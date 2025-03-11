@@ -8,20 +8,28 @@ let selectedMinutes = 0;
 // Settings state
 let clocktowerMode = true; // Default to true
 let playerCount = 5;
+let isFirstLoad = false;
 
 // Load settings from localStorage
 function loadSettings() {
   const savedSettings = localStorage.getItem('quickTimerSettings');
   if (savedSettings) {
     const settings = JSON.parse(savedSettings);
-    clocktowerMode = settings.clocktowerMode ?? true; // Use nullish coalescing to default to true
+    clocktowerMode = settings.clocktowerMode ?? true;
     playerCount = settings.playerCount || 5;
+  } else {
+    isFirstLoad = true;
   }
 
   // Always update UI to reflect settings (whether loaded or default)
   clocktowerModeCheckbox.checked = clocktowerMode;
   playerCountInput.value = playerCount;
   clocktowerSettings.classList.toggle('visible', clocktowerMode);
+
+  // Show settings dialog on first load
+  if (isFirstLoad) {
+    settingsDialog.showModal();
+  }
 }
 
 // Save settings to localStorage
@@ -31,6 +39,7 @@ function saveSettings() {
     playerCount,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+  isFirstLoad = false;
 }
 
 // Create Audio element for the end sound
@@ -73,6 +82,7 @@ function openSettings() {
 }
 
 function closeSettings() {
+  saveSettings(); // Always save when closing
   settingsDialog.close();
 }
 
@@ -231,9 +241,11 @@ secondButtons.forEach((btn) => {
 // Fullscreen change event listener
 document.addEventListener('fullscreenchange', updateFullscreenButton);
 
+// Initialize settings before anything else
+loadSettings();
+
 // Set initial presets
 document.querySelector('[data-minutes="5"]').classList.add('active');
 document.querySelector('[data-seconds="0"]').classList.add('active');
 selectedMinutes = 5; // Set initial minutes
-loadSettings(); // Load saved settings
 updateDisplay();
