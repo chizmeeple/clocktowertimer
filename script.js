@@ -1,6 +1,60 @@
 // Import helper functions
 import { updateCharacterAmounts } from './helper.js';
 
+// Wake Lock state
+let wakeLock = null;
+
+// Request wake lock
+async function requestWakeLock() {
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    console.log('Wake Lock is active');
+  } catch (err) {
+    console.log(`Failed to request Wake Lock: ${err.name}, ${err.message}`);
+  }
+}
+
+// Release wake lock
+async function releaseWakeLock() {
+  if (wakeLock) {
+    try {
+      await wakeLock.release();
+      wakeLock = null;
+      console.log('Wake Lock released');
+    } catch (err) {
+      console.log(`Failed to release Wake Lock: ${err.name}, ${err.message}`);
+    }
+  }
+}
+
+// Event listeners for wake lock
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible') {
+    await requestWakeLock();
+  } else {
+    await releaseWakeLock();
+  }
+});
+
+// Request wake lock on page load
+document.addEventListener('DOMContentLoaded', async () => {
+  await requestWakeLock();
+
+  // Existing DOMContentLoaded code...
+  endSound = new Audio('sounds/end-of-day/cathedral-bell.mp3');
+  wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01.mp3');
+
+  // Add event listener for wake-up button
+  document
+    .getElementById('wakeUpBtn')
+    .addEventListener('click', playWakeUpSound);
+
+  // Add event listener for Start New Game button
+  document
+    .getElementById('startNewGame')
+    .addEventListener('click', startNewGame);
+});
+
 // Helper functions for timer calculations
 function calcTimerStartEndValues(startingPlayerCount) {
   return {
@@ -121,22 +175,6 @@ function saveSettings() {
 // Create Audio element for the end sound
 let endSound;
 let wakeUpSound;
-
-// Initialize sounds
-document.addEventListener('DOMContentLoaded', () => {
-  endSound = new Audio('sounds/end-of-day/cathedral-bell.mp3');
-  wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01.mp3');
-
-  // Add event listener for wake-up button
-  document
-    .getElementById('wakeUpBtn')
-    .addEventListener('click', playWakeUpSound);
-
-  // Add event listener for Start New Game button
-  document
-    .getElementById('startNewGame')
-    .addEventListener('click', startNewGame);
-});
 
 // DOM elements
 const minutesDisplay = document.getElementById('minutes');
