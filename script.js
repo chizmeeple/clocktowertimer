@@ -141,7 +141,10 @@ function updateClocktowerPresets() {
   presets.forEach((preset, index) => {
     const button = document.createElement('button');
     button.className = 'preset-btn clocktower-btn';
-    button.textContent = `Day ${index + 1} (${preset.display})`;
+    button.innerHTML = `
+      <span class="time">${preset.display}</span>
+      <span class="day">Day ${index + 1}</span>
+    `;
     button.dataset.minutes = preset.minutes;
     button.dataset.seconds = preset.seconds;
 
