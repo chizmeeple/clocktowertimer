@@ -24,7 +24,7 @@ body {
 
 .container {
   background-color: rgba(33, 33, 33, 0.7);
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   text-align: center;
@@ -33,20 +33,21 @@ body {
   max-width: 1000px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 h1 {
   color: #ffffff;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .timer-display {
   min-height: calc(min(18vw, 14rem) * 1.2);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
+  padding: 0;
 }
 
 .timer-display .time {
@@ -420,12 +421,41 @@ h1 {
   display: block;
 }
 
+.character-counts-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  padding: 0 0.5rem;
+  width: 95%;
+  max-width: 1000px;
+}
+
+.character-counts {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  justify-content: center;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
 .day-display {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: bold;
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  margin-bottom: 0.5rem;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  background: rgba(33, 33, 33, 0.7);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  min-width: 120px;
 }
 
 .dialog-buttons {
@@ -471,15 +501,6 @@ h1 {
   100% {
     box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.5);
   }
-}
-
-.character-counts {
-  display: flex;
-  gap: 0.25rem;
-  margin: 0;
-  justify-content: center;
-  flex-wrap: wrap;
-  padding: 0 0.5rem;
 }
 
 .character-type {

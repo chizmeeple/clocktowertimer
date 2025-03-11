@@ -8,31 +8,33 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="characterCounts" class="character-counts">
-      <div class="character-type">
-        <span class="label">Townsfolk</span>
-        <span id="townsfolkAmount" class="amount">7</span>
+    <div class="character-counts-wrapper">
+      <div id="characterCounts" class="character-counts">
+        <div class="character-type">
+          <span class="label">Townsfolk</span>
+          <span id="townsfolkAmount" class="amount">7</span>
+        </div>
+        <div class="character-type">
+          <span class="label">Outsiders</span>
+          <span id="outsiderAmount" class="amount">0</span>
+        </div>
+        <div class="character-type">
+          <span class="label">Minions</span>
+          <span id="minionAmount" class="amount">2</span>
+        </div>
+        <div class="character-type">
+          <span class="label">Demon</span>
+          <span id="demonAmount" class="amount">1</span>
+        </div>
+        <div id="travellerDisplay" class="character-type traveller">
+          <span class="label">Travellers</span>
+          <span id="travellerAmount" class="amount">0</span>
+        </div>
       </div>
-      <div class="character-type">
-        <span class="label">Outsiders</span>
-        <span id="outsiderAmount" class="amount">0</span>
-      </div>
-      <div class="character-type">
-        <span class="label">Minions</span>
-        <span id="minionAmount" class="amount">2</span>
-      </div>
-      <div class="character-type">
-        <span class="label">Demon</span>
-        <span id="demonAmount" class="amount">1</span>
-      </div>
-      <div id="travellerDisplay" class="character-type traveller">
-        <span class="label">Travellers</span>
-        <span id="travellerAmount" class="amount">0</span>
-      </div>
+      <div class="day-display">Day&nbsp;<span id="currentDay">-</span></div>
     </div>
 
     <div class="container">
-      <div class="day-display">Day <span id="currentDay">-</span></div>
       <div class="timer-display">
         <div class="time">
           <span id="minutes">00</span>:<span id="seconds">00</span>
