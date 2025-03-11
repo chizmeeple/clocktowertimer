@@ -184,12 +184,19 @@ button {
   color: white;
   padding: 0.75rem;
   min-width: auto;
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  opacity: 0.7;
+  transition: opacity 0.2s;
 }
 
 #settingsBtn:hover {
   background-color: #3c513c;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  opacity: 1;
 }
 
 .settings-icon {
