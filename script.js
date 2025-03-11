@@ -338,6 +338,13 @@ travellerCountInput.addEventListener('change', updateTravellerCount);
 travellerCountInput.addEventListener('input', updateTravellerCount);
 accelerateBtn.addEventListener('click', accelerateTime);
 
+// Add keyboard shortcut for settings dialog
+document.addEventListener('keydown', (event) => {
+  if (event.key.toLowerCase() === 'q') {
+    openSettings();
+  }
+});
+
 // Add click handlers for preset buttons
 minuteButtons.forEach((btn) => {
   btn.addEventListener('click', handleMinuteClick);
