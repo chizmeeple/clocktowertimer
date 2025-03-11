@@ -143,12 +143,25 @@ button {
   color: white;
   padding: 0.75rem;
   min-width: auto;
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  opacity: 0.7;
+  transition: opacity 0.2s;
 }
 
 #fullscreenBtn:hover {
   background-color: #1976d2;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  opacity: 1;
+}
+
+/* Move fullscreen button to top right in fullscreen mode */
+:fullscreen #fullscreenBtn {
+  bottom: 1rem;
+  right: 1rem;
 }
 
 .fullscreen-icon {
