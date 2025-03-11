@@ -42,16 +42,28 @@ h1 {
 }
 
 .timer-display {
+  min-height: calc(min(18vw, 14rem) * 1.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.timer-display .time {
   font-size: min(18vw, 14rem);
   font-weight: bold;
   color: #4caf50;
-  margin: 0;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   line-height: 0.9;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1em;
 }
 
-.timer-display.wake-up-countdown {
+.timer-display.wake-up-countdown .time {
   color: #ffd700;
   animation: pulse-text 2s infinite;
 }
@@ -59,11 +71,12 @@ h1 {
 .timer-display.wake-up-countdown::before {
   content: 'Day starts in:';
   display: block;
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
+  font-size: min(4vw, 2rem);
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   animation: none;
+  line-height: 1;
+  margin-bottom: -0.5em;
 }
 
 @keyframes pulse-text {
