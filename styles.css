@@ -198,15 +198,15 @@ button {
 /* Fullscreen mode adjustments */
 :fullscreen .container {
   width: 90vw;
-  height: 90vh;
+  height: auto;
+  min-height: auto;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 2rem;
+  gap: 1rem;
   max-width: none;
-  margin: auto;
+  margin: 2rem auto;
 }
 
 :fullscreen .timer-display {
@@ -217,7 +217,7 @@ button {
 
 :fullscreen .controls {
   margin-top: 0;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 #settingsBtn {
@@ -504,7 +504,14 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 }
 
 :fullscreen .clocktower-presets {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+:fullscreen .action-buttons {
+  margin-top: 0.5rem;
 }
 
 /* Fullscreen prompt */
