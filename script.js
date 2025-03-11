@@ -6,7 +6,7 @@ let selectedSeconds = 0;
 let selectedMinutes = 0;
 
 // Settings state
-let clocktowerMode = false;
+let clocktowerMode = true; // Default to true
 let playerCount = 5;
 
 // Load settings from localStorage
@@ -14,14 +14,14 @@ function loadSettings() {
   const savedSettings = localStorage.getItem('quickTimerSettings');
   if (savedSettings) {
     const settings = JSON.parse(savedSettings);
-    clocktowerMode = settings.clocktowerMode || false;
+    clocktowerMode = settings.clocktowerMode ?? true; // Use nullish coalescing to default to true
     playerCount = settings.playerCount || 5;
-
-    // Update UI to reflect loaded settings
-    clocktowerModeCheckbox.checked = clocktowerMode;
-    playerCountInput.value = playerCount;
-    clocktowerSettings.classList.toggle('visible', clocktowerMode);
   }
+
+  // Always update UI to reflect settings (whether loaded or default)
+  clocktowerModeCheckbox.checked = clocktowerMode;
+  playerCountInput.value = playerCount;
+  clocktowerSettings.classList.toggle('visible', clocktowerMode);
 }
 
 // Save settings to localStorage
