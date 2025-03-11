@@ -39,6 +39,7 @@ function generateDayPresets(playerCount) {
       display: `${String(wholeMinutes).padStart(2, '0')}:${String(
         seconds
       ).padStart(2, '0')}`,
+      day: day,
     });
   }
 
@@ -53,11 +54,13 @@ let selectedSeconds = 0;
 let selectedMinutes = 0;
 let normalInterval = 1000; // Normal 1 second interval
 let currentInterval = normalInterval;
+let wakeUpTimeout = null;
 
 // Settings state
 let playerCount = 10; // Default to 10 players
 let travellerCount = 0; // Default to 0 travellers
 let isFirstLoad = false;
+let currentDay = null;
 
 // Character amounts mapping
 const characterAmounts = {
@@ -81,16 +84,18 @@ function loadSettings() {
     const settings = JSON.parse(savedSettings);
     playerCount = settings.playerCount || 10;
     travellerCount = settings.travellerCount || 0;
+    currentDay = settings.currentDay || null;
   } else {
     isFirstLoad = true;
   }
 
-  // Always update UI to reflect settings (whether loaded or default)
+  // Always update UI to reflect settings
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
+  updateDayDisplay();
 
   // Update character amounts and presets
   updateCharacterAmounts(playerCount);
@@ -108,6 +113,7 @@ function saveSettings() {
   const settings = {
     playerCount,
     travellerCount,
+    currentDay,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
@@ -118,13 +124,18 @@ let wakeUpSound;
 
 // Initialize sounds
 document.addEventListener('DOMContentLoaded', () => {
-  endSound = new Audio('sounds/end-sound.mp3');
+  endSound = new Audio('sounds/end-of-day.mp3');
   wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01.mp3');
 
   // Add event listener for wake-up button
   document
     .getElementById('wakeUpBtn')
     .addEventListener('click', playWakeUpSound);
+
+  // Add event listener for Start New Game button
+  document
+    .getElementById('startNewGame')
+    .addEventListener('click', startNewGame);
 });
 
 // DOM elements
@@ -148,15 +159,19 @@ function updateClocktowerPresets() {
   clocktowerPresetsDiv.innerHTML = ''; // Clear existing presets
 
   const presets = generateDayPresets(playerCount);
-  presets.forEach((preset, index) => {
+  presets.forEach((preset) => {
     const button = document.createElement('button');
     button.className = 'preset-btn clocktower-btn';
+    if (preset.day === currentDay) {
+      button.classList.add('current-day');
+    }
     button.innerHTML = `
       <span class="time">${preset.display}</span>
-      <span class="day">Day ${index + 1}</span>
+      <span class="day">Day ${preset.day}</span>
     `;
     button.dataset.minutes = preset.minutes;
     button.dataset.seconds = preset.seconds;
+    button.dataset.day = preset.day;
 
     button.addEventListener('click', (e) => {
       // Update active state
@@ -459,9 +474,52 @@ function playWakeUpSound() {
   if (isRunning) {
     resetTimer();
   }
+
+  // Clear any existing wake-up timeout
+  if (wakeUpTimeout) {
+    clearTimeout(wakeUpTimeout);
+  }
+
   wakeUpSound.currentTime = 0;
   wakeUpSound.play().catch((error) => {
     console.log('Error playing wake-up sound:', error);
     createBeep();
+  });
+
+  // Increment day counter if we're in a game
+  if (currentDay !== null) {
+    currentDay++;
+    updateDayDisplay();
+    saveSettings();
+
+    // Schedule next day's timer to start in 30 seconds
+    wakeUpTimeout = setTimeout(() => {
+      const nextDayPreset = document.querySelector(
+        `.clocktower-btn[data-day="${currentDay}"]`
+      );
+      if (nextDayPreset) {
+        nextDayPreset.click();
+      }
+    }, 30000);
+  }
+}
+
+function startNewGame() {
+  currentDay = 1;
+  updateDayDisplay();
+  saveSettings();
+  closeSettings();
+}
+
+function updateDayDisplay() {
+  const dayDisplay = document.getElementById('currentDay');
+  dayDisplay.textContent = currentDay || '-';
+
+  // Update preset button highlighting
+  document.querySelectorAll('.clocktower-btn').forEach((btn) => {
+    btn.classList.toggle(
+      'current-day',
+      parseInt(btn.dataset.day) === currentDay
+    );
   });
 }
