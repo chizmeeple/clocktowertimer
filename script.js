@@ -373,12 +373,21 @@ function startTimer() {
 // Reset timer
 function resetTimer() {
   clearInterval(timerId);
+  if (wakeUpTimeout) {
+    clearTimeout(wakeUpTimeout);
+    wakeUpTimeout = null;
+  }
   timeLeft = 0;
   isRunning = false;
   currentInterval = normalInterval;
   startBtn.disabled = true;
-  accelerateBtn.disabled = false; // Re-enable accelerate button
+  accelerateBtn.disabled = false;
   updateDisplay();
+
+  // Clear wake-up countdown state
+  document
+    .querySelector('.timer-display')
+    .classList.remove('wake-up-countdown');
 
   // Clear active state from preset buttons
   document.querySelectorAll('.clocktower-btn').forEach((btn) => {
@@ -492,15 +501,35 @@ function playWakeUpSound() {
     updateDayDisplay();
     saveSettings();
 
-    // Schedule next day's timer to start in 30 seconds
-    wakeUpTimeout = setTimeout(() => {
-      const nextDayPreset = document.querySelector(
-        `.clocktower-btn[data-day="${currentDay}"]`
-      );
-      if (nextDayPreset) {
-        nextDayPreset.click();
+    // Start countdown display
+    const timerDisplay = document.querySelector('.timer-display');
+    timerDisplay.classList.add('wake-up-countdown');
+
+    let countdownSeconds = 20;
+    timeLeft = countdownSeconds;
+    updateDisplay();
+
+    // Update countdown every second
+    timerId = setInterval(() => {
+      timeLeft--;
+      updateDisplay();
+
+      if (timeLeft === 0) {
+        clearInterval(timerId);
+        timerDisplay.classList.remove('wake-up-countdown');
+
+        // Start next day's timer
+        const nextDayPreset = document.querySelector(
+          `.clocktower-btn[data-day="${currentDay}"]`
+        );
+        if (nextDayPreset) {
+          nextDayPreset.click();
+        }
       }
-    }, 30000);
+    }, 1000);
+
+    // Store the countdown interval ID so it can be cleared if needed
+    wakeUpTimeout = timerId;
   }
 }
 
