@@ -391,3 +391,58 @@ button {
   color: #fff;
   line-height: 1;
 }
+
+/* Regular presets */
+#regularPresets,
+#regularSecondsPresets {
+  display: flex;
+}
+
+/* Hide regular presets when clocktower mode is active */
+.clocktower-settings.visible ~ #regularPresets,
+.clocktower-settings.visible ~ #regularSecondsPresets {
+  display: none;
+}
+
+.clocktower-presets {
+  display: none;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.clocktower-presets.visible {
+  display: flex;
+}
+
+.clocktower-presets button {
+  background-color: #2c3e2c;
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+  min-width: 8rem;
+}
+
+.clocktower-presets button:hover {
+  background-color: #3c513c;
+}
+
+.clocktower-presets button.active {
+  background-color: #4caf50;
+}
+
+/* Remove the old selector that was causing issues */
+.clocktower-settings ~ #regularPresets,
+.clocktower-settings ~ #regularSecondsPresets {
+  display: none;
+}
+
+/* Regular timer controls */
+#regularTimerControls {
+  display: block;
+}
+
+/* Hide regular controls when clocktower mode is active */
+body:has(.clocktower-settings.visible) #regularTimerControls {
+  display: none;
+}

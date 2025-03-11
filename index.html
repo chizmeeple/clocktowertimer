@@ -37,24 +37,42 @@
       </div>
       <div class="controls">
         <div class="time-inputs">
-          <div class="minutes-presets">
-            <button class="preset-btn minute-btn" data-minutes="0">0</button>
-            <button class="preset-btn minute-btn" data-minutes="1">1</button>
-            <button class="preset-btn minute-btn" data-minutes="2">2</button>
-            <button class="preset-btn minute-btn" data-minutes="3">3</button>
-            <button class="preset-btn minute-btn" data-minutes="4">4</button>
-            <button class="preset-btn minute-btn" data-minutes="5">5</button>
-            <button class="preset-btn minute-btn" data-minutes="6">6</button>
-            <button class="preset-btn minute-btn" data-minutes="7">7</button>
-            <button class="preset-btn minute-btn" data-minutes="8">8</button>
-            <button class="preset-btn minute-btn" data-minutes="9">9</button>
-            <button class="preset-btn minute-btn" data-minutes="10">10</button>
+          <div id="regularTimerControls">
+            <div class="minutes-presets" id="regularPresets">
+              <button class="preset-btn minute-btn" data-minutes="0">0</button>
+              <button class="preset-btn minute-btn" data-minutes="1">1</button>
+              <button class="preset-btn minute-btn" data-minutes="2">2</button>
+              <button class="preset-btn minute-btn" data-minutes="3">3</button>
+              <button class="preset-btn minute-btn" data-minutes="4">4</button>
+              <button class="preset-btn minute-btn" data-minutes="5">5</button>
+              <button class="preset-btn minute-btn" data-minutes="6">6</button>
+              <button class="preset-btn minute-btn" data-minutes="7">7</button>
+              <button class="preset-btn minute-btn" data-minutes="8">8</button>
+              <button class="preset-btn minute-btn" data-minutes="9">9</button>
+              <button class="preset-btn minute-btn" data-minutes="10">
+                10
+              </button>
+            </div>
+            <div class="seconds-presets" id="regularSecondsPresets">
+              <button class="preset-btn second-btn" data-seconds="0">
+                :00
+              </button>
+              <button class="preset-btn second-btn" data-seconds="15">
+                :15
+              </button>
+              <button class="preset-btn second-btn" data-seconds="30">
+                :30
+              </button>
+              <button class="preset-btn second-btn" data-seconds="45">
+                :45
+              </button>
+            </div>
           </div>
-          <div class="seconds-presets">
-            <button class="preset-btn second-btn" data-seconds="0">:00</button>
-            <button class="preset-btn second-btn" data-seconds="15">:15</button>
-            <button class="preset-btn second-btn" data-seconds="30">:30</button>
-            <button class="preset-btn second-btn" data-seconds="45">:45</button>
+          <div
+            id="clocktowerPresets"
+            class="clocktower-presets clocktower-settings"
+          >
+            <!-- Day presets will be inserted here dynamically -->
           </div>
         </div>
         <div class="action-buttons">
@@ -94,7 +112,7 @@
           </div>
         </div>
         <div class="dialog-buttons">
-          <button id="closeSettings">Close</button>
+          <button id="closeSettings">Save and Close</button>
         </div>
       </div>
     </dialog>

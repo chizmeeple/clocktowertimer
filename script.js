@@ -1,6 +1,50 @@
 // Import helper functions
 import { updateCharacterAmounts } from './helper.js';
 
+// Helper functions for timer calculations
+function calcTimerStartEndValues(startingPlayerCount) {
+  return {
+    totalNumbers: startingPlayerCount - startingPlayerCount / 5,
+    dayStartValue: startingPlayerCount * 0.4 + 2,
+    dayEndValue: 2,
+    nightStartValue: startingPlayerCount * 0.1 + 1,
+    nightEndValue: 1,
+  };
+}
+
+function roundToNearestQuarter(n) {
+  return Math.round(n * 4) / 4;
+}
+
+// Function to generate day presets
+function generateDayPresets(playerCount) {
+  const { totalNumbers, dayStartValue, dayEndValue } =
+    calcTimerStartEndValues(playerCount);
+  const numberOfDays = Math.floor(totalNumbers);
+  const presets = [];
+
+  for (let day = 1; day <= numberOfDays; day++) {
+    // Linear interpolation between start and end values
+    const progress = (day - 1) / (numberOfDays - 1);
+    const minutes = roundToNearestQuarter(
+      dayStartValue - progress * (dayStartValue - dayEndValue)
+    );
+
+    // Convert to MM:SS format
+    const wholeMinutes = Math.floor(minutes);
+    const seconds = Math.round((minutes % 1) * 60);
+    presets.push({
+      minutes: wholeMinutes,
+      seconds: seconds,
+      display: `${String(wholeMinutes).padStart(2, '0')}:${String(
+        seconds
+      ).padStart(2, '0')}`,
+    });
+  }
+
+  return presets;
+}
+
 // Timer state
 let timeLeft = 0;
 let timerId = null;
@@ -56,10 +100,11 @@ function loadSettings() {
     .getElementById('travellerDisplay')
     .classList.toggle('visible', clocktowerMode && travellerCount > 0);
 
-  // Update character amounts if in clocktower mode
+  // Update character amounts and presets if in clocktower mode
   if (clocktowerMode) {
     updateCharacterAmounts(playerCount);
     document.getElementById('travellerAmount').textContent = travellerCount;
+    updateClocktowerPresets();
   }
 
   // Show settings dialog on first load
@@ -101,6 +146,44 @@ const minuteButtons = document.querySelectorAll('.minute-btn');
 const secondButtons = document.querySelectorAll('.second-btn');
 
 // Settings functionality
+function updateClocktowerPresets() {
+  const clocktowerPresetsDiv = document.getElementById('clocktowerPresets');
+  clocktowerPresetsDiv.innerHTML = ''; // Clear existing presets
+
+  if (!clocktowerMode) return;
+
+  const presets = generateDayPresets(playerCount);
+  presets.forEach((preset, index) => {
+    const button = document.createElement('button');
+    button.className = 'preset-btn clocktower-btn';
+    button.textContent = `Day ${index + 1} (${preset.display})`;
+    button.dataset.minutes = preset.minutes;
+    button.dataset.seconds = preset.seconds;
+
+    button.addEventListener('click', (e) => {
+      // Update active state
+      document
+        .querySelectorAll('.clocktower-btn')
+        .forEach((btn) => btn.classList.remove('active'));
+      button.classList.add('active');
+
+      // Update selected time
+      selectedMinutes = preset.minutes;
+      selectedSeconds = preset.seconds;
+
+      // If timer is not running, update display
+      if (!isRunning) {
+        timeLeft = selectedMinutes * 60 + selectedSeconds;
+        updateDisplay();
+      }
+    });
+
+    clocktowerPresetsDiv.appendChild(button);
+  });
+
+  clocktowerPresetsDiv.classList.toggle('visible', clocktowerMode);
+}
+
 function toggleClocktowerSettings() {
   clocktowerMode = clocktowerModeCheckbox.checked;
   clocktowerSettings.classList.toggle('visible', clocktowerMode);
@@ -112,10 +195,11 @@ function toggleClocktowerSettings() {
     .getElementById('travellerDisplay')
     .classList.toggle('visible', clocktowerMode && travellerCount > 0);
 
-  // Update character amounts if enabling clocktower mode
+  // Update character amounts and presets if enabling clocktower mode
   if (clocktowerMode) {
     updateCharacterAmounts(playerCount);
     document.getElementById('travellerAmount').textContent = travellerCount;
+    updateClocktowerPresets();
   }
   saveSettings();
 }
@@ -128,6 +212,7 @@ function updatePlayerCount() {
   playerCountInput.value = playerCount;
   if (clocktowerMode) {
     updateCharacterAmounts(playerCount);
+    updateClocktowerPresets();
   }
   saveSettings();
 }
