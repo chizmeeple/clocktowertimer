@@ -293,14 +293,29 @@ h1 {
   transition: opacity 0.2s;
 }
 
-#settingsBtn:hover {
+#infoBtn {
+  background-color: #2c3e2c;
+  color: white;
+  padding: 0.75rem;
+  min-width: auto;
+  position: fixed;
+  bottom: 1rem;
+  left: 4.5rem;
+  z-index: 1000;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+#settingsBtn:hover,
+#infoBtn:hover {
   background-color: #3c513c;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   opacity: 1;
 }
 
-.settings-icon {
+.settings-icon,
+.info-icon {
   display: block;
   width: 24px;
   height: 24px;
@@ -647,4 +662,63 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 
 :fullscreen .action-buttons {
   margin-top: 0.5rem;
+}
+
+/* Info Dialog */
+.info-dialog {
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background-color: #1a2b1a;
+  color: white;
+  max-width: 400px;
+  width: 90%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+}
+
+.info-dialog[open] {
+  opacity: 1;
+  visibility: visible;
+  display: block;
+}
+
+.info-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.qr-code-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+}
+
+.qr-code-container img {
+  max-width: 200px;
+  height: auto;
+}
+
+.website-link {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.website-link a {
+  color: #4caf50;
+  text-decoration: none;
+}
+
+.website-link a:hover {
+  text-decoration: underline;
 }

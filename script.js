@@ -190,6 +190,9 @@ const travellerCountInput = document.getElementById('travellerCount');
 const accelerateBtn = document.getElementById('accelerateBtn');
 const minuteButtons = document.querySelectorAll('.minute-btn');
 const secondButtons = document.querySelectorAll('.second-btn');
+const infoBtn = document.getElementById('infoBtn');
+const infoDialog = document.getElementById('infoDialog');
+const closeInfoBtn = document.getElementById('closeInfo');
 
 // Settings functionality
 function updateClocktowerPresets() {
@@ -485,6 +488,8 @@ resetBtn.addEventListener('click', resetTimer);
 fullscreenBtn.addEventListener('click', toggleFullscreen);
 settingsBtn.addEventListener('click', openSettings);
 closeSettingsBtn.addEventListener('click', closeSettings);
+infoBtn.addEventListener('click', openInfo);
+closeInfoBtn.addEventListener('click', closeInfo);
 playerCountInput.addEventListener('change', updatePlayerCount);
 playerCountInput.addEventListener('input', updatePlayerCount);
 travellerCountInput.addEventListener('change', updateTravellerCount);
@@ -632,4 +637,23 @@ function updateDayDisplay(state = '') {
       parseInt(btn.dataset.day) === currentDay
     );
   });
+}
+
+// Generate QR code for the website
+function generateQRCode() {
+  const url = 'https://chizmw.github.io/clocktowertimer/';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+    url
+  )}`;
+  document.getElementById('qrCode').src = qrCodeUrl;
+}
+
+// Info dialog functionality
+function openInfo() {
+  generateQRCode();
+  infoDialog.showModal();
+}
+
+function closeInfo() {
+  infoDialog.close();
 }
