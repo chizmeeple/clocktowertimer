@@ -9,6 +9,30 @@ let selectedMinutes = 0;
 let clocktowerMode = false;
 let playerCount = 5;
 
+// Load settings from localStorage
+function loadSettings() {
+  const savedSettings = localStorage.getItem('quickTimerSettings');
+  if (savedSettings) {
+    const settings = JSON.parse(savedSettings);
+    clocktowerMode = settings.clocktowerMode || false;
+    playerCount = settings.playerCount || 5;
+
+    // Update UI to reflect loaded settings
+    clocktowerModeCheckbox.checked = clocktowerMode;
+    playerCountInput.value = playerCount;
+    clocktowerSettings.classList.toggle('visible', clocktowerMode);
+  }
+}
+
+// Save settings to localStorage
+function saveSettings() {
+  const settings = {
+    clocktowerMode,
+    playerCount,
+  };
+  localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+}
+
 // Create Audio element for the end sound
 const endSound = new Audio('sounds/end-of-day.mp3');
 endSound.preload = 'auto';
@@ -32,6 +56,7 @@ const secondButtons = document.querySelectorAll('.second-btn');
 function toggleClocktowerSettings() {
   clocktowerMode = clocktowerModeCheckbox.checked;
   clocktowerSettings.classList.toggle('visible', clocktowerMode);
+  saveSettings();
 }
 
 function updatePlayerCount() {
@@ -40,6 +65,7 @@ function updatePlayerCount() {
     15
   );
   playerCountInput.value = playerCount;
+  saveSettings();
 }
 
 function openSettings() {
@@ -209,4 +235,5 @@ document.addEventListener('fullscreenchange', updateFullscreenButton);
 document.querySelector('[data-minutes="5"]').classList.add('active');
 document.querySelector('[data-seconds="0"]').classList.add('active');
 selectedMinutes = 5; // Set initial minutes
+loadSettings(); // Load saved settings
 updateDisplay();
