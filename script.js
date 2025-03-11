@@ -166,8 +166,8 @@ function updateClocktowerPresets() {
       updateDisplay();
 
       // Start the timer
-      startBtn.textContent = 'Pause';
       isRunning = true;
+      startBtn.disabled = false;
       accelerateBtn.disabled = false;
 
       timerId = setInterval(() => {
@@ -177,8 +177,8 @@ function updateClocktowerPresets() {
         if (timeLeft === 0) {
           clearInterval(timerId);
           playEndSound();
-          startBtn.textContent = 'Start';
           isRunning = false;
+          startBtn.disabled = true;
         }
       }, normalInterval);
     });
@@ -303,8 +303,8 @@ function accelerateTime() {
     if (timeLeft === 0) {
       clearInterval(timerId);
       playEndSound();
-      startBtn.textContent = 'Start';
       isRunning = false;
+      startBtn.disabled = true;
       currentInterval = normalInterval;
     }
   }, currentInterval);
@@ -318,7 +318,6 @@ function startTimer() {
   if (isRunning) {
     // Pause timer
     clearInterval(timerId);
-    startBtn.textContent = 'Start';
     isRunning = false;
     return;
   }
@@ -329,7 +328,6 @@ function startTimer() {
     if (timeLeft === 0) return; // Don't start if no time is set
   }
 
-  startBtn.textContent = 'Pause';
   isRunning = true;
   accelerateBtn.disabled = false; // Re-enable accelerate button
 
@@ -340,8 +338,8 @@ function startTimer() {
     if (timeLeft === 0) {
       clearInterval(timerId);
       playEndSound();
-      startBtn.textContent = 'Start';
       isRunning = false;
+      startBtn.disabled = true;
     }
   }, normalInterval);
 }
@@ -352,9 +350,14 @@ function resetTimer() {
   timeLeft = 0;
   isRunning = false;
   currentInterval = normalInterval;
-  startBtn.textContent = 'Start';
+  startBtn.disabled = true;
   accelerateBtn.disabled = false; // Re-enable accelerate button
   updateDisplay();
+
+  // Clear active state from preset buttons
+  document.querySelectorAll('.clocktower-btn').forEach((btn) => {
+    btn.classList.remove('active');
+  });
 }
 
 // Handle minutes preset selection
@@ -370,6 +373,7 @@ function handleMinuteClick(e) {
   if (!isRunning) {
     timeLeft = selectedMinutes * 60 + selectedSeconds;
     updateDisplay();
+    startBtn.disabled = false;
   }
 }
 
@@ -386,6 +390,7 @@ function handleSecondClick(e) {
   if (!isRunning) {
     timeLeft = selectedMinutes * 60 + selectedSeconds;
     updateDisplay();
+    startBtn.disabled = false;
   }
 }
 

@@ -131,6 +131,12 @@ button {
   background-color: #45a049;
 }
 
+#startBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 #resetBtn {
   background-color: #8b4513;
   color: white;
