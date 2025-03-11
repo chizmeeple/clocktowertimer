@@ -9,7 +9,7 @@ let currentInterval = normalInterval;
 
 // Settings state
 let clocktowerMode = true; // Default to true
-let playerCount = 5;
+let playerCount = 10; // Default to 10 players
 let isFirstLoad = false;
 
 // Load settings from localStorage
@@ -18,7 +18,7 @@ function loadSettings() {
   if (savedSettings) {
     const settings = JSON.parse(savedSettings);
     clocktowerMode = settings.clocktowerMode ?? true;
-    playerCount = settings.playerCount || 5;
+    playerCount = settings.playerCount || 10;
   } else {
     isFirstLoad = true;
   }
