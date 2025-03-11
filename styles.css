@@ -137,3 +137,36 @@ button {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
+#fullscreenBtn {
+  background-color: #2196f3;
+  color: white;
+  padding: 0.75rem;
+  min-width: auto;
+}
+
+#fullscreenBtn:hover {
+  background-color: #1976d2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.fullscreen-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+/* Fullscreen mode adjustments */
+:fullscreen .container {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+:fullscreen .timer-display {
+  font-size: 20rem;
+}

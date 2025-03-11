@@ -14,8 +14,30 @@ const minutesDisplay = document.getElementById('minutes');
 const secondsDisplay = document.getElementById('seconds');
 const startBtn = document.getElementById('startBtn');
 const resetBtn = document.getElementById('resetBtn');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
 const minuteButtons = document.querySelectorAll('.minute-btn');
 const secondButtons = document.querySelectorAll('.second-btn');
+
+// Fullscreen functionality
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch((err) => {
+      console.log('Error attempting to enable fullscreen:', err);
+    });
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+}
+
+// Update fullscreen button icon based on state
+function updateFullscreenButton() {
+  const isFullscreen = document.fullscreenElement !== null;
+  fullscreenBtn.innerHTML = isFullscreen
+    ? '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>'
+    : '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+}
 
 // Play end sound
 function playEndSound() {
@@ -132,6 +154,7 @@ function handleSecondClick(e) {
 // Event listeners
 startBtn.addEventListener('click', startTimer);
 resetBtn.addEventListener('click', resetTimer);
+fullscreenBtn.addEventListener('click', toggleFullscreen);
 
 // Add click handlers for preset buttons
 minuteButtons.forEach((btn) => {
@@ -141,6 +164,9 @@ minuteButtons.forEach((btn) => {
 secondButtons.forEach((btn) => {
   btn.addEventListener('click', handleSecondClick);
 });
+
+// Fullscreen change event listener
+document.addEventListener('fullscreenchange', updateFullscreenButton);
 
 // Set initial presets
 document.querySelector('[data-minutes="5"]').classList.add('active');
