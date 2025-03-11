@@ -9,8 +9,10 @@ body {
     Ubuntu, sans-serif;
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 1.5rem;
   background-image: url('images/background.jpg');
   background-size: cover;
   background-position: center;
@@ -328,17 +330,18 @@ button {
 
 .character-counts {
   display: none;
-  margin-bottom: 1rem;
-  padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(33, 33, 33, 0.7);
+  border-radius: 12px;
   text-align: center;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
 .character-counts.visible {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 2rem;
   flex-wrap: wrap;
 }
 
@@ -346,17 +349,34 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 100px;
+  min-width: 120px;
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(33, 33, 33, 0.5);
+}
+
+/* Good team (blue background) */
+.character-type:nth-child(1),
+.character-type:nth-child(2) {
+  background: rgba(25, 118, 210, 0.7);
+}
+
+/* Evil team (red background) */
+.character-type:nth-child(3),
+.character-type:nth-child(4) {
+  background: rgba(211, 47, 47, 0.7);
 }
 
 .character-type .label {
-  font-size: 0.9rem;
-  color: #ccc;
-  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
 }
 
 .character-type .amount {
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   font-weight: bold;
   color: #fff;
+  line-height: 1;
 }
