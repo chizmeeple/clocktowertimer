@@ -13,6 +13,7 @@ let currentInterval = normalInterval;
 // Settings state
 let clocktowerMode = true; // Default to true
 let playerCount = 10; // Default to 10 players
+let travellerCount = 0; // Default to 0 travellers
 let isFirstLoad = false;
 
 // Character amounts mapping
@@ -37,6 +38,7 @@ function loadSettings() {
     const settings = JSON.parse(savedSettings);
     clocktowerMode = settings.clocktowerMode ?? true;
     playerCount = settings.playerCount || 10;
+    travellerCount = settings.travellerCount || 0;
   } else {
     isFirstLoad = true;
   }
@@ -44,15 +46,20 @@ function loadSettings() {
   // Always update UI to reflect settings (whether loaded or default)
   clocktowerModeCheckbox.checked = clocktowerMode;
   playerCountInput.value = playerCount;
+  travellerCountInput.value = travellerCount;
   clocktowerSettings.classList.toggle('visible', clocktowerMode);
   accelerateBtn.classList.toggle('visible', clocktowerMode);
   document
     .getElementById('characterCounts')
     .classList.toggle('visible', clocktowerMode);
+  document
+    .getElementById('travellerDisplay')
+    .classList.toggle('visible', clocktowerMode && travellerCount > 0);
 
   // Update character amounts if in clocktower mode
   if (clocktowerMode) {
     updateCharacterAmounts(playerCount);
+    document.getElementById('travellerAmount').textContent = travellerCount;
   }
 
   // Show settings dialog on first load
@@ -66,6 +73,7 @@ function saveSettings() {
   const settings = {
     clocktowerMode,
     playerCount,
+    travellerCount,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
   isFirstLoad = false;
@@ -86,6 +94,7 @@ const settingsDialog = document.getElementById('settingsDialog');
 const closeSettingsBtn = document.getElementById('closeSettings');
 const clocktowerModeCheckbox = document.getElementById('clocktowerMode');
 const playerCountInput = document.getElementById('playerCount');
+const travellerCountInput = document.getElementById('travellerCount');
 const clocktowerSettings = document.getElementById('clocktowerSettings');
 const accelerateBtn = document.getElementById('accelerateBtn');
 const minuteButtons = document.querySelectorAll('.minute-btn');
@@ -99,10 +108,14 @@ function toggleClocktowerSettings() {
   document
     .getElementById('characterCounts')
     .classList.toggle('visible', clocktowerMode);
+  document
+    .getElementById('travellerDisplay')
+    .classList.toggle('visible', clocktowerMode && travellerCount > 0);
 
   // Update character amounts if enabling clocktower mode
   if (clocktowerMode) {
     updateCharacterAmounts(playerCount);
+    document.getElementById('travellerAmount').textContent = travellerCount;
   }
   saveSettings();
 }
@@ -115,6 +128,21 @@ function updatePlayerCount() {
   playerCountInput.value = playerCount;
   if (clocktowerMode) {
     updateCharacterAmounts(playerCount);
+  }
+  saveSettings();
+}
+
+function updateTravellerCount() {
+  travellerCount = Math.min(
+    Math.max(parseInt(travellerCountInput.value) || 0, 0),
+    5
+  );
+  travellerCountInput.value = travellerCount;
+  document
+    .getElementById('travellerDisplay')
+    .classList.toggle('visible', clocktowerMode && travellerCount > 0);
+  if (clocktowerMode) {
+    document.getElementById('travellerAmount').textContent = travellerCount;
   }
   saveSettings();
 }
@@ -306,6 +334,8 @@ closeSettingsBtn.addEventListener('click', closeSettings);
 clocktowerModeCheckbox.addEventListener('change', toggleClocktowerSettings);
 playerCountInput.addEventListener('change', updatePlayerCount);
 playerCountInput.addEventListener('input', updatePlayerCount);
+travellerCountInput.addEventListener('change', updateTravellerCount);
+travellerCountInput.addEventListener('input', updateTravellerCount);
 accelerateBtn.addEventListener('click', accelerateTime);
 
 // Add click handlers for preset buttons

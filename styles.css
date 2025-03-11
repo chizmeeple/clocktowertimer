@@ -355,6 +355,17 @@ button {
   background: rgba(33, 33, 33, 0.5);
 }
 
+.character-type.traveller {
+  display: none;
+  background: rgba(255, 140, 0, 0.7); /* More orange, less red */
+  border: 2px solid rgba(255, 215, 0, 0.7); /* Golden border */
+  box-shadow: 0 0 10px rgba(255, 140, 0, 0.3); /* Subtle glow */
+}
+
+.character-type.traveller.visible {
+  display: flex;
+}
+
 /* Good team (blue background) */
 .character-type:nth-child(1),
 .character-type:nth-child(2) {

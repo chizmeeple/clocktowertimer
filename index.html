@@ -25,6 +25,10 @@
         <span class="label">Demon</span>
         <span id="demonAmount" class="amount">1</span>
       </div>
+      <div id="travellerDisplay" class="character-type traveller">
+        <span class="label">Travellers</span>
+        <span id="travellerAmount" class="amount">0</span>
+      </div>
     </div>
 
     <div class="container">
@@ -77,6 +81,16 @@
           <div class="setting-row">
             <label for="playerCount">Starting Player Count:</label>
             <input type="number" id="playerCount" min="5" max="15" value="10" />
+          </div>
+          <div class="setting-row">
+            <label for="travellerCount">Number of Travellers:</label>
+            <input
+              type="number"
+              id="travellerCount"
+              min="0"
+              max="5"
+              value="0"
+            />
           </div>
         </div>
         <div class="dialog-buttons">
