@@ -124,7 +124,7 @@ let wakeUpSound;
 
 // Initialize sounds
 document.addEventListener('DOMContentLoaded', () => {
-  endSound = new Audio('sounds/end-of-day.mp3');
+  endSound = new Audio('sounds/end-of-day/cathedral-bell.mp3');
   wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01.mp3');
 
   // Add event listener for wake-up button
