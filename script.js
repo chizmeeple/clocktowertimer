@@ -4,6 +4,8 @@ let timerId = null;
 let isRunning = false;
 let selectedSeconds = 0;
 let selectedMinutes = 0;
+let normalInterval = 1000; // Normal 1 second interval
+let currentInterval = normalInterval;
 
 // Settings state
 let clocktowerMode = true; // Default to true
@@ -25,6 +27,7 @@ function loadSettings() {
   clocktowerModeCheckbox.checked = clocktowerMode;
   playerCountInput.value = playerCount;
   clocktowerSettings.classList.toggle('visible', clocktowerMode);
+  accelerateBtn.classList.toggle('visible', clocktowerMode);
 
   // Show settings dialog on first load
   if (isFirstLoad) {
@@ -58,6 +61,7 @@ const closeSettingsBtn = document.getElementById('closeSettings');
 const clocktowerModeCheckbox = document.getElementById('clocktowerMode');
 const playerCountInput = document.getElementById('playerCount');
 const clocktowerSettings = document.getElementById('clocktowerSettings');
+const accelerateBtn = document.getElementById('accelerateBtn');
 const minuteButtons = document.querySelectorAll('.minute-btn');
 const secondButtons = document.querySelectorAll('.second-btn');
 
@@ -65,6 +69,7 @@ const secondButtons = document.querySelectorAll('.second-btn');
 function toggleClocktowerSettings() {
   clocktowerMode = clocktowerModeCheckbox.checked;
   clocktowerSettings.classList.toggle('visible', clocktowerMode);
+  accelerateBtn.classList.toggle('visible', clocktowerMode);
   saveSettings();
 }
 
@@ -146,6 +151,39 @@ function updateDisplay() {
   secondsDisplay.textContent = seconds.toString().padStart(2, '0');
 }
 
+// Acceleration functionality
+function accelerateTime() {
+  if (!isRunning || timeLeft <= 0) return;
+
+  // Calculate a random completion time between 3-10 seconds
+  const completionTime = Math.floor(Math.random() * 8000) + 3000; // 3000-10000ms
+
+  // Calculate how many intervals we need
+  const intervals = Math.min(timeLeft, Math.floor(completionTime / 50)); // Use 50ms intervals
+  const timePerTick = Math.ceil(timeLeft / intervals);
+
+  // Clear existing timer
+  clearInterval(timerId);
+
+  // Start accelerated timer
+  currentInterval = 50; // 50ms intervals for smooth countdown
+  timerId = setInterval(() => {
+    timeLeft = Math.max(0, timeLeft - timePerTick);
+    updateDisplay();
+
+    if (timeLeft === 0) {
+      clearInterval(timerId);
+      playEndSound();
+      startBtn.textContent = 'Start';
+      isRunning = false;
+      currentInterval = normalInterval;
+    }
+  }, currentInterval);
+
+  // Disable accelerate button after use
+  accelerateBtn.disabled = true;
+}
+
 // Start timer
 function startTimer() {
   if (isRunning) {
@@ -164,6 +202,7 @@ function startTimer() {
 
   startBtn.textContent = 'Pause';
   isRunning = true;
+  accelerateBtn.disabled = false; // Re-enable accelerate button
 
   timerId = setInterval(() => {
     timeLeft--;
@@ -175,7 +214,7 @@ function startTimer() {
       startBtn.textContent = 'Start';
       isRunning = false;
     }
-  }, 1000);
+  }, normalInterval);
 }
 
 // Reset timer
@@ -183,7 +222,9 @@ function resetTimer() {
   clearInterval(timerId);
   timeLeft = 0;
   isRunning = false;
+  currentInterval = normalInterval;
   startBtn.textContent = 'Start';
+  accelerateBtn.disabled = false; // Re-enable accelerate button
   updateDisplay();
 }
 
@@ -228,6 +269,7 @@ closeSettingsBtn.addEventListener('click', closeSettings);
 clocktowerModeCheckbox.addEventListener('change', toggleClocktowerSettings);
 playerCountInput.addEventListener('change', updatePlayerCount);
 playerCountInput.addEventListener('input', updatePlayerCount);
+accelerateBtn.addEventListener('click', accelerateTime);
 
 // Add click handlers for preset buttons
 minuteButtons.forEach((btn) => {
@@ -243,6 +285,7 @@ document.addEventListener('fullscreenchange', updateFullscreenButton);
 
 // Initialize settings before anything else
 loadSettings();
+accelerateBtn.classList.toggle('visible', clocktowerMode); // Set initial visibility
 
 // Set initial presets
 document.querySelector('[data-minutes="5"]').classList.add('active');

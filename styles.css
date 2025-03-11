@@ -133,6 +133,30 @@ button {
   background-color: #6b3410;
 }
 
+#accelerateBtn {
+  background-color: #2c3e2c;
+  color: white;
+  min-width: 160px;
+  display: none;
+}
+
+#accelerateBtn:hover {
+  background-color: #3c513c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#accelerateBtn.visible {
+  display: inline-block;
+}
+
+#accelerateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 #fullscreenBtn {
   background-color: #2c3e2c;
   color: white;
