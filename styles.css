@@ -21,7 +21,7 @@ body {
 
 .container {
   background-color: rgba(33, 33, 33, 0.95);
-  padding: 2rem;
+  padding: 3rem;
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   text-align: center;
@@ -34,33 +34,90 @@ h1 {
 }
 
 .timer-display {
-  font-size: 4rem;
+  font-size: 12rem;
   font-weight: bold;
   color: #4caf50;
   margin: 1rem 0;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  line-height: 1;
 }
 
 .controls {
   display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.time-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.minutes-presets,
+.seconds-presets {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.minutes-presets {
+  margin-bottom: 0.5rem;
+}
+
+.action-buttons {
+  display: flex;
   gap: 0.5rem;
   justify-content: center;
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;
 }
 
 button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.2rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.preset-btn {
+  background-color: #333;
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+  min-width: 3rem;
+}
+
+.preset-btn:hover {
+  background-color: #444;
+  transform: translateY(-1px);
+}
+
+.preset-btn.active {
+  background-color: #4caf50;
+}
+
+.minute-btn {
+  background-color: #2c3e50;
+}
+
+.minute-btn:hover {
+  background-color: #34495e;
+}
+
+.minute-btn.active {
+  background-color: #4caf50;
 }
 
 #startBtn {
   background-color: #4caf50;
   color: white;
+  min-width: 120px;
 }
 
 #startBtn:hover {
@@ -72,27 +129,11 @@ button {
 #resetBtn {
   background-color: #f44336;
   color: white;
+  min-width: 120px;
 }
 
 #resetBtn:hover {
   background-color: #da190b;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-#timeInput {
-  padding: 0.5rem;
-  width: 70px;
-  font-size: 1rem;
-  border: 1px solid #444;
-  border-radius: 6px;
-  text-align: center;
-  background-color: #333;
-  color: white;
-}
-
-#timeInput:focus {
-  outline: none;
-  border-color: #4caf50;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }

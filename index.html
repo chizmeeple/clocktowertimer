@@ -1,23 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quick Timer</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
     <div class="container">
-        <h1>Quick Timer</h1>
-        <div class="timer-display">
-            <span id="minutes">00</span>:<span id="seconds">00</span>
+      <div class="timer-display">
+        <span id="minutes">00</span>:<span id="seconds">00</span>
+      </div>
+      <div class="controls">
+        <div class="time-inputs">
+          <div class="minutes-presets">
+            <button class="preset-btn minute-btn" data-minutes="0">0</button>
+            <button class="preset-btn minute-btn" data-minutes="1">1</button>
+            <button class="preset-btn minute-btn" data-minutes="2">2</button>
+            <button class="preset-btn minute-btn" data-minutes="3">3</button>
+            <button class="preset-btn minute-btn" data-minutes="4">4</button>
+            <button class="preset-btn minute-btn" data-minutes="5">5</button>
+            <button class="preset-btn minute-btn" data-minutes="6">6</button>
+            <button class="preset-btn minute-btn" data-minutes="7">7</button>
+            <button class="preset-btn minute-btn" data-minutes="8">8</button>
+            <button class="preset-btn minute-btn" data-minutes="9">9</button>
+            <button class="preset-btn minute-btn" data-minutes="10">10</button>
+          </div>
+          <div class="seconds-presets">
+            <button class="preset-btn second-btn" data-seconds="0">:00</button>
+            <button class="preset-btn second-btn" data-seconds="15">:15</button>
+            <button class="preset-btn second-btn" data-seconds="30">:30</button>
+            <button class="preset-btn second-btn" data-seconds="45">:45</button>
+          </div>
         </div>
-        <div class="controls">
-            <input type="number" id="timeInput" min="1" max="60" value="5" aria-label="Minutes">
-            <button id="startBtn">Start</button>
-            <button id="resetBtn">Reset</button>
+        <div class="action-buttons">
+          <button id="startBtn">Start</button>
+          <button id="resetBtn">Reset</button>
         </div>
+      </div>
     </div>
     <script src="script.js"></script>
-</body>
+  </body>
 </html>
