@@ -159,11 +159,29 @@ function updateClocktowerPresets() {
       selectedMinutes = preset.minutes;
       selectedSeconds = preset.seconds;
 
-      // If timer is not running, update display
-      if (!isRunning) {
-        timeLeft = selectedMinutes * 60 + selectedSeconds;
+      // Reset any existing timer
+      clearInterval(timerId);
+
+      // Set and display the new time
+      timeLeft = selectedMinutes * 60 + selectedSeconds;
+      updateDisplay();
+
+      // Start the timer
+      startBtn.textContent = 'Pause';
+      isRunning = true;
+      accelerateBtn.disabled = false;
+
+      timerId = setInterval(() => {
+        timeLeft--;
         updateDisplay();
-      }
+
+        if (timeLeft === 0) {
+          clearInterval(timerId);
+          playEndSound();
+          startBtn.textContent = 'Start';
+          isRunning = false;
+        }
+      }, normalInterval);
     });
 
     clocktowerPresetsDiv.appendChild(button);
