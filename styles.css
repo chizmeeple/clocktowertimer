@@ -197,16 +197,27 @@ button {
 
 /* Fullscreen mode adjustments */
 :fullscreen .container {
-  width: 100vw;
-  height: 100vh;
-  border-radius: 0;
-  padding: 0.75rem;
+  width: 90vw;
+  height: 90vh;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 2rem;
+  max-width: none;
+  margin: auto;
 }
 
 :fullscreen .timer-display {
-  font-size: min(22vw, 18rem);
+  font-size: min(18vw, 16rem);
+  margin: 0;
+  line-height: 1;
+}
+
+:fullscreen .controls {
+  margin-top: 0;
+  gap: 1.5rem;
 }
 
 #settingsBtn {
@@ -463,8 +474,5 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 }
 
 :fullscreen .clocktower-presets {
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  max-width: 90vw;
-  margin-left: auto;
-  margin-right: auto;
+  margin-bottom: 1rem;
 }
