@@ -1,3 +1,6 @@
+// Import helper functions
+import { updateCharacterAmounts } from './helper.js';
+
 // Timer state
 let timeLeft = 0;
 let timerId = null;
@@ -11,6 +14,21 @@ let currentInterval = normalInterval;
 let clocktowerMode = true; // Default to true
 let playerCount = 10; // Default to 10 players
 let isFirstLoad = false;
+
+// Character amounts mapping
+const characterAmounts = {
+  5: [3, 0, 1, 1],
+  6: [3, 1, 1, 1],
+  7: [5, 0, 1, 1],
+  8: [5, 1, 1, 1],
+  9: [5, 2, 1, 1],
+  10: [7, 0, 2, 1],
+  11: [7, 1, 2, 1],
+  12: [7, 2, 2, 1],
+  13: [9, 0, 3, 1],
+  14: [9, 1, 3, 1],
+  15: [9, 2, 3, 1],
+};
 
 // Load settings from localStorage
 function loadSettings() {
@@ -28,6 +46,14 @@ function loadSettings() {
   playerCountInput.value = playerCount;
   clocktowerSettings.classList.toggle('visible', clocktowerMode);
   accelerateBtn.classList.toggle('visible', clocktowerMode);
+  document
+    .getElementById('characterCounts')
+    .classList.toggle('visible', clocktowerMode);
+
+  // Update character amounts if in clocktower mode
+  if (clocktowerMode) {
+    updateCharacterAmounts(playerCount);
+  }
 
   // Show settings dialog on first load
   if (isFirstLoad) {
@@ -70,6 +96,14 @@ function toggleClocktowerSettings() {
   clocktowerMode = clocktowerModeCheckbox.checked;
   clocktowerSettings.classList.toggle('visible', clocktowerMode);
   accelerateBtn.classList.toggle('visible', clocktowerMode);
+  document
+    .getElementById('characterCounts')
+    .classList.toggle('visible', clocktowerMode);
+
+  // Update character amounts if enabling clocktower mode
+  if (clocktowerMode) {
+    updateCharacterAmounts(playerCount);
+  }
   saveSettings();
 }
 
@@ -79,6 +113,9 @@ function updatePlayerCount() {
     15
   );
   playerCountInput.value = playerCount;
+  if (clocktowerMode) {
+    updateCharacterAmounts(playerCount);
+  }
   saveSettings();
 }
 
