@@ -113,8 +113,19 @@ function saveSettings() {
 }
 
 // Create Audio element for the end sound
-const endSound = new Audio('sounds/end-of-day.mp3');
-endSound.preload = 'auto';
+let endSound;
+let wakeUpSound;
+
+// Initialize sounds
+document.addEventListener('DOMContentLoaded', () => {
+  endSound = new Audio('sounds/end-sound.mp3');
+  wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01.mp3');
+
+  // Add event listener for wake-up button
+  document
+    .getElementById('wakeUpBtn')
+    .addEventListener('click', playWakeUpSound);
+});
 
 // DOM elements
 const minutesDisplay = document.getElementById('minutes');
@@ -443,3 +454,14 @@ loadSettings();
 // Set initial presets
 updateClocktowerPresets();
 updateDisplay();
+
+function playWakeUpSound() {
+  if (isRunning) {
+    resetTimer();
+  }
+  wakeUpSound.currentTime = 0;
+  wakeUpSound.play().catch((error) => {
+    console.log('Error playing wake-up sound:', error);
+    createBeep();
+  });
+}
