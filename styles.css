@@ -52,7 +52,7 @@ h1 {
 .timer-display .time {
   font-size: min(18vw, 14rem);
   font-weight: bold;
-  color: #4caf50;
+  color: #ffd700;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   line-height: 0.9;
@@ -64,7 +64,7 @@ h1 {
 }
 
 .timer-display.wake-up-countdown .time {
-  color: #ffd700;
+  color: #4caf50;
   animation: pulse-text 2s infinite;
 }
 
