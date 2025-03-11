@@ -441,7 +441,7 @@ terraform.rc
 ### Vim ###
 # Swap
 [._]*.s[a-v][a-z]
-!*.svg  # comment out if you don't need vector files
+!*.svg # comment out if you don't need vector files
 [._]*.sw[a-p]
 [._]s[a-rt-v][a-z]
 [._]ss[a-gi-z]
@@ -460,3 +460,10 @@ tags
 [._]*.un~
 
 # End of https://www.toptal.com/developers/gitignore/api/git,vim,node,ruby,go,terraform,python
+
+.DS_Store
+node_modules/
+*.log
+.env
+.idea/
+.vscode/
