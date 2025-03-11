@@ -556,7 +556,14 @@ function startNewGame() {
 function updateDayDisplay(state = '') {
   const dayDisplay = document.querySelector('.day-display');
   const daySpan = document.getElementById('currentDay');
-  daySpan.textContent = currentDay || '-';
+
+  // Set currentDay to 1 if it's null or undefined
+  if (currentDay === null || currentDay === undefined) {
+    currentDay = 1;
+    saveSettings();
+  }
+
+  daySpan.textContent = currentDay;
 
   // Remove any existing state classes
   dayDisplay.classList.remove('dawn', 'dusk');
@@ -568,7 +575,7 @@ function updateDayDisplay(state = '') {
   } else if (state === 'dusk') {
     dayDisplay.classList.add('dusk');
     dayDisplay.firstChild.textContent = 'Day\u00A0';
-    daySpan.textContent = (currentDay || '-') + ', Dusk';
+    daySpan.textContent = currentDay + ', Dusk';
   } else {
     dayDisplay.firstChild.textContent = 'Day\u00A0';
   }
