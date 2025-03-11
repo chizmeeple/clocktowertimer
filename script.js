@@ -57,7 +57,6 @@ let currentInterval = normalInterval;
 // Settings state
 let playerCount = 10; // Default to 10 players
 let travellerCount = 0; // Default to 0 travellers
-let startFullscreen = false; // Default to false
 let isFirstLoad = false;
 
 // Character amounts mapping
@@ -82,7 +81,6 @@ function loadSettings() {
     const settings = JSON.parse(savedSettings);
     playerCount = settings.playerCount || 10;
     travellerCount = settings.travellerCount || 0;
-    startFullscreen = settings.startFullscreen || false;
   } else {
     isFirstLoad = true;
   }
@@ -90,7 +88,6 @@ function loadSettings() {
   // Always update UI to reflect settings (whether loaded or default)
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
-  document.getElementById('startFullscreen').checked = startFullscreen;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
@@ -103,19 +100,14 @@ function loadSettings() {
   // Show settings dialog on first load
   if (isFirstLoad) {
     settingsDialog.showModal();
-  } else if (startFullscreen && !document.fullscreenElement) {
-    // Show fullscreen prompt if the setting is enabled
-    document.getElementById('fullscreenPrompt').classList.add('visible');
   }
 }
 
 // Save settings to localStorage
 function saveSettings() {
-  startFullscreen = document.getElementById('startFullscreen').checked;
   const settings = {
     playerCount,
     travellerCount,
-    startFullscreen,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
@@ -408,21 +400,6 @@ playerCountInput.addEventListener('input', updatePlayerCount);
 travellerCountInput.addEventListener('change', updateTravellerCount);
 travellerCountInput.addEventListener('input', updateTravellerCount);
 accelerateBtn.addEventListener('click', accelerateTime);
-
-// Add event listener for the fullscreen prompt button
-document.getElementById('enterFullscreenBtn').addEventListener('click', () => {
-  document.getElementById('fullscreenPrompt').classList.remove('visible');
-  document.documentElement.requestFullscreen().catch((err) => {
-    console.log('Error attempting to enable fullscreen:', err);
-  });
-});
-
-// Add keyboard shortcut for settings dialog
-document.addEventListener('keydown', (event) => {
-  if (event.key.toLowerCase() === 'q') {
-    openSettings();
-  }
-});
 
 // Add click handlers for preset buttons
 minuteButtons.forEach((btn) => {

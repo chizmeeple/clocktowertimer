@@ -260,6 +260,15 @@ button {
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+}
+
+.settings-dialog[open] {
+  opacity: 1;
+  visibility: visible;
+  display: block;
 }
 
 .settings-dialog::backdrop {
@@ -512,36 +521,4 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 
 :fullscreen .action-buttons {
   margin-top: 0.5rem;
-}
-
-/* Fullscreen prompt */
-.fullscreen-prompt {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(33, 33, 33, 0.95);
-  padding: 1.5rem;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
-  z-index: 2000;
-  display: none;
-}
-
-.fullscreen-prompt.visible {
-  display: block;
-}
-
-.fullscreen-prompt button {
-  background-color: #4caf50;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  margin-top: 1rem;
-  font-size: 1.1rem;
-}
-
-.fullscreen-prompt button:hover {
-  background-color: #45a049;
 }
