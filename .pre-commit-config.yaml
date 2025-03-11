@@ -1,0 +1,92 @@
+---
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+default_language_version:
+  python: python3
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-added-large-files
+
+  # use this and NOT the one in jumanjihouse; it supports the enable/disable
+  # markup
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.44.0
+    hooks:
+      - id: markdownlint
+        args: [--ignore, .changeset, --ignore, CHANGELOG.md]
+
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 3.0.0
+    hooks:
+      # - id: bundler-audit
+      # - id: check-mailmap
+      # - id: fasterer
+      # - id: forbid-binary
+      # - id: forbid-space-in-indent
+      - id: git-check
+      - id: git-dirty
+      # - id: markdownlint
+      # - id: reek
+      # - id: require-ascii
+      # - id: rubocop
+      # - id: script-must-have-extension
+      # - id: script-must-not-have-extension
+      - id: shellcheck
+      # - id: shfmt
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.97.4
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_docs
+
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.36.0
+    hooks:
+      - id: yamllint
+        args: [--format, parsable, --strict]
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+    rev: 0.2.3
+    hooks:
+      - id: yamlfmt
+        args: [--offset, '2', --mapping, '2', --sequence, '4']
+
+  - repo: https://github.com/tekwizely/pre-commit-golang
+    rev: v1.0.0-rc.1
+    hooks:
+      - id: go-build-mod
+      - id: go-test-mod
+      - id: go-sec-mod
+      - id: go-vet-mod
+      - id: go-fmt
+      - id: go-imports
+      - id: go-returns
+      # - id: go-lint
+      - id: go-revive
+      # - id: go-critic
+      # - id: golangci-lint-mod
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.21.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+
+  - repo: https://github.com/AleksaC/hadolint-py
+    rev: v2.12.1b3
+    hooks:
+      - id: hadolint
