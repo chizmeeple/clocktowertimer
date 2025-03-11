@@ -298,6 +298,29 @@ button {
   color: rgba(255, 255, 255, 0.9);
 }
 
+.number-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.number-input-group button {
+  background-color: #2c3e2c;
+  color: white;
+  padding: 0.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  border-radius: 4px;
+}
+
+.number-input-group button:hover {
+  background-color: #3c513c;
+}
+
 .setting-group input[type='number'] {
   width: 80px;
   padding: 0.5rem;
@@ -305,8 +328,15 @@ button {
   border: 1px solid #4caf50;
   border-radius: 4px;
   color: white;
-  font-size: 1rem;
+  font-size: 1.2rem;
   text-align: center;
+  -moz-appearance: textfield;
+}
+
+.setting-group input[type='number']::-webkit-inner-spin-button,
+.setting-group input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .setting-row input[type='checkbox'] {

@@ -436,6 +436,25 @@ secondButtons.forEach((btn) => {
 // Fullscreen change event listener
 document.addEventListener('fullscreenchange', updateFullscreenButton);
 
+// Add handlers for number input increment/decrement buttons
+document.querySelectorAll('.number-input-group button').forEach((button) => {
+  button.addEventListener('click', (e) => {
+    const input = document.getElementById(e.target.dataset.input);
+    const min = parseInt(input.min);
+    const max = parseInt(input.max);
+    const currentValue = parseInt(input.value) || min;
+
+    if (button.classList.contains('increment')) {
+      input.value = Math.min(currentValue + 1, max);
+    } else {
+      input.value = Math.max(currentValue - 1, min);
+    }
+
+    // Trigger the change event
+    input.dispatchEvent(new Event('change'));
+  });
+});
+
 // Initialize settings before anything else
 loadSettings();
 

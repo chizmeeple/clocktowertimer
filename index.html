@@ -87,17 +87,35 @@
         <div class="setting-group">
           <label>
             <span>Number of Players</span>
-            <input type="number" id="playerCount" min="5" max="15" value="10" />
+            <div class="number-input-group">
+              <button class="decrement" data-input="playerCount">−</button>
+              <input
+                type="number"
+                id="playerCount"
+                min="5"
+                max="15"
+                value="10"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+              <button class="increment" data-input="playerCount">+</button>
+            </div>
           </label>
           <label>
             <span>Number of Travellers</span>
-            <input
-              type="number"
-              id="travellerCount"
-              min="0"
-              max="5"
-              value="0"
-            />
+            <div class="number-input-group">
+              <button class="decrement" data-input="travellerCount">−</button>
+              <input
+                type="number"
+                id="travellerCount"
+                min="0"
+                max="5"
+                value="0"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+              <button class="increment" data-input="travellerCount">+</button>
+            </div>
           </label>
         </div>
         <div class="setting-group">
