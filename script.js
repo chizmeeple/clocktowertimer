@@ -205,6 +205,9 @@ function updateClocktowerPresets() {
           playEndSound();
           isRunning = false;
           startBtn.disabled = true;
+          if (currentDay !== null) {
+            updateDayDisplay('dusk');
+          }
         }
       }, normalInterval);
     });
@@ -332,6 +335,9 @@ function accelerateTime() {
       isRunning = false;
       startBtn.disabled = true;
       currentInterval = normalInterval;
+      if (currentDay !== null) {
+        updateDayDisplay('dusk');
+      }
     }
   }, currentInterval);
 
@@ -366,6 +372,9 @@ function startTimer() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
+      if (currentDay !== null) {
+        updateDayDisplay('dusk');
+      }
     }
   }, normalInterval);
 }
@@ -383,6 +392,9 @@ function resetTimer() {
   startBtn.disabled = true;
   accelerateBtn.disabled = false;
   updateDisplay();
+
+  // Reset day display to normal state
+  updateDayDisplay();
 
   // Clear wake-up countdown state
   document
@@ -498,7 +510,7 @@ function playWakeUpSound() {
   // Increment day counter if we're in a game
   if (currentDay !== null) {
     currentDay++;
-    updateDayDisplay();
+    updateDayDisplay('dawn');
     saveSettings();
 
     // Start countdown display
@@ -517,6 +529,7 @@ function playWakeUpSound() {
       if (timeLeft === 0) {
         clearInterval(timerId);
         timerDisplay.classList.remove('wake-up-countdown');
+        updateDayDisplay(); // Reset to normal day display
 
         // Start next day's timer
         const nextDayPreset = document.querySelector(
@@ -540,9 +553,25 @@ function startNewGame() {
   closeSettings();
 }
 
-function updateDayDisplay() {
-  const dayDisplay = document.getElementById('currentDay');
-  dayDisplay.textContent = currentDay || '-';
+function updateDayDisplay(state = '') {
+  const dayDisplay = document.querySelector('.day-display');
+  const daySpan = document.getElementById('currentDay');
+  daySpan.textContent = currentDay || '-';
+
+  // Remove any existing state classes
+  dayDisplay.classList.remove('dawn', 'dusk');
+
+  // Update the text and state based on the current state
+  if (state === 'dawn') {
+    dayDisplay.classList.add('dawn');
+    dayDisplay.firstChild.textContent = 'Dawn of Day\u00A0';
+  } else if (state === 'dusk') {
+    dayDisplay.classList.add('dusk');
+    dayDisplay.firstChild.textContent = 'Day\u00A0';
+    daySpan.textContent = (currentDay || '-') + ', Dusk';
+  } else {
+    dayDisplay.firstChild.textContent = 'Day\u00A0';
+  }
 
   // Update preset button highlighting
   document.querySelectorAll('.clocktower-btn').forEach((btn) => {

@@ -44,10 +44,11 @@ h1 {
 .timer-display {
   min-height: calc(min(18vw, 14rem) * 1.2);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 0;
+  position: relative;
 }
 
 .timer-display .time {
@@ -441,21 +442,34 @@ h1 {
 }
 
 .day-display {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
   font-weight: bold;
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   margin: 0;
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
   background: rgba(33, 33, 33, 0.7);
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(8px);
-  min-width: 120px;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+}
+
+.day-display.dawn {
+  color: #ffd700;
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.day-display.dusk {
+  color: #ff6b6b;
+  background: rgba(211, 47, 47, 0.3);
 }
 
 .dialog-buttons {
