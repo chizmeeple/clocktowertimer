@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="characterCounts" class="character-counts clocktower-settings">
+    <div id="characterCounts" class="character-counts">
       <div class="character-type">
         <span class="label">Townsfolk</span>
         <span id="townsfolkAmount" class="amount">7</span>
@@ -68,19 +68,14 @@
               </button>
             </div>
           </div>
-          <div
-            id="clocktowerPresets"
-            class="clocktower-presets clocktower-settings"
-          >
+          <div id="clocktowerPresets" class="clocktower-presets">
             <!-- Day presets will be inserted here dynamically -->
           </div>
         </div>
         <div class="action-buttons">
           <button id="startBtn">Start</button>
           <button id="resetBtn">Reset</button>
-          <button id="accelerateBtn" class="clocktower-settings">
-            ⏩ Accelerate Time
-          </button>
+          <button id="accelerateBtn">⏩ Accelerate Time</button>
         </div>
       </div>
     </div>
@@ -90,18 +85,12 @@
       <div class="dialog-content">
         <h2>Settings</h2>
         <div class="setting-group">
-          <label class="setting-row">
-            <input type="checkbox" id="clocktowerMode" />
-            <span>Clocktower Mode</span>
-          </label>
-        </div>
-        <div id="clocktowerSettings" class="setting-group clocktower-settings">
-          <div class="setting-row">
-            <label for="playerCount">Starting Player Count:</label>
+          <label>
+            <span>Number of Players</span>
             <input type="number" id="playerCount" min="5" max="15" value="10" />
-          </div>
-          <div class="setting-row">
-            <label for="travellerCount">Number of Travellers:</label>
+          </label>
+          <label>
+            <span>Number of Travellers</span>
             <input
               type="number"
               id="travellerCount"
@@ -109,7 +98,7 @@
               max="5"
               value="0"
             />
-          </div>
+          </label>
         </div>
         <div class="dialog-buttons">
           <button id="closeSettings">Save and Close</button>
