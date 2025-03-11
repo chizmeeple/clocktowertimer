@@ -170,3 +170,119 @@ button {
 :fullscreen .timer-display {
   font-size: 20rem;
 }
+
+#settingsBtn {
+  background-color: #607d8b;
+  color: white;
+  padding: 0.75rem;
+  min-width: auto;
+}
+
+#settingsBtn:hover {
+  background-color: #455a64;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.settings-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+/* Settings Dialog */
+.settings-dialog {
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background-color: #333;
+  color: white;
+  max-width: 400px;
+  width: 90%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+}
+
+.settings-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.dialog-content {
+  padding: 1.5rem;
+}
+
+.dialog-content h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+}
+
+.setting-group {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.setting-row:last-child {
+  margin-bottom: 0;
+}
+
+.setting-row label {
+  flex: 1;
+}
+
+.setting-row input[type='number'] {
+  width: 80px;
+  padding: 0.5rem;
+  background-color: #444;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: white;
+  font-size: 1rem;
+}
+
+.setting-row input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  accent-color: #4caf50;
+}
+
+.clocktower-settings {
+  display: none;
+}
+
+.clocktower-settings.visible {
+  display: block;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.dialog-buttons button {
+  background-color: #4caf50;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dialog-buttons button:hover {
+  background-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

@@ -5,6 +5,10 @@ let isRunning = false;
 let selectedSeconds = 0;
 let selectedMinutes = 0;
 
+// Settings state
+let clocktowerMode = false;
+let playerCount = 5;
+
 // Create Audio element for the end sound
 const endSound = new Audio('sounds/end-of-day.mp3');
 endSound.preload = 'auto';
@@ -15,8 +19,36 @@ const secondsDisplay = document.getElementById('seconds');
 const startBtn = document.getElementById('startBtn');
 const resetBtn = document.getElementById('resetBtn');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsDialog = document.getElementById('settingsDialog');
+const closeSettingsBtn = document.getElementById('closeSettings');
+const clocktowerModeCheckbox = document.getElementById('clocktowerMode');
+const playerCountInput = document.getElementById('playerCount');
+const clocktowerSettings = document.getElementById('clocktowerSettings');
 const minuteButtons = document.querySelectorAll('.minute-btn');
 const secondButtons = document.querySelectorAll('.second-btn');
+
+// Settings functionality
+function toggleClocktowerSettings() {
+  clocktowerMode = clocktowerModeCheckbox.checked;
+  clocktowerSettings.classList.toggle('visible', clocktowerMode);
+}
+
+function updatePlayerCount() {
+  playerCount = Math.min(
+    Math.max(parseInt(playerCountInput.value) || 5, 5),
+    15
+  );
+  playerCountInput.value = playerCount;
+}
+
+function openSettings() {
+  settingsDialog.showModal();
+}
+
+function closeSettings() {
+  settingsDialog.close();
+}
 
 // Fullscreen functionality
 function toggleFullscreen() {
@@ -155,6 +187,11 @@ function handleSecondClick(e) {
 startBtn.addEventListener('click', startTimer);
 resetBtn.addEventListener('click', resetTimer);
 fullscreenBtn.addEventListener('click', toggleFullscreen);
+settingsBtn.addEventListener('click', openSettings);
+closeSettingsBtn.addEventListener('click', closeSettings);
+clocktowerModeCheckbox.addEventListener('change', toggleClocktowerSettings);
+playerCountInput.addEventListener('change', updatePlayerCount);
+playerCountInput.addEventListener('input', updatePlayerCount);
 
 // Add click handlers for preset buttons
 minuteButtons.forEach((btn) => {
