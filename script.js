@@ -14,8 +14,7 @@ let minutesDisplay,
   secondButtons,
   infoBtn,
   infoDialog,
-  closeInfoBtn,
-  wakeUpBtn;
+  closeInfoBtn;
 
 // Utility functions
 const connectivityUtils = {
@@ -736,7 +735,6 @@ function resetTimer() {
   startBtn.disabled = true;
   startBtn.textContent = BUTTON_LABELS.RESUME;
   accelerateBtn.disabled = true;
-  wakeUpBtn.disabled = false;
 
   youtubeUtils.stop();
 
@@ -784,19 +782,6 @@ function handleSecondClick(e) {
   }
 }
 
-// Event listeners
-startBtn.addEventListener('click', startTimer);
-resetBtn.addEventListener('click', resetTimer);
-fullscreenBtn.addEventListener('click', toggleFullscreen);
-settingsBtn.addEventListener('click', openSettings);
-closeSettingsBtn.addEventListener('click', closeSettings);
-infoBtn.addEventListener('click', openInfo);
-closeInfoBtn.addEventListener('click', closeInfo);
-playerCountInput.addEventListener('change', updatePlayerCount);
-playerCountInput.addEventListener('input', updatePlayerCount);
-travellerCountInput.addEventListener('change', updateTravellerCount);
-travellerCountInput.addEventListener('input', updateTravellerCount);
-
 // Fullscreen change event listener
 document.addEventListener('fullscreenchange', updateFullscreenButton);
 
@@ -818,13 +803,6 @@ document.querySelectorAll('.number-input-group button').forEach((button) => {
     input.dispatchEvent(new Event('change'));
   });
 });
-
-// Initialize settings before anything else
-loadSettings();
-
-// Set initial presets
-updateClocktowerPresets();
-updateDisplay();
 
 function playWakeUpSound() {
   if (isRunning) {
@@ -1061,21 +1039,30 @@ document.getElementById('gamePace').addEventListener('change', (e) => {
 });
 
 // YouTube player functionality
-function extractVideoAndPlaylistIds(url) {
-  const videoRegExp =
-    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const playlistRegExp = /[?&]list=([^#\&\?]+)/;
+let youtubeApiReady = false;
 
-  const videoMatch = url.match(videoRegExp);
-  const playlistMatch = url.match(playlistRegExp);
-
-  return {
-    videoId: videoMatch && videoMatch[2].length === 11 ? videoMatch[2] : null,
-    playlistId: playlistMatch ? playlistMatch[1] : null,
-  };
+// Load YouTube IFrame API
+function loadYoutubeApi() {
+  if (
+    !window.YT &&
+    !document.querySelector('script[src*="youtube.com/iframe_api"]')
+  ) {
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  }
 }
 
-function initYoutubePlayer() {
+// Called by YouTube API when ready
+window.onYouTubeIframeAPIReady = function () {
+  youtubeApiReady = true;
+  if (playMusic) {
+    createYoutubePlayer();
+  }
+};
+
+function createYoutubePlayer() {
   // Check for internet connectivity first
   if (!connectivityUtils.isOnline()) {
     console.log('Cannot initialize YouTube player: offline');
@@ -1083,6 +1070,15 @@ function initYoutubePlayer() {
   }
 
   // Remove existing player if any
+  if (youtubePlayer) {
+    try {
+      youtubePlayer.destroy();
+    } catch (e) {
+      console.log('Error destroying player:', e);
+    }
+    youtubePlayer = null;
+  }
+
   const existingContainer = document.querySelector('.youtube-player-container');
   if (existingContainer) {
     existingContainer.remove();
@@ -1098,16 +1094,17 @@ function initYoutubePlayer() {
     extractVideoAndPlaylistIds(youtubePlaylistUrl);
   if (!videoId && !playlistId) return;
 
-  // Load YouTube IFrame API if not already loaded
-  if (!window.YT) {
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  // Track creation attempts to prevent infinite loops
+  const maxRetries = 3;
+  let retryCount = parseInt(container.dataset.retryCount || '0');
+  container.dataset.retryCount = retryCount;
+
+  if (retryCount >= maxRetries) {
+    console.log('Max retry attempts reached for YouTube player creation');
+    return;
   }
 
-  // Create player when API is ready
-  window.onYouTubeIframeAPIReady = function () {
+  try {
     youtubePlayer = new YT.Player(container, {
       height: '135',
       width: '240',
@@ -1120,19 +1117,19 @@ function initYoutubePlayer() {
         playsinline: 1,
         rel: 0,
         loop: 1,
-        playlist: playlistId, // Required for looping playlists
+        playlist: playlistId,
       },
       events: {
         onReady: function (event) {
-          event.target.setVolume(youtubeVolume); // Use saved volume setting
+          // Reset retry count on successful creation
+          container.dataset.retryCount = '0';
+          event.target.setVolume(youtubeVolume);
           if (playlistId) {
-            // Enable shuffle before loading playlist
             event.target.setShuffle(true);
-            // Load but don't play the playlist
             event.target.cuePlaylist({
               list: playlistId,
               listType: 'playlist',
-              index: 0, // Start from beginning after shuffle
+              index: 0,
               suggestedQuality: 'small',
             });
           } else if (videoId) {
@@ -1140,42 +1137,111 @@ function initYoutubePlayer() {
           }
         },
         onStateChange: function (event) {
-          // When video is cued (ready to play), ensure shuffle is enabled
           if (event.data === YT.PlayerState.CUED && playlistId) {
             event.target.setShuffle(true);
           }
-          // Handle video ending
           if (event.data === YT.PlayerState.ENDED) {
             if (playlistId) {
-              // For playlists, reshuffle and start from beginning
               event.target.setShuffle(true);
               event.target.playVideoAt(0);
             } else {
-              // For single videos, replay
               event.target.playVideo();
             }
           }
         },
+        onError: function (event) {
+          console.log('YouTube player error:', event);
+          const errorCode = event.data;
+
+          // Don't retry for certain error codes
+          if (errorCode === 101 || errorCode === 150) {
+            console.log('Video playback not allowed. Skipping retry.');
+            return;
+          }
+
+          // Increment retry count
+          retryCount++;
+          container.dataset.retryCount = retryCount;
+
+          if (retryCount < maxRetries) {
+            console.log(
+              `Retrying YouTube player creation (attempt ${
+                retryCount + 1
+              }/${maxRetries})`
+            );
+            setTimeout(createYoutubePlayer, 1000);
+          } else {
+            console.log(
+              'Max retry attempts reached for YouTube player creation'
+            );
+          }
+        },
       },
     });
-  };
+  } catch (e) {
+    console.log('Error creating YouTube player:', e);
+    retryCount++;
+    container.dataset.retryCount = retryCount;
+
+    if (retryCount < maxRetries) {
+      console.log(
+        `Retrying YouTube player creation (attempt ${
+          retryCount + 1
+        }/${maxRetries})`
+      );
+      setTimeout(createYoutubePlayer, 1000);
+    } else {
+      console.log('Max retry attempts reached for YouTube player creation');
+    }
+  }
 }
 
-function onPlayerReady(event) {
-  // Player is ready but don't autoplay
-}
-
-function onPlayerStateChange(event) {
-  // Handle player state changes if needed
+function initYoutubePlayer() {
+  if (!window.YT || !youtubeApiReady) {
+    loadYoutubeApi();
+  } else {
+    createYoutubePlayer();
+  }
 }
 
 // Update YouTube playlist URL
 function updateYoutubePlaylist() {
   const input = document.getElementById('youtubePlaylist');
-  youtubePlaylistUrl = input.value;
-  saveSettings();
-  if (playMusic) {
-    initYoutubePlayer();
+  const newUrl = input.value;
+
+  // Extract IDs to validate URL
+  const { videoId, playlistId } = extractVideoAndPlaylistIds(newUrl);
+
+  // Only update if we have a valid video or playlist ID
+  if (videoId || playlistId) {
+    youtubePlaylistUrl = newUrl;
+    saveSettings();
+
+    // If music is enabled, update the player immediately
+    if (playMusic) {
+      // Always destroy and recreate the player for URL changes
+      if (youtubePlayer) {
+        try {
+          youtubePlayer.destroy();
+        } catch (e) {
+          console.log('Error destroying player:', e);
+        }
+        youtubePlayer = null;
+      }
+
+      // Remove the container
+      const container = document.querySelector('.youtube-player-container');
+      if (container) {
+        container.remove();
+      }
+
+      // Create new player with updated URL
+      createYoutubePlayer();
+    }
+  } else {
+    // If invalid URL, revert to the saved URL
+    console.log('Invalid YouTube URL, reverting to saved URL');
+    input.value = youtubePlaylistUrl;
   }
 }
 
@@ -1223,4 +1289,19 @@ function updateBackgroundTheme() {
   backgroundTheme = document.getElementById('backgroundTheme').value;
   document.body.setAttribute('data-theme', backgroundTheme);
   saveSettings();
+}
+
+// Extract video and playlist IDs from YouTube URL
+function extractVideoAndPlaylistIds(url) {
+  const videoRegex =
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const playlistRegex = /[?&]list=([^#\&\?]+)/;
+
+  const videoMatch = url.match(videoRegex);
+  const playlistMatch = url.match(playlistRegex);
+
+  return {
+    videoId: videoMatch ? videoMatch[1] : null,
+    playlistId: playlistMatch ? playlistMatch[1] : null,
+  };
 }
