@@ -548,7 +548,7 @@ function playWakeUpSound() {
     const timerDisplay = document.querySelector('.timer-display');
     timerDisplay.classList.add('wake-up-countdown');
 
-    let countdownSeconds = 20;
+    let countdownSeconds = 10;
     timeLeft = countdownSeconds;
     updateDisplay();
 
