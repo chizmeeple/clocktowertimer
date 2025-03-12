@@ -138,14 +138,6 @@ h1 {
   transition: background-color 0.3s;
 }
 
-#wakeUpBtn {
-  background-color: #8b4513;
-}
-
-#wakeUpBtn:hover {
-  background-color: #a0522d;
-}
-
 .preset-btn {
   background-color: #2c3e2c;
   color: white;
@@ -923,7 +915,7 @@ button:disabled {
   border-color: #444;
 }
 
-#wakeUpBtn:disabled {
+#startBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   background-color: #8b4513;

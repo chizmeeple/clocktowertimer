@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   minutesDisplay = document.getElementById('minutes');
   secondsDisplay = document.getElementById('seconds');
   startBtn = document.getElementById('startBtn');
-  startBtn.textContent = BUTTON_LABELS.RESUME;
+  startBtn.textContent = BUTTON_LABELS.WAKE_UP;
   resetBtn = document.getElementById('resetBtn');
   resetBtn.textContent = BUTTON_LABELS.RESET;
   fullscreenBtn = document.getElementById('fullscreenBtn');
@@ -153,8 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   infoBtn = document.getElementById('infoBtn');
   infoDialog = document.getElementById('infoDialog');
   closeInfoBtn = document.getElementById('closeInfo');
-  wakeUpBtn = document.getElementById('wakeUpBtn');
-  wakeUpBtn.textContent = BUTTON_LABELS.WAKE_UP;
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
@@ -169,9 +167,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   travellerCountInput.addEventListener('change', updateTravellerCount);
   travellerCountInput.addEventListener('input', updateTravellerCount);
   accelerateBtn.addEventListener('click', accelerateTime);
-  document
-    .getElementById('wakeUpBtn')
-    .addEventListener('click', playWakeUpSound);
   document
     .getElementById('startNewGame')
     .addEventListener('click', startNewGame);
@@ -269,7 +264,7 @@ function loadSettings() {
   // Check if we're in a wake-up countdown and disable the button
   const timerDisplay = document.querySelector('.timer-display');
   if (timerDisplay.classList.contains('wake-up-countdown')) {
-    wakeUpBtn.disabled = true;
+    startBtn.disabled = true;
   }
 
   // Update character amounts and presets
@@ -482,23 +477,17 @@ function updateDisplay() {
   minutesDisplay.textContent = minutes.toString().padStart(2, '0');
   secondsDisplay.textContent = seconds.toString().padStart(2, '0');
 
-  // Disable Wake Up button only during active timers or countdowns
-  const timerDisplay = document.querySelector('.timer-display');
-  const isWakeUpCountdown =
-    timerDisplay.classList.contains('wake-up-countdown');
-  wakeUpBtn.disabled = isRunning || isWakeUpCountdown;
-
-  // Update start button text based on state
+  // Handle the combined button states
   if (isRunning) {
     startBtn.textContent = BUTTON_LABELS.PAUSE;
-  } else if (currentDay !== null && timeLeft === 0) {
-    startBtn.textContent = BUTTON_LABELS.START_DAY(currentDay);
     startBtn.disabled = false;
-  } else if (!isRunning && timeLeft > 0) {
+  } else if (timeLeft > 0) {
     startBtn.textContent = BUTTON_LABELS.RESUME;
+    startBtn.disabled = false;
   } else {
-    startBtn.textContent = BUTTON_LABELS.RESUME;
-    startBtn.disabled = true;
+    // When timer is complete or not started, show Wake Up
+    startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+    startBtn.disabled = false;
   }
 }
 
@@ -547,60 +536,28 @@ function accelerateTime() {
 // Start timer
 function startTimer() {
   if (isRunning) {
-    // Pause timer and YouTube
+    // Pause timer
     clearInterval(timerId);
     isRunning = false;
     if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
       youtubePlayer.pauseVideo();
     }
-    updateDisplay(); // This will now set the appropriate button text
+    updateDisplay();
     return;
   }
 
-  // If we're starting a new day, find and click the corresponding preset button
-  if (currentDay !== null && timeLeft === 0) {
-    const dayPreset = document.querySelector(
-      `.clocktower-btn[data-day="${currentDay}"]`
-    );
-    if (dayPreset) {
-      dayPreset.click();
-      return;
+  // If we have remaining time, resume the timer
+  if (timeLeft > 0) {
+    isRunning = true;
+    if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
+      youtubePlayer.playVideo();
     }
+    startCountdown();
+    return;
   }
 
-  // Start timer
-  if (timeLeft === 0) {
-    timeLeft = selectedMinutes * 60 + selectedSeconds;
-    if (timeLeft === 0) return; // Don't start if no time is set
-  }
-
-  isRunning = true;
-  accelerateBtn.disabled = false; // Re-enable accelerate button
-  updateDisplay(); // This will now set the appropriate button text
-
-  // Start YouTube player if music is enabled
-  if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
-    youtubePlayer.playVideo();
-  }
-
-  timerId = setInterval(() => {
-    timeLeft--;
-    updateDisplay();
-
-    if (timeLeft === 0) {
-      clearInterval(timerId);
-      playEndSound();
-      isRunning = false;
-      // Stop YouTube player when timer ends
-      if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
-        youtubePlayer.pauseVideo();
-      }
-      if (currentDay !== null) {
-        updateDayDisplay('dusk');
-      }
-      updateDisplay(); // Ensure final state is reflected
-    }
-  }, normalInterval);
+  // If we're at 0, treat this as a Wake Up click
+  playWakeUpSound();
 }
 
 // Reset timer
@@ -733,54 +690,89 @@ function playWakeUpSound() {
     });
   }
 
-  // Increment day counter if we're in a game
-  if (currentDay !== null) {
+  // Only increment day if we're in dusk state
+  const dayInfo = document.querySelector('.day-display');
+  if (currentDay !== null && dayInfo.classList.contains('dusk')) {
     currentDay++;
-    updateDayDisplay('dawn');
     saveSettings();
+  }
 
-    // Start countdown display
-    const timerDisplay = document.querySelector('.timer-display');
-    timerDisplay.classList.add('wake-up-countdown');
+  // Start countdown display
+  const timerDisplay = document.querySelector('.timer-display');
+  timerDisplay.classList.add('wake-up-countdown');
 
-    // Disable the Wake Up button during countdown
-    wakeUpBtn.disabled = true;
+  // Show dawn state for current day
+  updateDayDisplay('dawn');
 
-    let countdownSeconds = 10;
-    timeLeft = countdownSeconds;
+  // Disable the button during countdown
+  startBtn.disabled = true;
+
+  let countdownSeconds = 10;
+  timeLeft = countdownSeconds;
+  updateDisplay();
+
+  // Update countdown every second
+  timerId = setInterval(() => {
+    timeLeft--;
     updateDisplay();
 
-    // Update countdown every second
-    timerId = setInterval(() => {
-      timeLeft--;
-      updateDisplay();
+    if (timeLeft === 0) {
+      clearInterval(timerId);
+      timerDisplay.classList.remove('wake-up-countdown');
 
-      if (timeLeft === 0) {
-        clearInterval(timerId);
-        timerDisplay.classList.remove('wake-up-countdown');
-        updateDayDisplay(); // Reset to normal day display
+      // Remove dawn state and show regular day display
+      updateDayDisplay();
 
-        // Re-enable the Wake Up button
-        wakeUpBtn.disabled = false;
-
-        // Start next day's timer
-        const nextDayPreset = document.querySelector(
-          `.clocktower-btn[data-day="${currentDay}"]`
-        );
-        if (nextDayPreset) {
-          nextDayPreset.click();
-        }
+      // Find and start the current day's timer
+      const dayPreset = document.querySelector(
+        `.clocktower-btn[data-day="${currentDay}"]`
+      );
+      if (dayPreset) {
+        dayPreset.click();
       }
-    }, 1000);
+    }
+  }, 1000);
 
-    // Store the countdown interval ID so it can be cleared if needed
-    wakeUpTimeout = timerId;
-  }
+  // Store the countdown interval ID
+  wakeUpTimeout = timerId;
+}
+
+function startCountdown() {
+  timerId = setInterval(() => {
+    timeLeft--;
+    updateDisplay();
+
+    if (timeLeft === 0) {
+      clearInterval(timerId);
+      playEndSound();
+      isRunning = false;
+      if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
+        youtubePlayer.pauseVideo();
+      }
+      if (currentDay !== null) {
+        updateDayDisplay('dusk');
+      }
+      updateDisplay();
+    }
+  }, normalInterval);
 }
 
 function startNewGame() {
+  // Reset timer state
+  clearInterval(timerId);
+  timeLeft = 0;
+  isRunning = false;
+  currentInterval = normalInterval;
+
+  // Set to Day 1
   currentDay = 1;
   updateDayDisplay();
+
+  // Set button to Wake Up state
+  startBtn.disabled = false;
+  startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+  accelerateBtn.disabled = false;
+
   saveSettings();
   closeSettings();
 
@@ -788,13 +780,12 @@ function startNewGame() {
   if (playMusic && youtubePlayer) {
     const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
     if (playlistId) {
-      youtubePlayer.stopVideo(); // Stop current video if playing
-      youtubePlayer.setShuffle(true); // Ensure shuffle is enabled
-      // Load a new random video from the playlist without playing
+      youtubePlayer.stopVideo();
+      youtubePlayer.setShuffle(true);
       youtubePlayer.cuePlaylist({
         list: playlistId,
         listType: 'playlist',
-        index: Math.floor(Math.random() * 50), // Start at random position
+        index: Math.floor(Math.random() * 50),
         suggestedQuality: 'small',
       });
     }
