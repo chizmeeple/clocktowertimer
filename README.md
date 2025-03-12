@@ -20,6 +20,10 @@ to use this timer.
   - use Wake Up to transition from Night to Day
     - this will automatically increment the day and start the next timer
 
+## Settings Dialog
+
+![Settings dialog](images/readme/settings.png)
+
 ## Development
 
 This is a pure HTML/CSS/JavaScript application with no build requirements. To run
