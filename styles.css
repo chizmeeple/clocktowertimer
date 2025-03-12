@@ -380,6 +380,13 @@ h1 {
 .setting-group label span {
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.9);
+  transition: opacity 0.2s ease;
+}
+
+/* Grey out labels when their associated inputs are disabled */
+.setting-group label:has(input:disabled) span,
+.setting-group label:has(select:disabled) span {
+  opacity: 0.5;
 }
 
 .number-input-group {
@@ -826,6 +833,14 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   border-radius: 4px;
   background-color: #2c3e2c;
   color: white;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.youtube-playlist-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #1a2b1a;
+  border-color: #2c3e2c;
 }
 
 .volume-slider {
@@ -837,7 +852,7 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   border-radius: 4px;
   outline: none;
   opacity: 0.7;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s ease;
 }
 
 .volume-slider:hover {
@@ -867,12 +882,8 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   cursor: not-allowed;
 }
 
-.volume-slider:disabled::-webkit-slider-thumb {
-  cursor: not-allowed;
-}
-
-.volume-slider:disabled::-moz-range-thumb {
-  cursor: not-allowed;
+.volume-slider:disabled ~ .volume-value {
+  opacity: 0.5;
 }
 
 .volume-value {
