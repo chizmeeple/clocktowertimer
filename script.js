@@ -46,7 +46,8 @@ let travellerCount = 0; // Default to 0 travellers
 let isFirstLoad = false;
 let currentDay = null;
 let currentPace = 'normal'; // Default pace
-let youtubePlaylistUrl = 'https://youtu.be/TInSYXP9ZB8?si=qeoJf04Uhfq2wf0r'; // Default playlist
+let youtubePlaylistUrl =
+  'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW'; // Default playlist
 let youtubePlayer = null;
 
 // Character amounts mapping
@@ -198,7 +199,7 @@ function loadSettings() {
     currentPace = settings.currentPace || 'normal';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl ||
-      'https://youtu.be/TInSYXP9ZB8?si=qeoJf04Uhfq2wf0r';
+      'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW';
   } else {
     isFirstLoad = true;
   }
@@ -681,6 +682,16 @@ function startNewGame() {
   updateDayDisplay();
   saveSettings();
   closeSettings();
+
+  // Only shuffle the playlist without starting playback
+  if (youtubePlayer) {
+    const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
+    if (playlistId) {
+      youtubePlayer.setShuffle(true);
+      youtubePlayer.nextVideo(); // Queue up next video
+      youtubePlayer.pauseVideo(); // Ensure it doesn't start playing
+    }
+  }
 }
 
 // Update day display
@@ -797,6 +808,20 @@ document.getElementById('gamePace').addEventListener('change', (e) => {
 });
 
 // YouTube player functionality
+function extractVideoAndPlaylistIds(url) {
+  const videoRegExp =
+    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const playlistRegExp = /[?&]list=([^#\&\?]+)/;
+
+  const videoMatch = url.match(videoRegExp);
+  const playlistMatch = url.match(playlistRegExp);
+
+  return {
+    videoId: videoMatch && videoMatch[2].length === 11 ? videoMatch[2] : null,
+    playlistId: playlistMatch ? playlistMatch[1] : null,
+  };
+}
+
 function initYoutubePlayer() {
   // Remove existing player if any
   const existingContainer = document.querySelector('.youtube-player-container');
@@ -809,9 +834,10 @@ function initYoutubePlayer() {
   container.className = 'youtube-player-container';
   document.body.appendChild(container);
 
-  // Extract video ID from URL
-  const videoId = extractVideoId(youtubePlaylistUrl);
-  if (!videoId) return;
+  // Extract video and playlist IDs from URL
+  const { videoId, playlistId } =
+    extractVideoAndPlaylistIds(youtubePlaylistUrl);
+  if (!videoId && !playlistId) return;
 
   // Load YouTube IFrame API if not already loaded
   if (!window.YT) {
@@ -835,24 +861,27 @@ function initYoutubePlayer() {
         modestbranding: 1,
         playsinline: 1,
         rel: 0,
+        listType: playlistId ? 'playlist' : undefined,
+        list: playlistId,
+        loop: 1,
+        shuffle: 1,
       },
       events: {
         onReady: function (event) {
           event.target.setVolume(20); // Set volume to 20%
+          if (playlistId) {
+            event.target.setShuffle(true); // Enable shuffle if it's a playlist
+          }
         },
         onStateChange: function (event) {
-          // Handle state changes if needed
+          // If video ends and it's not a playlist, replay it
+          if (event.data === YT.PlayerState.ENDED && !playlistId) {
+            event.target.playVideo();
+          }
         },
       },
     });
   };
-}
-
-function extractVideoId(url) {
-  const regExp =
-    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return match && match[2].length === 11 ? match[2] : null;
 }
 
 function onPlayerReady(event) {
