@@ -17,6 +17,39 @@ let minutesDisplay,
   closeInfoBtn,
   wakeUpBtn;
 
+// Utility functions
+const youtubeUtils = {
+  play: () => {
+    if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
+      youtubePlayer.playVideo();
+    }
+  },
+  pause: () => {
+    if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
+      youtubePlayer.pauseVideo();
+    }
+  },
+  stop: () => {
+    if (playMusic && youtubePlayer && youtubePlayer.stopVideo) {
+      youtubePlayer.stopVideo();
+    }
+  },
+};
+
+const timerUtils = {
+  stop: () => {
+    clearInterval(timerId);
+    isRunning = false;
+    updateDisplay();
+  },
+  updateButtonStates: (buttons, activeButton) => {
+    buttons.forEach((btn) => btn.classList.remove('active'));
+    if (activeButton) {
+      activeButton.classList.add('active');
+    }
+  },
+};
+
 // Button Labels
 const BUTTON_LABELS = {
   RESUME: '▶ Resume',
@@ -537,21 +570,15 @@ function accelerateTime() {
 function startTimer() {
   if (isRunning) {
     // Pause timer
-    clearInterval(timerId);
-    isRunning = false;
-    if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
-      youtubePlayer.pauseVideo();
-    }
-    updateDisplay();
+    timerUtils.stop();
+    youtubeUtils.pause();
     return;
   }
 
   // If we have remaining time, resume the timer
   if (timeLeft > 0) {
     isRunning = true;
-    if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
-      youtubePlayer.playVideo();
-    }
+    youtubeUtils.play();
     startCountdown();
     return;
   }
@@ -562,24 +589,19 @@ function startTimer() {
 
 // Reset timer
 function resetTimer() {
-  clearInterval(timerId);
+  timerUtils.stop();
   if (wakeUpTimeout) {
     clearTimeout(wakeUpTimeout);
     wakeUpTimeout = null;
   }
   timeLeft = 0;
-  isRunning = false;
   currentInterval = normalInterval;
   startBtn.disabled = true;
   startBtn.textContent = BUTTON_LABELS.RESUME;
   accelerateBtn.disabled = false;
   wakeUpBtn.disabled = false;
-  updateDisplay();
 
-  // Stop YouTube player
-  if (playMusic && youtubePlayer && youtubePlayer.stopVideo) {
-    youtubePlayer.stopVideo();
-  }
+  youtubeUtils.stop();
 
   // Reset day display to normal state
   updateDayDisplay();
@@ -590,9 +612,7 @@ function resetTimer() {
     .classList.remove('wake-up-countdown');
 
   // Clear active state from preset buttons
-  document.querySelectorAll('.clocktower-btn').forEach((btn) => {
-    btn.classList.remove('active');
-  });
+  timerUtils.updateButtonStates(document.querySelectorAll('.clocktower-btn'));
 }
 
 // Handle minutes preset selection
@@ -601,8 +621,7 @@ function handleMinuteClick(e) {
   selectedMinutes = minutes;
 
   // Update active state
-  minuteButtons.forEach((btn) => btn.classList.remove('active'));
-  e.target.classList.add('active');
+  timerUtils.updateButtonStates(minuteButtons, e.target);
 
   // If timer is not running, update display
   if (!isRunning) {
@@ -618,8 +637,7 @@ function handleSecondClick(e) {
   selectedSeconds = seconds;
 
   // Update active state
-  secondButtons.forEach((btn) => btn.classList.remove('active'));
-  e.target.classList.add('active');
+  timerUtils.updateButtonStates(secondButtons, e.target);
 
   // If timer is not running, update display
   if (!isRunning) {
@@ -1026,14 +1044,12 @@ function updateMusicPlayback() {
     initYoutubePlayer();
   } else {
     // Stop and remove the player
-    if (youtubePlayer) {
-      youtubePlayer.stopVideo();
-      const container = document.querySelector('.youtube-player-container');
-      if (container) {
-        container.remove();
-      }
-      youtubePlayer = null;
+    youtubeUtils.stop();
+    const container = document.querySelector('.youtube-player-container');
+    if (container) {
+      container.remove();
     }
+    youtubePlayer = null;
   }
   saveSettings();
 }
