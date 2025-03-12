@@ -1,8 +1,77 @@
-// Import helper functions
-import { updateCharacterAmounts } from './helper.js';
+// DOM Elements
+let minutesDisplay,
+  secondsDisplay,
+  startBtn,
+  resetBtn,
+  fullscreenBtn,
+  settingsBtn,
+  settingsDialog,
+  closeSettingsBtn,
+  playerCountInput,
+  travellerCountInput,
+  accelerateBtn,
+  minuteButtons,
+  secondButtons,
+  infoBtn,
+  infoDialog,
+  closeInfoBtn;
+
+// Audio Elements
+let endSound = null;
+let wakeUpSound = null;
 
 // Wake Lock state
 let wakeLock = null;
+
+// Timer state
+let timeLeft = 0;
+let timerId = null;
+let isRunning = false;
+let selectedSeconds = 0;
+let selectedMinutes = 0;
+let normalInterval = 1000; // Normal 1 second interval
+let currentInterval = normalInterval;
+let wakeUpTimeout = null;
+
+// Game pace multipliers
+const PACE_MULTIPLIERS = {
+  relaxed: 1,
+  normal: 0.8, // 20% faster than relaxed
+  speedy: 0.5, // 50% faster than relaxed
+};
+
+// Settings state
+let playerCount = 10; // Default to 10 players
+let travellerCount = 0; // Default to 0 travellers
+let isFirstLoad = false;
+let currentDay = null;
+let currentPace = 'normal'; // Default pace
+let youtubePlaylistUrl = 'https://youtu.be/TInSYXP9ZB8?si=qeoJf04Uhfq2wf0r'; // Default playlist
+let youtubePlayer = null;
+
+// Character amounts mapping
+const characterAmounts = {
+  5: [3, 0, 1, 1],
+  6: [3, 1, 1, 1],
+  7: [5, 0, 1, 1],
+  8: [5, 1, 1, 1],
+  9: [5, 2, 1, 1],
+  10: [7, 0, 2, 1],
+  11: [7, 1, 2, 1],
+  12: [7, 2, 2, 1],
+  13: [9, 0, 3, 1],
+  14: [9, 1, 3, 1],
+  15: [9, 2, 3, 1],
+};
+
+// Helper function to update character amounts
+function updateCharacterAmounts(count) {
+  const amounts = characterAmounts[count] || [0, 0, 0, 0];
+  document.getElementById('townsfolkAmount').textContent = amounts[0];
+  document.getElementById('outsiderAmount').textContent = amounts[1];
+  document.getElementById('minionAmount').textContent = amounts[2];
+  document.getElementById('demonAmount').textContent = amounts[3];
+}
 
 // Request wake lock
 async function requestWakeLock() {
@@ -36,23 +105,71 @@ document.addEventListener('visibilitychange', async () => {
   }
 });
 
-// Request wake lock on page load
+// Request wake lock and initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
   await requestWakeLock();
 
-  // Existing DOMContentLoaded code...
+  // Initialize audio
   endSound = new Audio('sounds/end-of-day/cathedral-bell.mp3');
   wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01.mp3');
 
-  // Add event listener for wake-up button
+  // Initialize DOM elements
+  minutesDisplay = document.getElementById('minutes');
+  secondsDisplay = document.getElementById('seconds');
+  startBtn = document.getElementById('startBtn');
+  resetBtn = document.getElementById('resetBtn');
+  fullscreenBtn = document.getElementById('fullscreenBtn');
+  settingsBtn = document.getElementById('settingsBtn');
+  settingsDialog = document.getElementById('settingsDialog');
+  closeSettingsBtn = document.getElementById('closeSettings');
+  playerCountInput = document.getElementById('playerCount');
+  travellerCountInput = document.getElementById('travellerCount');
+  accelerateBtn = document.getElementById('accelerateBtn');
+  minuteButtons = document.querySelectorAll('.minute-btn');
+  secondButtons = document.querySelectorAll('.second-btn');
+  infoBtn = document.getElementById('infoBtn');
+  infoDialog = document.getElementById('infoDialog');
+  closeInfoBtn = document.getElementById('closeInfo');
+
+  // Add event listeners
+  startBtn.addEventListener('click', startTimer);
+  resetBtn.addEventListener('click', resetTimer);
+  fullscreenBtn.addEventListener('click', toggleFullscreen);
+  settingsBtn.addEventListener('click', openSettings);
+  closeSettingsBtn.addEventListener('click', closeSettings);
+  infoBtn.addEventListener('click', openInfo);
+  closeInfoBtn.addEventListener('click', closeInfo);
+  playerCountInput.addEventListener('change', updatePlayerCount);
+  playerCountInput.addEventListener('input', updatePlayerCount);
+  travellerCountInput.addEventListener('change', updateTravellerCount);
+  travellerCountInput.addEventListener('input', updateTravellerCount);
+  accelerateBtn.addEventListener('click', accelerateTime);
   document
     .getElementById('wakeUpBtn')
     .addEventListener('click', playWakeUpSound);
-
-  // Add event listener for Start New Game button
   document
     .getElementById('startNewGame')
     .addEventListener('click', startNewGame);
+  document.getElementById('gamePace').addEventListener('change', (e) => {
+    updateGamePace(e.target.value);
+  });
+  document
+    .getElementById('youtubePlaylist')
+    .addEventListener('change', updateYoutubePlaylist);
+
+  // Add click handlers for preset buttons
+  minuteButtons.forEach((btn) => {
+    btn.addEventListener('click', handleMinuteClick);
+  });
+
+  secondButtons.forEach((btn) => {
+    btn.addEventListener('click', handleSecondClick);
+  });
+
+  // Initialize settings and update display
+  loadSettings();
+  updateClocktowerPresets();
+  updateDisplay();
 });
 
 // Helper functions for timer calculations
@@ -70,45 +187,6 @@ function roundToNearestQuarter(n) {
   return Math.round(n * 4) / 4;
 }
 
-// Timer state
-let timeLeft = 0;
-let timerId = null;
-let isRunning = false;
-let selectedSeconds = 0;
-let selectedMinutes = 0;
-let normalInterval = 1000; // Normal 1 second interval
-let currentInterval = normalInterval;
-let wakeUpTimeout = null;
-
-// Game pace multipliers
-const PACE_MULTIPLIERS = {
-  relaxed: 1,
-  normal: 0.8, // 20% faster than relaxed
-  speedy: 0.5, // 50% faster than relaxed
-};
-
-// Settings state
-let playerCount = 10; // Default to 10 players
-let travellerCount = 0; // Default to 0 travellers
-let isFirstLoad = false;
-let currentDay = null;
-let currentPace = 'normal'; // Default pace
-
-// Character amounts mapping
-const characterAmounts = {
-  5: [3, 0, 1, 1],
-  6: [3, 1, 1, 1],
-  7: [5, 0, 1, 1],
-  8: [5, 1, 1, 1],
-  9: [5, 2, 1, 1],
-  10: [7, 0, 2, 1],
-  11: [7, 1, 2, 1],
-  12: [7, 2, 2, 1],
-  13: [9, 0, 3, 1],
-  14: [9, 1, 3, 1],
-  15: [9, 2, 3, 1],
-};
-
 // Load settings from localStorage
 function loadSettings() {
   const savedSettings = localStorage.getItem('quickTimerSettings');
@@ -118,6 +196,9 @@ function loadSettings() {
     travellerCount = settings.travellerCount || 0;
     currentDay = settings.currentDay || null;
     currentPace = settings.currentPace || 'normal';
+    youtubePlaylistUrl =
+      settings.youtubePlaylistUrl ||
+      'https://youtu.be/TInSYXP9ZB8?si=qeoJf04Uhfq2wf0r';
   } else {
     isFirstLoad = true;
   }
@@ -126,6 +207,7 @@ function loadSettings() {
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
   document.getElementById('gamePace').value = currentPace;
+  document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
@@ -140,6 +222,9 @@ function loadSettings() {
   if (isFirstLoad) {
     settingsDialog.showModal();
   }
+
+  // Initialize YouTube player
+  initYoutubePlayer();
 }
 
 // Save settings to localStorage
@@ -149,31 +234,10 @@ function saveSettings() {
     travellerCount,
     currentDay,
     currentPace,
+    youtubePlaylistUrl,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
-
-// Create Audio element for the end sound
-let endSound;
-let wakeUpSound;
-
-// DOM elements
-const minutesDisplay = document.getElementById('minutes');
-const secondsDisplay = document.getElementById('seconds');
-const startBtn = document.getElementById('startBtn');
-const resetBtn = document.getElementById('resetBtn');
-const fullscreenBtn = document.getElementById('fullscreenBtn');
-const settingsBtn = document.getElementById('settingsBtn');
-const settingsDialog = document.getElementById('settingsDialog');
-const closeSettingsBtn = document.getElementById('closeSettings');
-const playerCountInput = document.getElementById('playerCount');
-const travellerCountInput = document.getElementById('travellerCount');
-const accelerateBtn = document.getElementById('accelerateBtn');
-const minuteButtons = document.querySelectorAll('.minute-btn');
-const secondButtons = document.querySelectorAll('.second-btn');
-const infoBtn = document.getElementById('infoBtn');
-const infoDialog = document.getElementById('infoDialog');
-const closeInfoBtn = document.getElementById('closeInfo');
 
 // Settings functionality
 function updateClocktowerPresets() {
@@ -370,9 +434,12 @@ function accelerateTime() {
 // Start timer
 function startTimer() {
   if (isRunning) {
-    // Pause timer
+    // Pause timer and YouTube
     clearInterval(timerId);
     isRunning = false;
+    if (youtubePlayer && youtubePlayer.pauseVideo) {
+      youtubePlayer.pauseVideo();
+    }
     return;
   }
 
@@ -385,6 +452,11 @@ function startTimer() {
   isRunning = true;
   accelerateBtn.disabled = false; // Re-enable accelerate button
 
+  // Start YouTube player
+  if (youtubePlayer && youtubePlayer.playVideo) {
+    youtubePlayer.playVideo();
+  }
+
   timerId = setInterval(() => {
     timeLeft--;
     updateDisplay();
@@ -394,6 +466,9 @@ function startTimer() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
+      if (youtubePlayer && youtubePlayer.pauseVideo) {
+        youtubePlayer.pauseVideo();
+      }
       if (currentDay !== null) {
         updateDayDisplay('dusk');
       }
@@ -414,6 +489,11 @@ function resetTimer() {
   startBtn.disabled = true;
   accelerateBtn.disabled = false;
   updateDisplay();
+
+  // Stop YouTube player
+  if (youtubePlayer && youtubePlayer.stopVideo) {
+    youtubePlayer.stopVideo();
+  }
 
   // Reset day display to normal state
   updateDayDisplay();
@@ -696,3 +776,72 @@ function generateDayPresets(playerCount) {
 document.getElementById('gamePace').addEventListener('change', (e) => {
   updateGamePace(e.target.value);
 });
+
+// YouTube player functionality
+function initYoutubePlayer() {
+  // Remove existing player if any
+  const existingContainer = document.querySelector('.youtube-player-container');
+  if (existingContainer) {
+    existingContainer.remove();
+  }
+
+  // Create container for YouTube player
+  const container = document.createElement('div');
+  container.className = 'youtube-player-container';
+  document.body.appendChild(container);
+
+  // Extract video ID from URL
+  const videoId = extractVideoId(youtubePlaylistUrl);
+  if (!videoId) return;
+
+  // Load YouTube IFrame API if not already loaded
+  if (!window.YT) {
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  }
+
+  // Create player when API is ready
+  window.onYouTubeIframeAPIReady = function () {
+    youtubePlayer = new YT.Player(container, {
+      height: '135',
+      width: '240',
+      videoId: videoId,
+      playerVars: {
+        autoplay: 0,
+        controls: 1,
+        modestbranding: 1,
+        playsinline: 1,
+        rel: 0,
+      },
+      events: {
+        onReady: onPlayerReady,
+        onStateChange: onPlayerStateChange,
+      },
+    });
+  };
+}
+
+function extractVideoId(url) {
+  const regExp =
+    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
+}
+
+function onPlayerReady(event) {
+  // Player is ready but don't autoplay
+}
+
+function onPlayerStateChange(event) {
+  // Handle player state changes if needed
+}
+
+// Update YouTube playlist URL
+function updateYoutubePlaylist() {
+  const input = document.getElementById('youtubePlaylist');
+  youtubePlaylistUrl = input.value;
+  saveSettings();
+  initYoutubePlayer();
+}
