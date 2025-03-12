@@ -50,7 +50,7 @@ let playMusic = false; // Default to false for new users
 let playSoundEffects = true; // Default to true for sound effects
 let youtubeVolume = 20; // Default volume
 let youtubePlaylistUrl =
-  'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW'; // Default playlist
+  'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NwkkOAyQAMQkeberU9rwMcc'; // Default playlist
 let youtubePlayer = null;
 
 // Character amounts mapping
@@ -224,7 +224,7 @@ function loadSettings() {
     youtubeVolume = settings.youtubeVolume || 20;
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl ||
-      'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW';
+      'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NwkkOAyQAMQkeberU9rwMcc';
   } else {
     isFirstLoad = true;
   }
