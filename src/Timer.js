@@ -8,6 +8,9 @@ export class Timer {
     this.seconds = 0;
     this.isRunning = false;
     this.timerInterval = null;
+
+    // Try to restore saved state
+    this.restoreState();
   }
 
   setTime(minutes, seconds) {
@@ -20,6 +23,7 @@ export class Timer {
       !isNaN(parsedSeconds) && parsedSeconds >= 0 ? parsedSeconds : 0;
 
     this.updateDisplay();
+    this.saveState();
   }
 
   updateDisplay() {
@@ -33,6 +37,7 @@ export class Timer {
     if (!this.isRunning && (this.minutes > 0 || this.seconds > 0)) {
       this.isRunning = true;
       this.timerInterval = setInterval(() => this.tick(), 1000);
+      this.saveState();
       return true;
     }
     return false;
@@ -42,6 +47,7 @@ export class Timer {
     if (this.isRunning) {
       clearInterval(this.timerInterval);
       this.isRunning = false;
+      this.saveState();
       return true;
     }
     return false;
@@ -52,6 +58,7 @@ export class Timer {
     this.minutes = 0;
     this.seconds = 0;
     this.updateDisplay();
+    this.saveState();
   }
 
   tick() {
@@ -72,6 +79,7 @@ export class Timer {
     }
 
     this.updateDisplay();
+    this.saveState();
   }
 
   getTime() {
@@ -83,5 +91,51 @@ export class Timer {
 
   isActive() {
     return this.isRunning;
+  }
+
+  saveState() {
+    try {
+      const state = {
+        minutes: this.minutes,
+        seconds: this.seconds,
+        isRunning: this.isRunning,
+      };
+      localStorage.setItem('timerState', JSON.stringify(state));
+      return true;
+    } catch (error) {
+      console.error('Failed to save timer state:', error);
+      return false;
+    }
+  }
+
+  restoreState() {
+    try {
+      const savedState = localStorage.getItem('timerState');
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        this.minutes = state.minutes;
+        this.seconds = state.seconds;
+        this.updateDisplay();
+
+        // Start the timer after setting up the state if it was running
+        if (state.isRunning) {
+          this.start();
+        }
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to restore timer state:', error);
+    }
+    return false;
+  }
+
+  clearSavedState() {
+    try {
+      localStorage.removeItem('timerState');
+      return true;
+    } catch (error) {
+      console.error('Failed to clear timer state:', error);
+      return false;
+    }
   }
 }
