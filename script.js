@@ -75,7 +75,6 @@ const timerUtils = {
         const progress = Math.min(elapsed / holdDuration, 1);
 
         if (onProgress) {
-          // Update the width of the ::before pseudo-element
           button.style.setProperty('--progress-width', `${progress * 100}%`);
           onProgress(progress);
         }
@@ -107,12 +106,13 @@ const timerUtils = {
       }
     };
 
+    // Add event listeners with passive option where appropriate
     button.addEventListener('mousedown', start);
-    button.addEventListener('touchstart', start);
-    button.addEventListener('mouseup', cancel);
-    button.addEventListener('mouseleave', cancel);
-    button.addEventListener('touchend', cancel);
-    button.addEventListener('touchcancel', cancel);
+    button.addEventListener('touchstart', start, { passive: false }); // We need preventDefault, so can't be passive
+    button.addEventListener('mouseup', cancel, { passive: true });
+    button.addEventListener('mouseleave', cancel, { passive: true });
+    button.addEventListener('touchend', cancel, { passive: true });
+    button.addEventListener('touchcancel', cancel, { passive: true });
   },
 };
 
@@ -164,6 +164,7 @@ let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
 let playSoundEffects = true; // Default to true for sound effects
 let youtubeVolume = 20; // Default volume
+let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl =
   'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NwkkOAyQAMQkeberU9rwMcc'; // Default playlist
 let youtubePlayer = null;
@@ -320,6 +321,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('playSoundEffects')
     .addEventListener('change', updateSoundEffects);
+  document
+    .getElementById('backgroundTheme')
+    .addEventListener('change', updateBackgroundTheme);
 
   // Add keyboard shortcut for settings
   document.addEventListener('keydown', (e) => {
@@ -373,6 +377,7 @@ function loadSettings() {
         ? settings.playSoundEffects
         : true;
     youtubeVolume = settings.youtubeVolume || 20;
+    backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl ||
       'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NwkkOAyQAMQkeberU9rwMcc';
@@ -390,11 +395,15 @@ function loadSettings() {
   document.getElementById('youtubePlaylist').disabled = !playMusic;
   document.getElementById('youtubeVolume').value = youtubeVolume;
   document.getElementById('youtubeVolume').disabled = !playMusic;
+  document.getElementById('backgroundTheme').value = backgroundTheme;
   document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
   updateDayDisplay();
+
+  // Apply background theme
+  document.body.setAttribute('data-theme', backgroundTheme);
 
   // Check if we're in a wake-up countdown and disable the button
   const timerDisplay = document.querySelector('.timer-display');
@@ -438,6 +447,7 @@ function saveSettings() {
     playSoundEffects,
     youtubeVolume,
     youtubePlaylistUrl,
+    backgroundTheme,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
@@ -1181,5 +1191,12 @@ function updateYoutubeVolume() {
 // Update sound effects playback
 function updateSoundEffects() {
   playSoundEffects = document.getElementById('playSoundEffects').checked;
+  saveSettings();
+}
+
+// Update background theme
+function updateBackgroundTheme() {
+  backgroundTheme = document.getElementById('backgroundTheme').value;
+  document.body.setAttribute('data-theme', backgroundTheme);
   saveSettings();
 }

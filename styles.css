@@ -6,20 +6,73 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, sans-serif;
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  gap: 0.35rem;
-  padding-top: 1rem;
-  background-image: url('images/background.jpg');
+  gap: 0.25rem;
+  padding-top: 0.25rem;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  position: relative;
+}
+
+/* Background theme styles */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-color: #1a1a1a; /* Fallback if image fails to load */
-  color: #ffffff;
+  opacity: 0.15;
+  z-index: -1;
+  transition: background-image 0.5s ease-in-out;
+}
+
+/* Background theme classes */
+body[data-theme='gothic-city']::before {
+  background-image: url('images/backgrounds/gothic-city.png');
+}
+body[data-theme='medieval-cartoon']::before {
+  background-image: url('images/backgrounds/medieval-cartoon.png');
+}
+body[data-theme='tower-in-forest']::before {
+  background-image: url('images/backgrounds/tower-in-forest.png');
+}
+body[data-theme='infested-city']::before {
+  background-image: url('images/backgrounds/infested-city.png');
+}
+body[data-theme='circle-of-people']::before {
+  background-image: url('images/backgrounds/circle-of-people.png');
+}
+body[data-theme='large-clock-face']::before {
+  background-image: url('images/backgrounds/large-clock-face.png');
+}
+
+/* Background theme selector styles */
+.background-theme-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.background-theme-select:hover {
+  border-color: #666;
+}
+
+.background-theme-select:focus {
+  outline: none;
+  border-color: #72a4f2;
 }
 
 .container {
@@ -485,7 +538,7 @@ h1 {
   align-items: center;
   gap: 1rem;
   margin: 0;
-  padding: 0 0.5rem;
+  padding: 0;
   width: 95%;
   max-width: 1000px;
 }
