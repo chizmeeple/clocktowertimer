@@ -513,7 +513,6 @@ function updateClocktowerPresets() {
       isRunning = true;
       startBtn.disabled = false;
       startBtn.textContent = BUTTON_LABELS.PAUSE;
-      accelerateBtn.disabled = false;
 
       // Start YouTube player
       if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
@@ -926,7 +925,7 @@ function startNewGame() {
   // Set button to Wake Up state
   startBtn.disabled = false;
   startBtn.textContent = BUTTON_LABELS.WAKE_UP;
-  accelerateBtn.disabled = false;
+  accelerateBtn.disabled = true; // Accelerate button should start disabled
 
   saveSettings();
   closeSettings();
