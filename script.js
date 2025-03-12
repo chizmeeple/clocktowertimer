@@ -46,6 +46,7 @@ let travellerCount = 0; // Default to 0 travellers
 let isFirstLoad = false;
 let currentDay = null;
 let currentPace = 'normal'; // Default pace
+let playMusic = true; // Default to true for existing users
 let youtubePlaylistUrl =
   'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW'; // Default playlist
 let youtubePlayer = null;
@@ -155,6 +156,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateGamePace(e.target.value);
   });
   document
+    .getElementById('playMusic')
+    .addEventListener('change', updateMusicPlayback);
+  document
     .getElementById('youtubePlaylist')
     .addEventListener('change', updateYoutubePlaylist);
 
@@ -197,6 +201,7 @@ function loadSettings() {
     travellerCount = settings.travellerCount || 0;
     currentDay = settings.currentDay || null;
     currentPace = settings.currentPace || 'normal';
+    playMusic = settings.playMusic !== undefined ? settings.playMusic : true; // Default to true for existing users
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl ||
       'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW';
@@ -208,7 +213,9 @@ function loadSettings() {
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
   document.getElementById('gamePace').value = currentPace;
+  document.getElementById('playMusic').checked = playMusic;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
+  document.getElementById('youtubePlaylist').disabled = !playMusic;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
@@ -224,8 +231,19 @@ function loadSettings() {
     settingsDialog.showModal();
   }
 
-  // Initialize YouTube player
-  initYoutubePlayer();
+  // Initialize YouTube player only if music is enabled
+  if (playMusic) {
+    initYoutubePlayer();
+  } else {
+    // Remove existing player if music is disabled
+    const existingContainer = document.querySelector(
+      '.youtube-player-container'
+    );
+    if (existingContainer) {
+      existingContainer.remove();
+    }
+    youtubePlayer = null;
+  }
 }
 
 // Save settings to localStorage
@@ -235,6 +253,7 @@ function saveSettings() {
     travellerCount,
     currentDay,
     currentPace,
+    playMusic,
     youtubePlaylistUrl,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
@@ -284,7 +303,7 @@ function updateClocktowerPresets() {
       accelerateBtn.disabled = false;
 
       // Start YouTube player
-      if (youtubePlayer && youtubePlayer.playVideo) {
+      if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
         youtubePlayer.playVideo();
       }
 
@@ -298,7 +317,7 @@ function updateClocktowerPresets() {
           isRunning = false;
           startBtn.disabled = true;
           // Stop YouTube player when timer ends
-          if (youtubePlayer && youtubePlayer.pauseVideo) {
+          if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
             youtubePlayer.pauseVideo();
           }
           if (currentDay !== null) {
@@ -433,7 +452,7 @@ function accelerateTime() {
       startBtn.textContent = 'Start';
       currentInterval = normalInterval;
       // Stop YouTube player when accelerated time ends
-      if (youtubePlayer && youtubePlayer.pauseVideo) {
+      if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
         youtubePlayer.pauseVideo();
       }
       if (currentDay !== null) {
@@ -452,7 +471,7 @@ function startTimer() {
     // Pause timer and YouTube
     clearInterval(timerId);
     isRunning = false;
-    if (youtubePlayer && youtubePlayer.pauseVideo) {
+    if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
       youtubePlayer.pauseVideo();
     }
     startBtn.textContent = 'Start';
@@ -469,8 +488,8 @@ function startTimer() {
   startBtn.textContent = 'Pause';
   accelerateBtn.disabled = false; // Re-enable accelerate button
 
-  // Start YouTube player
-  if (youtubePlayer && youtubePlayer.playVideo) {
+  // Start YouTube player if music is enabled
+  if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
     youtubePlayer.playVideo();
   }
 
@@ -485,7 +504,7 @@ function startTimer() {
       startBtn.disabled = true;
       startBtn.textContent = 'Start';
       // Stop YouTube player when timer ends
-      if (youtubePlayer && youtubePlayer.pauseVideo) {
+      if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
         youtubePlayer.pauseVideo();
       }
       if (currentDay !== null) {
@@ -511,7 +530,7 @@ function resetTimer() {
   updateDisplay();
 
   // Stop YouTube player
-  if (youtubePlayer && youtubePlayer.stopVideo) {
+  if (playMusic && youtubePlayer && youtubePlayer.stopVideo) {
     youtubePlayer.stopVideo();
   }
 
@@ -684,7 +703,7 @@ function startNewGame() {
   closeSettings();
 
   // Stop any playing video and reshuffle playlist
-  if (youtubePlayer) {
+  if (playMusic && youtubePlayer) {
     const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
     if (playlistId) {
       youtubePlayer.stopVideo(); // Stop current video if playing
@@ -919,5 +938,28 @@ function updateYoutubePlaylist() {
   const input = document.getElementById('youtubePlaylist');
   youtubePlaylistUrl = input.value;
   saveSettings();
-  initYoutubePlayer();
+  if (playMusic) {
+    initYoutubePlayer();
+  }
+}
+
+// Toggle music playback
+function updateMusicPlayback() {
+  playMusic = document.getElementById('playMusic').checked;
+  document.getElementById('youtubePlaylist').disabled = !playMusic;
+
+  if (playMusic) {
+    initYoutubePlayer();
+  } else {
+    // Stop and remove the player
+    if (youtubePlayer) {
+      youtubePlayer.stopVideo();
+      const container = document.querySelector('.youtube-player-container');
+      if (container) {
+        container.remove();
+      }
+      youtubePlayer = null;
+    }
+  }
+  saveSettings();
 }

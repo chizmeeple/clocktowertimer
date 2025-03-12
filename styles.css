@@ -423,6 +423,24 @@ h1 {
   margin: 0;
 }
 
+.setting-group input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  accent-color: #4caf50;
+  cursor: pointer;
+}
+
+.setting-group input[type='checkbox']:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setting-group input[type='text']:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #1a2b1a;
+}
+
 .setting-row input[type='checkbox'] {
   width: 20px;
   height: 20px;
