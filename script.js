@@ -601,12 +601,12 @@ function updateDayDisplay(state = '') {
 
   if (state === 'dawn') {
     dayInfo.classList.add('dawn');
-    dayInfo.innerHTML = `Dawn of Day&nbsp;${currentDay}<br>${paceText}`;
+    dayInfo.innerHTML = `Dawn of Day&nbsp;${currentDay}<div class="pace-indicator">${paceText}</div>`;
   } else if (state === 'dusk') {
     dayInfo.classList.add('dusk');
-    dayInfo.innerHTML = `Day&nbsp;${currentDay}, Dusk<br>${paceText}`;
+    dayInfo.innerHTML = `Day&nbsp;${currentDay}, Dusk<div class="pace-indicator">${paceText}</div>`;
   } else {
-    dayInfo.innerHTML = `Day&nbsp;${currentDay}<br>${paceText}`;
+    dayInfo.innerHTML = `Day&nbsp;${currentDay}<div class="pace-indicator">${paceText}</div>`;
   }
 
   // Update preset button highlighting
