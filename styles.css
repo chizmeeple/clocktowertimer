@@ -915,3 +915,18 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   height: 100%;
   border: none;
 }
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #666;
+  border-color: #444;
+}
+
+#wakeUpBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #8b4513;
+  border-color: #654321;
+  color: rgba(255, 255, 255, 0.7);
+}

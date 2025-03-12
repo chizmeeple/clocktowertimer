@@ -14,7 +14,8 @@ let minutesDisplay,
   secondButtons,
   infoBtn,
   infoDialog,
-  closeInfoBtn;
+  closeInfoBtn,
+  wakeUpBtn;
 
 // Audio Elements
 let endSound = null;
@@ -134,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   infoBtn = document.getElementById('infoBtn');
   infoDialog = document.getElementById('infoDialog');
   closeInfoBtn = document.getElementById('closeInfo');
+  wakeUpBtn = document.getElementById('wakeUpBtn');
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
@@ -244,6 +246,12 @@ function loadSettings() {
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
   updateDayDisplay();
+
+  // Check if we're in a wake-up countdown and disable the button
+  const timerDisplay = document.querySelector('.timer-display');
+  if (timerDisplay.classList.contains('wake-up-countdown')) {
+    wakeUpBtn.disabled = true;
+  }
 
   // Update character amounts and presets
   updateCharacterAmounts(playerCount);
@@ -452,6 +460,17 @@ function updateDisplay() {
   const seconds = timeLeft % 60;
   minutesDisplay.textContent = minutes.toString().padStart(2, '0');
   secondsDisplay.textContent = seconds.toString().padStart(2, '0');
+
+  // Disable Wake Up button only during active timers or countdowns
+  const timerDisplay = document.querySelector('.timer-display');
+  const isWakeUpCountdown =
+    timerDisplay.classList.contains('wake-up-countdown');
+
+  // The button should be enabled if:
+  // 1. No timer is running (isRunning is false)
+  // 2. No wake-up countdown is in progress (isWakeUpCountdown is false)
+  // 3. Timer has reached zero (timeLeft is 0)
+  wakeUpBtn.disabled = isRunning || isWakeUpCountdown;
 }
 
 // Acceleration functionality
@@ -488,6 +507,7 @@ function accelerateTime() {
       if (currentDay !== null) {
         updateDayDisplay('dusk');
       }
+      updateDisplay(); // Make sure to update display one final time
     }
   }, currentInterval);
 
@@ -505,6 +525,7 @@ function startTimer() {
       youtubePlayer.pauseVideo();
     }
     startBtn.textContent = 'Start';
+    updateDisplay(); // Update display to re-enable Wake Up button if appropriate
     return;
   }
 
@@ -517,6 +538,7 @@ function startTimer() {
   isRunning = true;
   startBtn.textContent = 'Pause';
   accelerateBtn.disabled = false; // Re-enable accelerate button
+  updateDisplay(); // Update display to disable Wake Up button
 
   // Start YouTube player if music is enabled
   if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
@@ -540,6 +562,7 @@ function startTimer() {
       if (currentDay !== null) {
         updateDayDisplay('dusk');
       }
+      updateDisplay(); // Ensure final state is reflected
     }
   }, normalInterval);
 }
@@ -557,6 +580,7 @@ function resetTimer() {
   startBtn.disabled = true;
   startBtn.textContent = 'Start';
   accelerateBtn.disabled = false;
+  wakeUpBtn.disabled = false;
   updateDisplay();
 
   // Stop YouTube player
@@ -683,6 +707,9 @@ function playWakeUpSound() {
     const timerDisplay = document.querySelector('.timer-display');
     timerDisplay.classList.add('wake-up-countdown');
 
+    // Disable the Wake Up button during countdown
+    wakeUpBtn.disabled = true;
+
     let countdownSeconds = 10;
     timeLeft = countdownSeconds;
     updateDisplay();
@@ -696,6 +723,9 @@ function playWakeUpSound() {
         clearInterval(timerId);
         timerDisplay.classList.remove('wake-up-countdown');
         updateDayDisplay(); // Reset to normal day display
+
+        // Re-enable the Wake Up button
+        wakeUpBtn.disabled = false;
 
         // Start next day's timer
         const nextDayPreset = document.querySelector(
