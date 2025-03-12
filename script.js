@@ -597,16 +597,22 @@ function updateDayDisplay(state = '') {
     return;
   }
 
+  const paceEmojis = {
+    relaxed: '🐢',
+    normal: '🚶',
+    speedy: '⚡',
+  };
+  const paceEmoji = paceEmojis[currentPace];
   const paceText = currentPace.charAt(0).toUpperCase() + currentPace.slice(1);
 
   if (state === 'dawn') {
     dayInfo.classList.add('dawn');
-    dayInfo.innerHTML = `Dawn of Day&nbsp;${currentDay}<div class="pace-indicator">${paceText}</div>`;
+    dayInfo.innerHTML = `Dawn of Day&nbsp;${currentDay}<div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   } else if (state === 'dusk') {
     dayInfo.classList.add('dusk');
-    dayInfo.innerHTML = `Day&nbsp;${currentDay}, Dusk<div class="pace-indicator">${paceText}</div>`;
+    dayInfo.innerHTML = `Day&nbsp;${currentDay}, Dusk<div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   } else {
-    dayInfo.innerHTML = `Day&nbsp;${currentDay}<div class="pace-indicator">${paceText}</div>`;
+    dayInfo.innerHTML = `Day&nbsp;${currentDay}<div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   }
 
   // Update preset button highlighting
