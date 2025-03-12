@@ -17,6 +17,20 @@ let minutesDisplay,
   closeInfoBtn,
   wakeUpBtn;
 
+// Button Labels
+const BUTTON_LABELS = {
+  RESUME: '▶ Resume',
+  PAUSE: '⏸ Pause',
+  WAKE_UP: '🔔 Wake Up!',
+  RESET: '↺ Reset',
+  ACCELERATE: '⏩ Accelerate Time',
+  FULLSCREEN: {
+    ENTER:
+      '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
+    EXIT: '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>',
+  },
+};
+
 // Audio Elements
 let endSound = null;
 let wakeUpSound = null;
@@ -122,8 +136,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   minutesDisplay = document.getElementById('minutes');
   secondsDisplay = document.getElementById('seconds');
   startBtn = document.getElementById('startBtn');
-  startBtn.textContent = '▶ Resume';
+  startBtn.textContent = BUTTON_LABELS.RESUME;
   resetBtn = document.getElementById('resetBtn');
+  resetBtn.textContent = BUTTON_LABELS.RESET;
   fullscreenBtn = document.getElementById('fullscreenBtn');
   settingsBtn = document.getElementById('settingsBtn');
   settingsDialog = document.getElementById('settingsDialog');
@@ -131,12 +146,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   playerCountInput = document.getElementById('playerCount');
   travellerCountInput = document.getElementById('travellerCount');
   accelerateBtn = document.getElementById('accelerateBtn');
+  accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE;
   minuteButtons = document.querySelectorAll('.minute-btn');
   secondButtons = document.querySelectorAll('.second-btn');
   infoBtn = document.getElementById('infoBtn');
   infoDialog = document.getElementById('infoDialog');
   closeInfoBtn = document.getElementById('closeInfo');
   wakeUpBtn = document.getElementById('wakeUpBtn');
+  wakeUpBtn.textContent = BUTTON_LABELS.WAKE_UP;
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
@@ -335,7 +352,7 @@ function updateClocktowerPresets() {
       // Start the timer
       isRunning = true;
       startBtn.disabled = false;
-      startBtn.textContent = '⏸ Pause';
+      startBtn.textContent = BUTTON_LABELS.PAUSE;
       accelerateBtn.disabled = false;
 
       // Start YouTube player
@@ -352,7 +369,7 @@ function updateClocktowerPresets() {
           playEndSound();
           isRunning = false;
           startBtn.disabled = true;
-          startBtn.textContent = '▶ Resume';
+          startBtn.textContent = BUTTON_LABELS.RESUME;
           // Stop YouTube player when timer ends
           if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
             youtubePlayer.pauseVideo();
@@ -418,8 +435,8 @@ function toggleFullscreen() {
 function updateFullscreenButton() {
   const isFullscreen = document.fullscreenElement !== null;
   fullscreenBtn.innerHTML = isFullscreen
-    ? '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>'
-    : '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+    ? BUTTON_LABELS.FULLSCREEN.EXIT
+    : BUTTON_LABELS.FULLSCREEN.ENTER;
 }
 
 // Play end sound
@@ -501,7 +518,7 @@ function accelerateTime() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
-      startBtn.textContent = '▶ Resume';
+      startBtn.textContent = BUTTON_LABELS.RESUME;
       currentInterval = normalInterval;
       // Stop YouTube player when accelerated time ends
       if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
@@ -527,7 +544,7 @@ function startTimer() {
     if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
       youtubePlayer.pauseVideo();
     }
-    startBtn.textContent = '▶ Resume';
+    startBtn.textContent = BUTTON_LABELS.RESUME;
     updateDisplay(); // Update display to re-enable Wake Up button if appropriate
     return;
   }
@@ -539,7 +556,7 @@ function startTimer() {
   }
 
   isRunning = true;
-  startBtn.textContent = '⏸ Pause';
+  startBtn.textContent = BUTTON_LABELS.PAUSE;
   accelerateBtn.disabled = false; // Re-enable accelerate button
   updateDisplay(); // Update display to disable Wake Up button
 
@@ -557,7 +574,7 @@ function startTimer() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
-      startBtn.textContent = '▶ Resume';
+      startBtn.textContent = BUTTON_LABELS.RESUME;
       // Stop YouTube player when timer ends
       if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
         youtubePlayer.pauseVideo();
@@ -581,7 +598,7 @@ function resetTimer() {
   isRunning = false;
   currentInterval = normalInterval;
   startBtn.disabled = true;
-  startBtn.textContent = '▶ Resume';
+  startBtn.textContent = BUTTON_LABELS.RESUME;
   accelerateBtn.disabled = false;
   wakeUpBtn.disabled = false;
   updateDisplay();
