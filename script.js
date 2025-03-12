@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize audio
   endSound = new Audio('sounds/end-of-day/cathedral-bell.mp3');
-  wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01.mp3');
+  wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01-loud.mp3');
 
   // Initialize DOM elements
   minutesDisplay = document.getElementById('minutes');
