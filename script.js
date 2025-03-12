@@ -399,6 +399,7 @@ function loadSettings() {
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
   } else {
     isFirstLoad = true;
+    currentDay = 1; // Set to Day 1 on first load
   }
 
   // Always update UI to reflect settings
