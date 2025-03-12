@@ -238,9 +238,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Add connectivity listeners
   connectivityUtils.addStatusListener(
     () => {
-      // When we come back online, reinitialize YouTube if music is enabled
+      // When we come back online
       if (playMusic) {
         initYoutubePlayer();
+        // If timer is running, resume music after a short delay to allow player initialization
+        if (isRunning && timeLeft > 0) {
+          setTimeout(() => {
+            youtubeUtils.play();
+          }, 2000); // 2 second delay to allow player to initialize
+        }
       }
     },
     () => {
