@@ -47,6 +47,7 @@ let isFirstLoad = false;
 let currentDay = null;
 let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
+let playSoundEffects = true; // Default to true for sound effects
 let youtubeVolume = 20; // Default volume
 let youtubePlaylistUrl =
   'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW'; // Default playlist
@@ -165,6 +166,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('youtubeVolume')
     .addEventListener('input', updateYoutubeVolume);
+  document
+    .getElementById('playSoundEffects')
+    .addEventListener('change', updateSoundEffects);
 
   // Add keyboard shortcut for settings
   document.addEventListener('keydown', (e) => {
@@ -213,6 +217,10 @@ function loadSettings() {
     currentDay = settings.currentDay || null;
     currentPace = settings.currentPace || 'normal';
     playMusic = settings.playMusic !== undefined ? settings.playMusic : false;
+    playSoundEffects =
+      settings.playSoundEffects !== undefined
+        ? settings.playSoundEffects
+        : true;
     youtubeVolume = settings.youtubeVolume || 20;
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl ||
@@ -225,6 +233,7 @@ function loadSettings() {
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
   document.getElementById('gamePace').value = currentPace;
+  document.getElementById('playSoundEffects').checked = playSoundEffects;
   document.getElementById('playMusic').checked = playMusic;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
   document.getElementById('youtubePlaylist').disabled = !playMusic;
@@ -269,6 +278,7 @@ function saveSettings() {
     currentDay,
     currentPace,
     playMusic,
+    playSoundEffects,
     youtubeVolume,
     youtubePlaylistUrl,
   };
@@ -403,6 +413,8 @@ function updateFullscreenButton() {
 
 // Play end sound
 function playEndSound() {
+  if (!playSoundEffects) return;
+
   endSound.currentTime = 0; // Reset the sound to start
   endSound.play().catch((error) => {
     console.log('Error playing sound:', error);
@@ -413,6 +425,8 @@ function playEndSound() {
 
 // Create beep sound (fallback if mp3 fails to load)
 function createBeep() {
+  if (!playSoundEffects) return;
+
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
@@ -651,11 +665,13 @@ function playWakeUpSound() {
     clearTimeout(wakeUpTimeout);
   }
 
-  wakeUpSound.currentTime = 0;
-  wakeUpSound.play().catch((error) => {
-    console.log('Error playing wake-up sound:', error);
-    createBeep();
-  });
+  if (playSoundEffects) {
+    wakeUpSound.currentTime = 0;
+    wakeUpSound.play().catch((error) => {
+      console.log('Error playing wake-up sound:', error);
+      createBeep();
+    });
+  }
 
   // Increment day counter if we're in a game
   if (currentDay !== null) {
@@ -972,5 +988,11 @@ function updateYoutubeVolume() {
   if (youtubePlayer && youtubePlayer.setVolume) {
     youtubePlayer.setVolume(youtubeVolume);
   }
+  saveSettings();
+}
+
+// Update sound effects playback
+function updateSoundEffects() {
+  playSoundEffects = document.getElementById('playSoundEffects').checked;
   saveSettings();
 }
