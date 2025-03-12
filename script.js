@@ -1120,6 +1120,7 @@ function initYoutubePlayer() {
         playsinline: 1,
         rel: 0,
         loop: 1,
+        playlist: playlistId, // Required for looping playlists
       },
       events: {
         onReady: function (event) {
@@ -1131,7 +1132,7 @@ function initYoutubePlayer() {
             event.target.cuePlaylist({
               list: playlistId,
               listType: 'playlist',
-              index: Math.floor(Math.random() * 50), // Start at random position
+              index: 0, // Start from beginning after shuffle
               suggestedQuality: 'small',
             });
           } else if (videoId) {
@@ -1146,8 +1147,9 @@ function initYoutubePlayer() {
           // Handle video ending
           if (event.data === YT.PlayerState.ENDED) {
             if (playlistId) {
-              // For playlists, let YouTube handle the next video
-              // The shuffle setting will ensure it's random
+              // For playlists, reshuffle and start from beginning
+              event.target.setShuffle(true);
+              event.target.playVideoAt(0);
             } else {
               // For single videos, replay
               event.target.playVideo();
