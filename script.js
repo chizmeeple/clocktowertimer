@@ -82,9 +82,9 @@ let wakeUpTimeout = null;
 
 // Game pace multipliers
 const PACE_MULTIPLIERS = {
-  normal: 1,
-  speedy: 0.75,
-  lightning: 0.5,
+  relaxed: 1,
+  normal: 0.8, // 20% faster than relaxed
+  speedy: 0.5, // 50% faster than relaxed
 };
 
 // Settings state
