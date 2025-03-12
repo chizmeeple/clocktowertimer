@@ -5,8 +5,10 @@
   "main": "script.js",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+    "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
