@@ -18,6 +18,18 @@ let minutesDisplay,
   wakeUpBtn;
 
 // Utility functions
+const connectivityUtils = {
+  isOnline: () => navigator.onLine,
+  addStatusListener: (onlineCallback, offlineCallback) => {
+    window.addEventListener('online', onlineCallback);
+    window.addEventListener('offline', offlineCallback);
+  },
+  removeStatusListener: (onlineCallback, offlineCallback) => {
+    window.removeEventListener('online', onlineCallback);
+    window.removeEventListener('offline', offlineCallback);
+  },
+};
+
 const youtubeUtils = {
   play: () => {
     if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
@@ -219,6 +231,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize audio
   endSound = new Audio('sounds/end-of-day/cathedral-bell.mp3');
   wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01-loud.mp3');
+
+  // Add connectivity listeners
+  connectivityUtils.addStatusListener(
+    () => {
+      // When we come back online, reinitialize YouTube if music is enabled
+      if (playMusic) {
+        initYoutubePlayer();
+      }
+    },
+    () => {
+      // When we go offline, remove the YouTube player
+      const container = document.querySelector('.youtube-player-container');
+      if (container) {
+        container.remove();
+      }
+      youtubePlayer = null;
+    }
+  );
 
   // Initialize DOM elements
   minutesDisplay = document.getElementById('minutes');
@@ -1017,6 +1047,12 @@ function extractVideoAndPlaylistIds(url) {
 }
 
 function initYoutubePlayer() {
+  // Check for internet connectivity first
+  if (!connectivityUtils.isOnline()) {
+    console.log('Cannot initialize YouTube player: offline');
+    return;
+  }
+
   // Remove existing player if any
   const existingContainer = document.querySelector('.youtube-player-container');
   if (existingContainer) {
