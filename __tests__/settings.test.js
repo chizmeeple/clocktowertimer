@@ -4,6 +4,12 @@
 
 import { Timer } from '../src/Timer';
 import { jest } from '@jest/globals';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 describe('Settings Dialog Functionality', () => {
   let settingsDialog;
@@ -63,10 +69,23 @@ describe('Settings Dialog Functionality', () => {
     const paceEmoji = paceEmojis[currentPace];
     const paceText = currentPace.charAt(0).toUpperCase() + currentPace.slice(1);
 
-    dayInfo.innerHTML = `Day&nbsp;1<div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+    const currentDaySpan = document.getElementById('currentDay');
+    currentDaySpan.textContent = '1';
+    dayInfo.querySelector('.pace-indicator')?.remove();
+    dayInfo.insertAdjacentHTML(
+      'beforeend',
+      `<div class="pace-indicator">${paceEmoji} ${paceText}</div>`
+    );
   }
 
   beforeEach(() => {
+    // Load the HTML fixture
+    const fixture = readFileSync(
+      resolve(__dirname, './fixtures/app.html'),
+      'utf8'
+    );
+    document.documentElement.innerHTML = fixture;
+
     // Mock requestAnimationFrame
     jest
       .spyOn(window, 'requestAnimationFrame')
@@ -92,44 +111,6 @@ describe('Settings Dialog Functionality', () => {
 
     // Reset isFirstLoad
     isFirstLoad = false;
-
-    // Set up our document body
-    document.body.innerHTML = `
-      <div class="timer">
-        <span class="minutes">00</span>:<span class="seconds">00</span>
-      </div>
-      <div class="timer-display">
-        <div class="day-display">Day&nbsp;-</div>
-      </div>
-      <button id="startBtn">Start</button>
-      <button id="resetBtn">Reset</button>
-      <dialog id="settingsDialog" class="settings-dialog">
-        <div class="dialog-content">
-          <h2>Settings</h2>
-          <div class="setting-group">
-            <label>
-              <span>Number of Players</span>
-              <input type="number" id="playerCount" value="10" />
-            </label>
-            <label>
-              <span>Number of Travellers</span>
-              <input type="number" id="travellerCount" value="0" />
-            </label>
-            <label>
-              <span>Game Pace</span>
-              <select id="gamePace">
-                <option value="normal" selected>Normal</option>
-                <option value="relaxed">Relaxed</option>
-                <option value="speedy">Speedy</option>
-              </select>
-            </label>
-          </div>
-          <div class="dialog-buttons">
-            <button id="closeSettings">Save and Close</button>
-          </div>
-        </div>
-      </dialog>
-    `;
 
     // Initialize elements
     settingsDialog = document.getElementById('settingsDialog');
@@ -164,8 +145,28 @@ describe('Settings Dialog Functionality', () => {
 
     // Verify day display shows Day 1 and Normal pace
     const dayDisplay = document.querySelector('.day-display');
-    expect(dayDisplay.innerHTML).toContain('Day&nbsp;1');
-    expect(dayDisplay.innerHTML).toContain('🚶 Normal');
+    const currentDay = document.getElementById('currentDay');
+    expect(currentDay.textContent).toBe('1');
+    expect(dayDisplay.querySelector('.pace-indicator').textContent).toBe(
+      '🚶 Normal'
+    );
+
+    // Verify button states
+    const wakeUpBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const accelerateBtn = document.getElementById('accelerateBtn');
+
+    expect(wakeUpBtn).not.toBeNull();
+    expect(wakeUpBtn.disabled).toBe(false);
+    expect(wakeUpBtn.textContent).toBe('Wake Up');
+
+    expect(resetBtn).not.toBeNull();
+    expect(resetBtn.disabled).toBe(false);
+    expect(resetBtn.textContent).toBe('Reset');
+
+    expect(accelerateBtn).not.toBeNull();
+    expect(accelerateBtn.disabled).toBe(true);
+    expect(accelerateBtn.textContent).toBe('Accelerate Time');
   });
 
   test('settings are saved to localStorage when closing dialog', () => {
@@ -196,8 +197,20 @@ describe('Settings Dialog Functionality', () => {
 
     // Verify day display shows Day 1 and Speedy pace
     const dayDisplay = document.querySelector('.day-display');
-    expect(dayDisplay.innerHTML).toContain('Day&nbsp;1');
-    expect(dayDisplay.innerHTML).toContain('⚡ Speedy');
+    const currentDay = document.getElementById('currentDay');
+    expect(currentDay.textContent).toBe('1');
+    expect(dayDisplay.querySelector('.pace-indicator').textContent).toBe(
+      '⚡ Speedy'
+    );
+
+    // Verify button states remain correct after settings change
+    const wakeUpBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const accelerateBtn = document.getElementById('accelerateBtn');
+
+    expect(wakeUpBtn.disabled).toBe(false);
+    expect(resetBtn.disabled).toBe(false);
+    expect(accelerateBtn.disabled).toBe(true);
   });
 
   test('settings dialog does not show on load when localStorage has values', () => {
@@ -230,7 +243,19 @@ describe('Settings Dialog Functionality', () => {
 
     // Verify day display shows Day 1 and Normal pace
     const dayDisplay = document.querySelector('.day-display');
-    expect(dayDisplay.innerHTML).toContain('Day&nbsp;1');
-    expect(dayDisplay.innerHTML).toContain('🚶 Normal');
+    const currentDay = document.getElementById('currentDay');
+    expect(currentDay.textContent).toBe('1');
+    expect(dayDisplay.querySelector('.pace-indicator').textContent).toBe(
+      '🚶 Normal'
+    );
+
+    // Verify button states are correct with loaded settings
+    const wakeUpBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const accelerateBtn = document.getElementById('accelerateBtn');
+
+    expect(wakeUpBtn.disabled).toBe(false);
+    expect(resetBtn.disabled).toBe(false);
+    expect(accelerateBtn.disabled).toBe(true);
   });
 });

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="container">
+      <div class="timer-display">
+        <div class="day-display">Day&nbsp;<span id="currentDay">-</span></div>
+        <div class="time">
+          <span id="minutes">00</span>:<span id="seconds">00</span>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="action-buttons">
+          <button id="startBtn">Wake Up</button>
+          <button id="resetBtn">Reset</button>
+          <button id="accelerateBtn" disabled>Accelerate Time</button>
+        </div>
+      </div>
+    </div>
+
+    <dialog id="settingsDialog" class="settings-dialog">
+      <div class="dialog-content">
+        <h2>Settings</h2>
+        <div class="setting-group">
+          <label>
+            <span>Number of Players</span>
+            <div class="number-input-group">
+              <input
+                type="number"
+                id="playerCount"
+                min="5"
+                max="15"
+                value="10"
+              />
+            </div>
+          </label>
+          <label>
+            <span>Number of Travellers</span>
+            <div class="number-input-group">
+              <input
+                type="number"
+                id="travellerCount"
+                min="0"
+                max="5"
+                value="0"
+              />
+            </div>
+          </label>
+          <label>
+            <span>Game Pace</span>
+            <div class="number-input-group">
+              <select id="gamePace" class="game-pace-select">
+                <option value="relaxed">Relaxed</option>
+                <option value="normal" selected>Normal</option>
+                <option value="speedy">Speedy</option>
+              </select>
+            </div>
+          </label>
+        </div>
+        <div class="dialog-buttons">
+          <button id="closeSettings">Save and Close</button>
+        </div>
+      </div>
+    </dialog>
+  </body>
+</html>
