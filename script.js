@@ -870,7 +870,12 @@ function initYoutubePlayer() {
         onReady: function (event) {
           event.target.setVolume(20); // Set volume to 20%
           if (playlistId) {
-            event.target.setShuffle(true); // Enable shuffle if it's a playlist
+            // Add a small delay to ensure playlist is loaded
+            setTimeout(() => {
+              event.target.setShuffle(true); // Enable shuffle
+              event.target.nextVideo(); // Queue up next video
+              event.target.pauseVideo(); // But don't start playing
+            }, 1000);
           }
         },
         onStateChange: function (event) {
