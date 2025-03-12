@@ -641,6 +641,7 @@ function closeInfo() {
 function updateGamePace(newPace) {
   currentPace = newPace;
   updateClocktowerPresets();
+  updateDayDisplay();
   saveSettings();
 
   // If timer is running, adjust current time
