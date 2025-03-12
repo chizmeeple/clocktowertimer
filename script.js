@@ -46,7 +46,7 @@ let travellerCount = 0; // Default to 0 travellers
 let isFirstLoad = false;
 let currentDay = null;
 let currentPace = 'normal'; // Default pace
-let playMusic = true; // Default to true for existing users
+let playMusic = false; // Default to false for new users
 let youtubePlaylistUrl =
   'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW'; // Default playlist
 let youtubePlayer = null;
@@ -201,7 +201,7 @@ function loadSettings() {
     travellerCount = settings.travellerCount || 0;
     currentDay = settings.currentDay || null;
     currentPace = settings.currentPace || 'normal';
-    playMusic = settings.playMusic !== undefined ? settings.playMusic : true; // Default to true for existing users
+    playMusic = settings.playMusic !== undefined ? settings.playMusic : false; // Default to false for new users
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl ||
       'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW';
