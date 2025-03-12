@@ -131,6 +131,10 @@ const BUTTON_LABELS = {
   },
 };
 
+// Default YouTube playlist URL
+const DEFAULT_YOUTUBE_PLAYLIST =
+  'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NwkkOAyQAMQkeberU9rwMcc';
+
 // Audio Elements
 let endSound = null;
 let wakeUpSound = null;
@@ -165,8 +169,7 @@ let playMusic = false; // Default to false for new users
 let playSoundEffects = true; // Default to true for sound effects
 let youtubeVolume = 20; // Default volume
 let backgroundTheme = 'medieval-cartoon'; // Default background theme
-let youtubePlaylistUrl =
-  'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NwkkOAyQAMQkeberU9rwMcc'; // Default playlist
+let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let youtubePlayer = null;
 
 // Character amounts mapping
@@ -271,6 +274,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   infoBtn = document.getElementById('infoBtn');
   infoDialog = document.getElementById('infoDialog');
   closeInfoBtn = document.getElementById('closeInfo');
+
+  // Add event listener for "Use original playlist" link
+  document
+    .getElementById('useOriginalPlaylist')
+    .addEventListener('click', (e) => {
+      e.preventDefault();
+      const playlistInput = document.getElementById('youtubePlaylist');
+      playlistInput.value = DEFAULT_YOUTUBE_PLAYLIST;
+      youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST;
+      saveSettings();
+      if (playMusic) {
+        initYoutubePlayer();
+      }
+    });
 
   // Add hold-to-activate for accelerate button
   timerUtils.holdToActivate(
@@ -379,8 +396,7 @@ function loadSettings() {
     youtubeVolume = settings.youtubeVolume || 20;
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
-      settings.youtubePlaylistUrl ||
-      'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NwkkOAyQAMQkeberU9rwMcc';
+      settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
   } else {
     isFirstLoad = true;
   }
@@ -397,6 +413,9 @@ function loadSettings() {
   document.getElementById('youtubeVolume').disabled = !playMusic;
   document.getElementById('backgroundTheme').value = backgroundTheme;
   document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+  document
+    .getElementById('useOriginalPlaylist')
+    .classList.toggle('disabled', !playMusic);
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
@@ -1163,6 +1182,9 @@ function updateMusicPlayback() {
   playMusic = document.getElementById('playMusic').checked;
   document.getElementById('youtubePlaylist').disabled = !playMusic;
   document.getElementById('youtubeVolume').disabled = !playMusic;
+  document
+    .getElementById('useOriginalPlaylist')
+    .classList.toggle('disabled', !playMusic);
 
   if (playMusic) {
     initYoutubePlayer();
