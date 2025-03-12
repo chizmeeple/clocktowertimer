@@ -683,13 +683,19 @@ function startNewGame() {
   saveSettings();
   closeSettings();
 
-  // Only shuffle the playlist without starting playback
+  // Stop any playing video and reshuffle playlist
   if (youtubePlayer) {
     const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
     if (playlistId) {
-      youtubePlayer.setShuffle(true);
-      youtubePlayer.nextVideo(); // Queue up next video
-      youtubePlayer.pauseVideo(); // Ensure it doesn't start playing
+      youtubePlayer.stopVideo(); // Stop current video if playing
+      youtubePlayer.setShuffle(true); // Ensure shuffle is enabled
+      // Load a new random video from the playlist without playing
+      youtubePlayer.cuePlaylist({
+        list: playlistId,
+        listType: 'playlist',
+        index: Math.floor(Math.random() * 50), // Start at random position
+        suggestedQuality: 'small',
+      });
     }
   }
 }
@@ -852,7 +858,6 @@ function initYoutubePlayer() {
     youtubePlayer = new YT.Player(container, {
       height: '135',
       width: '240',
-      videoId: videoId,
       playerVars: {
         autoplay: 0,
         controls: 1,
@@ -861,27 +866,39 @@ function initYoutubePlayer() {
         modestbranding: 1,
         playsinline: 1,
         rel: 0,
-        listType: playlistId ? 'playlist' : undefined,
-        list: playlistId,
         loop: 1,
-        shuffle: 1,
       },
       events: {
         onReady: function (event) {
           event.target.setVolume(20); // Set volume to 20%
           if (playlistId) {
-            // Add a small delay to ensure playlist is loaded
-            setTimeout(() => {
-              event.target.setShuffle(true); // Enable shuffle
-              event.target.nextVideo(); // Queue up next video
-              event.target.pauseVideo(); // But don't start playing
-            }, 1000);
+            // Enable shuffle before loading playlist
+            event.target.setShuffle(true);
+            // Load but don't play the playlist
+            event.target.cuePlaylist({
+              list: playlistId,
+              listType: 'playlist',
+              index: Math.floor(Math.random() * 50), // Start at random position
+              suggestedQuality: 'small',
+            });
+          } else if (videoId) {
+            event.target.cueVideoById(videoId);
           }
         },
         onStateChange: function (event) {
-          // If video ends and it's not a playlist, replay it
-          if (event.data === YT.PlayerState.ENDED && !playlistId) {
-            event.target.playVideo();
+          // When video is cued (ready to play), ensure shuffle is enabled
+          if (event.data === YT.PlayerState.CUED && playlistId) {
+            event.target.setShuffle(true);
+          }
+          // Handle video ending
+          if (event.data === YT.PlayerState.ENDED) {
+            if (playlistId) {
+              // For playlists, let YouTube handle the next video
+              // The shuffle setting will ensure it's random
+            } else {
+              // For single videos, replay
+              event.target.playVideo();
+            }
           }
         },
       },
