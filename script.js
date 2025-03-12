@@ -48,6 +48,60 @@ const timerUtils = {
       activeButton.classList.add('active');
     }
   },
+  holdToActivate: (button, holdDuration, onProgress, onComplete) => {
+    let startTime;
+    let animationFrame;
+    let holdTimer;
+
+    const start = (e) => {
+      // Prevent text selection during hold
+      e.preventDefault();
+      startTime = Date.now();
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / holdDuration, 1);
+
+        if (onProgress) {
+          // Update the width of the ::before pseudo-element
+          button.style.setProperty('--progress-width', `${progress * 100}%`);
+          onProgress(progress);
+        }
+
+        if (progress < 1) {
+          animationFrame = requestAnimationFrame(animate);
+        }
+      };
+
+      animate();
+
+      holdTimer = setTimeout(() => {
+        if (onComplete) {
+          onComplete();
+        }
+      }, holdDuration);
+    };
+
+    const cancel = () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      if (holdTimer) {
+        clearTimeout(holdTimer);
+      }
+      if (onProgress) {
+        button.style.setProperty('--progress-width', '0%');
+        onProgress(0);
+      }
+    };
+
+    button.addEventListener('mousedown', start);
+    button.addEventListener('touchstart', start);
+    button.addEventListener('mouseup', cancel);
+    button.addEventListener('mouseleave', cancel);
+    button.addEventListener('touchend', cancel);
+    button.addEventListener('touchcancel', cancel);
+  },
 };
 
 // Button Labels
@@ -187,6 +241,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   infoDialog = document.getElementById('infoDialog');
   closeInfoBtn = document.getElementById('closeInfo');
 
+  // Add hold-to-activate for accelerate button
+  timerUtils.holdToActivate(
+    accelerateBtn,
+    2000, // 2 seconds hold duration
+    (progress) => {
+      // Progress is now handled by CSS custom property
+    },
+    () => {
+      // Reset button appearance and trigger acceleration
+      accelerateBtn.style.setProperty('--progress-width', '0%');
+      if (!accelerateBtn.disabled) {
+        accelerateTime();
+      }
+    }
+  );
+
+  // Remove the click event listener for accelerate button since we're using hold now
+  accelerateBtn.removeEventListener('click', accelerateTime);
+
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
   resetBtn.addEventListener('click', resetTimer);
@@ -199,7 +272,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   playerCountInput.addEventListener('input', updatePlayerCount);
   travellerCountInput.addEventListener('change', updateTravellerCount);
   travellerCountInput.addEventListener('input', updateTravellerCount);
-  accelerateBtn.addEventListener('click', accelerateTime);
   document
     .getElementById('startNewGame')
     .addEventListener('click', startNewGame);
@@ -514,13 +586,19 @@ function updateDisplay() {
   if (isRunning) {
     startBtn.textContent = BUTTON_LABELS.PAUSE;
     startBtn.disabled = false;
+    // Only enable accelerate button during day timer (not during wake-up countdown)
+    const timerDisplay = document.querySelector('.timer-display');
+    accelerateBtn.disabled =
+      timerDisplay.classList.contains('wake-up-countdown');
   } else if (timeLeft > 0) {
     startBtn.textContent = BUTTON_LABELS.RESUME;
     startBtn.disabled = false;
+    accelerateBtn.disabled = true;
   } else {
     // When timer is complete or not started, show Wake Up
     startBtn.textContent = BUTTON_LABELS.WAKE_UP;
     startBtn.disabled = false;
+    accelerateBtn.disabled = true;
   }
 }
 
@@ -598,7 +676,7 @@ function resetTimer() {
   currentInterval = normalInterval;
   startBtn.disabled = true;
   startBtn.textContent = BUTTON_LABELS.RESUME;
-  accelerateBtn.disabled = false;
+  accelerateBtn.disabled = true;
   wakeUpBtn.disabled = false;
 
   youtubeUtils.stop();
@@ -659,7 +737,6 @@ playerCountInput.addEventListener('change', updatePlayerCount);
 playerCountInput.addEventListener('input', updatePlayerCount);
 travellerCountInput.addEventListener('change', updateTravellerCount);
 travellerCountInput.addEventListener('input', updateTravellerCount);
-accelerateBtn.addEventListener('click', accelerateTime);
 
 // Fullscreen change event listener
 document.addEventListener('fullscreenchange', updateFullscreenButton);
@@ -722,8 +799,9 @@ function playWakeUpSound() {
   // Show dawn state for current day
   updateDayDisplay('dawn');
 
-  // Disable the button during countdown
+  // Disable buttons during countdown
   startBtn.disabled = true;
+  accelerateBtn.disabled = true;
 
   let countdownSeconds = 10;
   timeLeft = countdownSeconds;

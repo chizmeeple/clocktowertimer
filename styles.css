@@ -200,6 +200,22 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.1s linear;
+  --progress-width: 0%;
+}
+
+#accelerateBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--progress-width);
+  height: 100%;
+  background-color: rgba(76, 175, 80, 0.3);
+  transition: width 0.1s linear;
+  z-index: 0;
 }
 
 #accelerateBtn:hover {
@@ -213,6 +229,16 @@ h1 {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+#accelerateBtn:active {
+  transform: scale(0.98);
+}
+
+/* Ensure the text stays on top of the progress bar */
+#accelerateBtn span {
+  position: relative;
+  z-index: 1;
 }
 
 #fullscreenBtn {
