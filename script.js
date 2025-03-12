@@ -24,6 +24,7 @@ const BUTTON_LABELS = {
   WAKE_UP: '🔔 Wake Up!',
   RESET: '↺ Reset',
   ACCELERATE: '⏩ Accelerate Time',
+  START_DAY: (day) => `▶ Start Day ${day}`,
   FULLSCREEN: {
     ENTER:
       '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
@@ -485,12 +486,20 @@ function updateDisplay() {
   const timerDisplay = document.querySelector('.timer-display');
   const isWakeUpCountdown =
     timerDisplay.classList.contains('wake-up-countdown');
-
-  // The button should be enabled if:
-  // 1. No timer is running (isRunning is false)
-  // 2. No wake-up countdown is in progress (isWakeUpCountdown is false)
-  // 3. Timer has reached zero (timeLeft is 0)
   wakeUpBtn.disabled = isRunning || isWakeUpCountdown;
+
+  // Update start button text based on state
+  if (isRunning) {
+    startBtn.textContent = BUTTON_LABELS.PAUSE;
+  } else if (currentDay !== null && timeLeft === 0) {
+    startBtn.textContent = BUTTON_LABELS.START_DAY(currentDay);
+    startBtn.disabled = false;
+  } else if (!isRunning && timeLeft > 0) {
+    startBtn.textContent = BUTTON_LABELS.RESUME;
+  } else {
+    startBtn.textContent = BUTTON_LABELS.RESUME;
+    startBtn.disabled = true;
+  }
 }
 
 // Acceleration functionality
@@ -544,9 +553,19 @@ function startTimer() {
     if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
       youtubePlayer.pauseVideo();
     }
-    startBtn.textContent = BUTTON_LABELS.RESUME;
-    updateDisplay(); // Update display to re-enable Wake Up button if appropriate
+    updateDisplay(); // This will now set the appropriate button text
     return;
+  }
+
+  // If we're starting a new day, find and click the corresponding preset button
+  if (currentDay !== null && timeLeft === 0) {
+    const dayPreset = document.querySelector(
+      `.clocktower-btn[data-day="${currentDay}"]`
+    );
+    if (dayPreset) {
+      dayPreset.click();
+      return;
+    }
   }
 
   // Start timer
@@ -556,9 +575,8 @@ function startTimer() {
   }
 
   isRunning = true;
-  startBtn.textContent = BUTTON_LABELS.PAUSE;
   accelerateBtn.disabled = false; // Re-enable accelerate button
-  updateDisplay(); // Update display to disable Wake Up button
+  updateDisplay(); // This will now set the appropriate button text
 
   // Start YouTube player if music is enabled
   if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
@@ -573,8 +591,6 @@ function startTimer() {
       clearInterval(timerId);
       playEndSound();
       isRunning = false;
-      startBtn.disabled = true;
-      startBtn.textContent = BUTTON_LABELS.RESUME;
       // Stop YouTube player when timer ends
       if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
         youtubePlayer.pauseVideo();
