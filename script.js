@@ -830,13 +830,19 @@ function initYoutubePlayer() {
       playerVars: {
         autoplay: 0,
         controls: 1,
+        disablekb: 1,
+        fs: 0,
         modestbranding: 1,
         playsinline: 1,
         rel: 0,
       },
       events: {
-        onReady: onPlayerReady,
-        onStateChange: onPlayerStateChange,
+        onReady: function (event) {
+          event.target.setVolume(20); // Set volume to 20%
+        },
+        onStateChange: function (event) {
+          // Handle state changes if needed
+        },
       },
     });
   };
