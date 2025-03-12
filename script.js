@@ -282,6 +282,11 @@ function updateClocktowerPresets() {
       startBtn.disabled = false;
       accelerateBtn.disabled = false;
 
+      // Start YouTube player
+      if (youtubePlayer && youtubePlayer.playVideo) {
+        youtubePlayer.playVideo();
+      }
+
       timerId = setInterval(() => {
         timeLeft--;
         updateDisplay();
@@ -291,6 +296,10 @@ function updateClocktowerPresets() {
           playEndSound();
           isRunning = false;
           startBtn.disabled = true;
+          // Stop YouTube player when timer ends
+          if (youtubePlayer && youtubePlayer.pauseVideo) {
+            youtubePlayer.pauseVideo();
+          }
           if (currentDay !== null) {
             updateDayDisplay('dusk');
           }
@@ -420,7 +429,12 @@ function accelerateTime() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
+      startBtn.textContent = 'Start';
       currentInterval = normalInterval;
+      // Stop YouTube player when accelerated time ends
+      if (youtubePlayer && youtubePlayer.pauseVideo) {
+        youtubePlayer.pauseVideo();
+      }
       if (currentDay !== null) {
         updateDayDisplay('dusk');
       }
@@ -440,6 +454,7 @@ function startTimer() {
     if (youtubePlayer && youtubePlayer.pauseVideo) {
       youtubePlayer.pauseVideo();
     }
+    startBtn.textContent = 'Start';
     return;
   }
 
@@ -450,6 +465,7 @@ function startTimer() {
   }
 
   isRunning = true;
+  startBtn.textContent = 'Pause';
   accelerateBtn.disabled = false; // Re-enable accelerate button
 
   // Start YouTube player
@@ -466,6 +482,8 @@ function startTimer() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
+      startBtn.textContent = 'Start';
+      // Stop YouTube player when timer ends
       if (youtubePlayer && youtubePlayer.pauseVideo) {
         youtubePlayer.pauseVideo();
       }
@@ -487,6 +505,7 @@ function resetTimer() {
   isRunning = false;
   currentInterval = normalInterval;
   startBtn.disabled = true;
+  startBtn.textContent = 'Start';
   accelerateBtn.disabled = false;
   updateDisplay();
 
