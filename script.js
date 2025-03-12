@@ -1137,7 +1137,7 @@ function createYoutubePlayer() {
             event.target.cuePlaylist({
               list: playlistId,
               listType: 'playlist',
-              index: 0,
+              index: Math.floor(Math.random() * 50),
               suggestedQuality: 'small',
             });
           } else if (videoId) {
