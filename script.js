@@ -435,11 +435,6 @@ function loadSettings() {
   document.getElementById('travellerAmount').textContent = travellerCount;
   updateClocktowerPresets();
 
-  // Show settings dialog on first load
-  if (isFirstLoad) {
-    settingsDialog.showModal();
-  }
-
   // Initialize YouTube player only if music is enabled
   if (playMusic) {
     initYoutubePlayer();
@@ -452,6 +447,13 @@ function loadSettings() {
       existingContainer.remove();
     }
     youtubePlayer = null;
+  }
+
+  // Show settings dialog on first load after a short delay to ensure content is ready
+  if (isFirstLoad) {
+    requestAnimationFrame(() => {
+      settingsDialog.showModal();
+    });
   }
 }
 

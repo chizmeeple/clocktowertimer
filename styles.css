@@ -410,20 +410,22 @@ h1 {
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  min-height: 400px;
 }
 
 .settings-dialog[open] {
-  animation: dialog-fade-in 0.3s ease-out;
-}
-
-.settings-dialog::backdrop {
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(3px);
+  opacity: 1;
+  animation: none;
 }
 
 .dialog-content {
   padding: 1rem;
   overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .dialog-content h2 {
@@ -441,6 +443,7 @@ h1 {
   padding: 0.5rem;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
+  min-height: 50px;
 }
 
 .setting-group label {
@@ -636,17 +639,6 @@ h1 {
 
 #closeSettings:hover {
   background-color: #555;
-}
-
-@keyframes dialog-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .clocktower-settings {
