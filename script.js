@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   minutesDisplay = document.getElementById('minutes');
   secondsDisplay = document.getElementById('seconds');
   startBtn = document.getElementById('startBtn');
+  startBtn.textContent = '▶ Resume';
   resetBtn = document.getElementById('resetBtn');
   fullscreenBtn = document.getElementById('fullscreenBtn');
   settingsBtn = document.getElementById('settingsBtn');
@@ -334,6 +335,7 @@ function updateClocktowerPresets() {
       // Start the timer
       isRunning = true;
       startBtn.disabled = false;
+      startBtn.textContent = '⏸ Pause';
       accelerateBtn.disabled = false;
 
       // Start YouTube player
@@ -350,6 +352,7 @@ function updateClocktowerPresets() {
           playEndSound();
           isRunning = false;
           startBtn.disabled = true;
+          startBtn.textContent = '▶ Resume';
           // Stop YouTube player when timer ends
           if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
             youtubePlayer.pauseVideo();
@@ -498,7 +501,7 @@ function accelerateTime() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
-      startBtn.textContent = 'Start';
+      startBtn.textContent = '▶ Resume';
       currentInterval = normalInterval;
       // Stop YouTube player when accelerated time ends
       if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
@@ -524,7 +527,7 @@ function startTimer() {
     if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
       youtubePlayer.pauseVideo();
     }
-    startBtn.textContent = 'Start';
+    startBtn.textContent = '▶ Resume';
     updateDisplay(); // Update display to re-enable Wake Up button if appropriate
     return;
   }
@@ -536,7 +539,7 @@ function startTimer() {
   }
 
   isRunning = true;
-  startBtn.textContent = 'Pause';
+  startBtn.textContent = '⏸ Pause';
   accelerateBtn.disabled = false; // Re-enable accelerate button
   updateDisplay(); // Update display to disable Wake Up button
 
@@ -554,7 +557,7 @@ function startTimer() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
-      startBtn.textContent = 'Start';
+      startBtn.textContent = '▶ Resume';
       // Stop YouTube player when timer ends
       if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
         youtubePlayer.pauseVideo();
@@ -578,7 +581,7 @@ function resetTimer() {
   isRunning = false;
   currentInterval = normalInterval;
   startBtn.disabled = true;
-  startBtn.textContent = 'Start';
+  startBtn.textContent = '▶ Resume';
   accelerateBtn.disabled = false;
   wakeUpBtn.disabled = false;
   updateDisplay();
