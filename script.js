@@ -47,6 +47,7 @@ let isFirstLoad = false;
 let currentDay = null;
 let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
+let youtubeVolume = 20; // Default volume
 let youtubePlaylistUrl =
   'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW'; // Default playlist
 let youtubePlayer = null;
@@ -161,6 +162,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('youtubePlaylist')
     .addEventListener('change', updateYoutubePlaylist);
+  document
+    .getElementById('youtubeVolume')
+    .addEventListener('input', updateYoutubeVolume);
+
+  // Add keyboard shortcut for settings
+  document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'q' && !settingsDialog.open) {
+      openSettings();
+    }
+  });
 
   // Add click handlers for preset buttons
   minuteButtons.forEach((btn) => {
@@ -201,7 +212,8 @@ function loadSettings() {
     travellerCount = settings.travellerCount || 0;
     currentDay = settings.currentDay || null;
     currentPace = settings.currentPace || 'normal';
-    playMusic = settings.playMusic !== undefined ? settings.playMusic : false; // Default to false for new users
+    playMusic = settings.playMusic !== undefined ? settings.playMusic : false;
+    youtubeVolume = settings.youtubeVolume || 20;
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl ||
       'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NyI0K6z2MtM4NnBzTxjEdTW';
@@ -216,6 +228,9 @@ function loadSettings() {
   document.getElementById('playMusic').checked = playMusic;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
   document.getElementById('youtubePlaylist').disabled = !playMusic;
+  document.getElementById('youtubeVolume').value = youtubeVolume;
+  document.getElementById('youtubeVolume').disabled = !playMusic;
+  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
@@ -254,6 +269,7 @@ function saveSettings() {
     currentDay,
     currentPace,
     playMusic,
+    youtubeVolume,
     youtubePlaylistUrl,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
@@ -596,22 +612,6 @@ travellerCountInput.addEventListener('change', updateTravellerCount);
 travellerCountInput.addEventListener('input', updateTravellerCount);
 accelerateBtn.addEventListener('click', accelerateTime);
 
-// Add keyboard shortcut for settings
-document.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'q' && !settingsDialog.open) {
-    openSettings();
-  }
-});
-
-// Add click handlers for preset buttons
-minuteButtons.forEach((btn) => {
-  btn.addEventListener('click', handleMinuteClick);
-});
-
-secondButtons.forEach((btn) => {
-  btn.addEventListener('click', handleSecondClick);
-});
-
 // Fullscreen change event listener
 document.addEventListener('fullscreenchange', updateFullscreenButton);
 
@@ -889,7 +889,7 @@ function initYoutubePlayer() {
       },
       events: {
         onReady: function (event) {
-          event.target.setVolume(20); // Set volume to 20%
+          event.target.setVolume(youtubeVolume); // Use saved volume setting
           if (playlistId) {
             // Enable shuffle before loading playlist
             event.target.setShuffle(true);
@@ -947,6 +947,7 @@ function updateYoutubePlaylist() {
 function updateMusicPlayback() {
   playMusic = document.getElementById('playMusic').checked;
   document.getElementById('youtubePlaylist').disabled = !playMusic;
+  document.getElementById('youtubeVolume').disabled = !playMusic;
 
   if (playMusic) {
     initYoutubePlayer();
@@ -960,6 +961,16 @@ function updateMusicPlayback() {
       }
       youtubePlayer = null;
     }
+  }
+  saveSettings();
+}
+
+// Update YouTube volume
+function updateYoutubeVolume() {
+  youtubeVolume = parseInt(document.getElementById('youtubeVolume').value);
+  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+  if (youtubePlayer && youtubePlayer.setVolume) {
+    youtubePlayer.setVolume(youtubeVolume);
   }
   saveSettings();
 }

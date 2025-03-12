@@ -828,6 +828,59 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   color: white;
 }
 
+.volume-slider {
+  width: 100%;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #2c3e2c;
+  border-radius: 4px;
+  outline: none;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.volume-slider:hover {
+  opacity: 1;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4caf50;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #4caf50;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.volume-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.volume-slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+
+.volume-slider:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+}
+
+.volume-value {
+  margin-left: 1rem;
+  min-width: 3rem;
+  text-align: right;
+}
+
 .youtube-player-container {
   position: fixed;
   bottom: 4.5rem;
