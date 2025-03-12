@@ -742,3 +742,13 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 .disclaimer a:hover {
   text-decoration: underline;
 }
+
+.kofi-container {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.kofi-container iframe {
+  border: 0;
+  margin: 0 auto;
+}
