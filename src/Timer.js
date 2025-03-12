@@ -11,8 +11,14 @@ export class Timer {
   }
 
   setTime(minutes, seconds) {
-    this.minutes = parseInt(minutes) || 0;
-    this.seconds = parseInt(seconds) || 0;
+    const parsedMinutes = parseInt(minutes);
+    const parsedSeconds = parseInt(seconds);
+
+    this.minutes =
+      !isNaN(parsedMinutes) && parsedMinutes >= 0 ? parsedMinutes : 0;
+    this.seconds =
+      !isNaN(parsedSeconds) && parsedSeconds >= 0 ? parsedSeconds : 0;
+
     this.updateDisplay();
   }
 
