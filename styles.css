@@ -695,30 +695,50 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 }
 
 .qr-code-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 2rem 0;
-  padding: 1rem;
   background: white;
+  padding: 1rem;
   border-radius: 8px;
+  margin: 1rem auto;
+  text-align: center;
+  max-width: 300px;
 }
 
 .qr-code-container img {
   max-width: 200px;
   height: auto;
+  margin-bottom: 0.5rem;
 }
 
 .website-link {
-  text-align: center;
-  margin: 1rem 0;
+  margin: 0;
+  word-break: break-all;
 }
 
 .website-link a {
+  color: #1a2b1a;
+  text-decoration: none;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.website-link a:hover {
+  text-decoration: underline;
+}
+
+.disclaimer {
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  padding: 0 1rem;
+}
+
+.disclaimer a {
   color: #4caf50;
   text-decoration: none;
 }
 
-.website-link a:hover {
+.disclaimer a:hover {
   text-decoration: underline;
 }
