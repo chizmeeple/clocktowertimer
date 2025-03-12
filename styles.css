@@ -752,3 +752,31 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   border: 0;
   margin: 0 auto;
 }
+
+.game-pace-select {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  background-color: #2c3e2c;
+  color: white;
+  cursor: pointer;
+}
+
+.game-pace-select:hover {
+  background-color: #3c513c;
+}
+
+.game-pace-select:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.game-pace-display {
+  font-size: 1rem;
+  color: #ffd700;
+  text-align: center;
+  margin-top: 0.25rem;
+}

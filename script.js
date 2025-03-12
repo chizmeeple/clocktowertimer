@@ -70,36 +70,6 @@ function roundToNearestQuarter(n) {
   return Math.round(n * 4) / 4;
 }
 
-// Function to generate day presets
-function generateDayPresets(playerCount) {
-  const { totalNumbers, dayStartValue, dayEndValue } =
-    calcTimerStartEndValues(playerCount);
-  const numberOfDays = Math.floor(totalNumbers);
-  const presets = [];
-
-  for (let day = 1; day <= numberOfDays; day++) {
-    // Linear interpolation between start and end values
-    const progress = (day - 1) / (numberOfDays - 1);
-    const minutes = roundToNearestQuarter(
-      dayStartValue - progress * (dayStartValue - dayEndValue)
-    );
-
-    // Convert to MM:SS format
-    const wholeMinutes = Math.floor(minutes);
-    const seconds = Math.round((minutes % 1) * 60);
-    presets.push({
-      minutes: wholeMinutes,
-      seconds: seconds,
-      display: `${String(wholeMinutes).padStart(2, '0')}:${String(
-        seconds
-      ).padStart(2, '0')}`,
-      day: day,
-    });
-  }
-
-  return presets;
-}
-
 // Timer state
 let timeLeft = 0;
 let timerId = null;
@@ -110,11 +80,19 @@ let normalInterval = 1000; // Normal 1 second interval
 let currentInterval = normalInterval;
 let wakeUpTimeout = null;
 
+// Game pace multipliers
+const PACE_MULTIPLIERS = {
+  normal: 1,
+  speedy: 0.75,
+  lightning: 0.5,
+};
+
 // Settings state
 let playerCount = 10; // Default to 10 players
 let travellerCount = 0; // Default to 0 travellers
 let isFirstLoad = false;
 let currentDay = null;
+let currentPace = 'normal'; // Default pace
 
 // Character amounts mapping
 const characterAmounts = {
@@ -139,6 +117,7 @@ function loadSettings() {
     playerCount = settings.playerCount || 10;
     travellerCount = settings.travellerCount || 0;
     currentDay = settings.currentDay || null;
+    currentPace = settings.currentPace || 'normal';
   } else {
     isFirstLoad = true;
   }
@@ -146,6 +125,7 @@ function loadSettings() {
   // Always update UI to reflect settings
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
+  document.getElementById('gamePace').value = currentPace;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
@@ -168,6 +148,7 @@ function saveSettings() {
     playerCount,
     travellerCount,
     currentDay,
+    currentPace,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
@@ -603,31 +584,29 @@ function startNewGame() {
   closeSettings();
 }
 
+// Update day display
 function updateDayDisplay(state = '') {
-  const dayDisplay = document.querySelector('.day-display');
-  const daySpan = document.getElementById('currentDay');
+  const dayInfo = document.querySelector('.day-display');
+  if (!dayInfo) return;
 
-  // Set currentDay to 1 if it's null or undefined
-  if (currentDay === null || currentDay === undefined) {
-    currentDay = 1;
-    saveSettings();
+  // Remove existing state classes
+  dayInfo.classList.remove('dawn', 'dusk');
+
+  if (currentDay === null) {
+    dayInfo.innerHTML = 'Day&nbsp;-';
+    return;
   }
 
-  daySpan.textContent = currentDay;
+  const paceText = currentPace.charAt(0).toUpperCase() + currentPace.slice(1);
 
-  // Remove any existing state classes
-  dayDisplay.classList.remove('dawn', 'dusk');
-
-  // Update the text and state based on the current state
   if (state === 'dawn') {
-    dayDisplay.classList.add('dawn');
-    dayDisplay.firstChild.textContent = 'Dawn of Day\u00A0';
+    dayInfo.classList.add('dawn');
+    dayInfo.innerHTML = `Dawn of Day&nbsp;${currentDay}<br>${paceText}`;
   } else if (state === 'dusk') {
-    dayDisplay.classList.add('dusk');
-    dayDisplay.firstChild.textContent = 'Day\u00A0';
-    daySpan.textContent = currentDay + ', Dusk';
+    dayInfo.classList.add('dusk');
+    dayInfo.innerHTML = `Day&nbsp;${currentDay}, Dusk<br>${paceText}`;
   } else {
-    dayDisplay.firstChild.textContent = 'Day\u00A0';
+    dayInfo.innerHTML = `Day&nbsp;${currentDay}<br>${paceText}`;
   }
 
   // Update preset button highlighting
@@ -657,3 +636,56 @@ function openInfo() {
 function closeInfo() {
   infoDialog.close();
 }
+
+// Update game pace
+function updateGamePace(newPace) {
+  currentPace = newPace;
+  updateClocktowerPresets();
+  saveSettings();
+
+  // If timer is running, adjust current time
+  if (isRunning && timeLeft > 0) {
+    const oldTimeLeft = timeLeft;
+    const multiplier =
+      PACE_MULTIPLIERS[newPace] / PACE_MULTIPLIERS[currentPace];
+    timeLeft = Math.round(oldTimeLeft * multiplier);
+    updateDisplay();
+  }
+}
+
+// Function to generate day presets with pace adjustment
+function generateDayPresets(playerCount) {
+  const { totalNumbers, dayStartValue, dayEndValue } =
+    calcTimerStartEndValues(playerCount);
+  const numberOfDays = Math.floor(totalNumbers);
+  const presets = [];
+  const paceMultiplier = PACE_MULTIPLIERS[currentPace];
+
+  for (let day = 1; day <= numberOfDays; day++) {
+    // Linear interpolation between start and end values
+    const progress = (day - 1) / (numberOfDays - 1);
+    const minutes = roundToNearestQuarter(
+      (dayStartValue - progress * (dayStartValue - dayEndValue)) *
+        paceMultiplier
+    );
+
+    // Convert to MM:SS format
+    const wholeMinutes = Math.floor(minutes);
+    const seconds = Math.round((minutes % 1) * 60);
+    presets.push({
+      minutes: wholeMinutes,
+      seconds: seconds,
+      display: `${String(wholeMinutes).padStart(2, '0')}:${String(
+        seconds
+      ).padStart(2, '0')}`,
+      day: day,
+    });
+  }
+
+  return presets;
+}
+
+// Add event listener for game pace changes
+document.getElementById('gamePace').addEventListener('change', (e) => {
+  updateGamePace(e.target.value);
+});
