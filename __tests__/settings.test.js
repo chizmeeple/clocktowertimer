@@ -47,6 +47,25 @@ describe('Settings Dialog Functionality', () => {
     settingsDialog.close();
   }
 
+  function updateDayDisplay(state = '') {
+    const dayInfo = document.querySelector('.day-display');
+    if (!dayInfo) return;
+
+    // Remove existing state classes
+    dayInfo.classList.remove('dawn', 'dusk');
+
+    const paceEmojis = {
+      relaxed: '🐢',
+      normal: '🚶',
+      speedy: '⚡',
+    };
+    const currentPace = document.getElementById('gamePace').value;
+    const paceEmoji = paceEmojis[currentPace];
+    const paceText = currentPace.charAt(0).toUpperCase() + currentPace.slice(1);
+
+    dayInfo.innerHTML = `Day&nbsp;1<div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+  }
+
   beforeEach(() => {
     // Mock requestAnimationFrame
     jest
@@ -79,6 +98,9 @@ describe('Settings Dialog Functionality', () => {
       <div class="timer">
         <span class="minutes">00</span>:<span class="seconds">00</span>
       </div>
+      <div class="timer-display">
+        <div class="day-display">Day&nbsp;-</div>
+      </div>
       <button id="startBtn">Start</button>
       <button id="resetBtn">Reset</button>
       <dialog id="settingsDialog" class="settings-dialog">
@@ -96,7 +118,7 @@ describe('Settings Dialog Functionality', () => {
             <label>
               <span>Game Pace</span>
               <select id="gamePace">
-                <option value="normal">Normal</option>
+                <option value="normal" selected>Normal</option>
                 <option value="relaxed">Relaxed</option>
                 <option value="speedy">Speedy</option>
               </select>
@@ -126,6 +148,7 @@ describe('Settings Dialog Functionality', () => {
 
     // Load settings
     loadSettings();
+    updateDayDisplay();
   });
 
   afterEach(() => {
@@ -138,6 +161,11 @@ describe('Settings Dialog Functionality', () => {
     // The dialog should be shown
     expect(settingsDialog.hasAttribute('open')).toBe(true);
     expect(settingsDialog.showModal).toHaveBeenCalled();
+
+    // Verify day display shows Day 1 and Normal pace
+    const dayDisplay = document.querySelector('.day-display');
+    expect(dayDisplay.innerHTML).toContain('Day&nbsp;1');
+    expect(dayDisplay.innerHTML).toContain('🚶 Normal');
   });
 
   test('settings are saved to localStorage when closing dialog', () => {
@@ -149,6 +177,7 @@ describe('Settings Dialog Functionality', () => {
     playerCount.value = '8';
     travellerCount.value = '2';
     gamePace.value = 'speedy';
+    updateDayDisplay();
 
     // Close the dialog which should trigger save
     closeSettingsBtn.click();
@@ -164,6 +193,11 @@ describe('Settings Dialog Functionality', () => {
     });
     expect(settingsDialog.close).toHaveBeenCalled();
     expect(settingsDialog.hasAttribute('open')).toBe(false);
+
+    // Verify day display shows Day 1 and Speedy pace
+    const dayDisplay = document.querySelector('.day-display');
+    expect(dayDisplay.innerHTML).toContain('Day&nbsp;1');
+    expect(dayDisplay.innerHTML).toContain('⚡ Speedy');
   });
 
   test('settings dialog does not show on load when localStorage has values', () => {
@@ -183,6 +217,7 @@ describe('Settings Dialog Functionality', () => {
 
     // Load settings again
     loadSettings();
+    updateDayDisplay();
 
     // The dialog should not be shown
     expect(settingsDialog.hasAttribute('open')).toBe(false);
@@ -192,5 +227,10 @@ describe('Settings Dialog Functionality', () => {
     expect(document.getElementById('playerCount').value).toBe('8');
     expect(document.getElementById('travellerCount').value).toBe('0');
     expect(document.getElementById('gamePace').value).toBe('normal');
+
+    // Verify day display shows Day 1 and Normal pace
+    const dayDisplay = document.querySelector('.day-display');
+    expect(dayDisplay.innerHTML).toContain('Day&nbsp;1');
+    expect(dayDisplay.innerHTML).toContain('🚶 Normal');
   });
 });
