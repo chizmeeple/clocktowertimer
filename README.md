@@ -3,6 +3,8 @@
 A simple, elegant countdown timer with a clean interface. Perfect for timing breaks,
 presentations, or any timed activity.
 
+![Screen grab of app](images/readme/screen-grab.png)
+
 ## Features
 
 - Large, easy-to-read display
