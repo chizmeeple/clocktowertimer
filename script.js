@@ -134,6 +134,9 @@ const BUTTON_LABELS = {
 const DEFAULT_YOUTUBE_PLAYLIST =
   'https://www.youtube.com/watch?v=TInSYXP9ZB8&list=PLhCDyBm6z1NwkkOAyQAMQkeberU9rwMcc';
 
+const ATMOSPHERIC_PLAYLIST =
+  'https://www.youtube.com/watch?v=1oCIZjPxthY&list=PLhCDyBm6z1NyrifTlGYj55uPb6xrlgBih';
+
 // Audio Elements
 let endSound = null;
 let wakeUpSound = null;
@@ -283,12 +286,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Add event listener for "Use original playlist" link
   document
-    .getElementById('useOriginalPlaylist')
+    .getElementById('useBardcorePlaylist')
     .addEventListener('click', (e) => {
       e.preventDefault();
       const playlistInput = document.getElementById('youtubePlaylist');
       playlistInput.value = DEFAULT_YOUTUBE_PLAYLIST;
       youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST;
+      saveSettings();
+      if (playMusic) {
+        initYoutubePlayer();
+      }
+    });
+
+  document
+    .getElementById('useAtmosphericPlaylist')
+    .addEventListener('click', (e) => {
+      e.preventDefault();
+      const playlistInput = document.getElementById('youtubePlaylist');
+      playlistInput.value = ATMOSPHERIC_PLAYLIST;
+      youtubePlaylistUrl = ATMOSPHERIC_PLAYLIST;
       saveSettings();
       if (playMusic) {
         initYoutubePlayer();
@@ -421,7 +437,10 @@ function loadSettings() {
   document.getElementById('backgroundTheme').value = backgroundTheme;
   document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
   document
-    .getElementById('useOriginalPlaylist')
+    .getElementById('useBardcorePlaylist')
+    .classList.toggle('disabled', !playMusic);
+  document
+    .getElementById('useAtmosphericPlaylist')
     .classList.toggle('disabled', !playMusic);
   document
     .getElementById('travellerDisplay')
@@ -1285,7 +1304,10 @@ function updateMusicPlayback() {
   document.getElementById('youtubePlaylist').disabled = !playMusic;
   document.getElementById('youtubeVolume').disabled = !playMusic;
   document
-    .getElementById('useOriginalPlaylist')
+    .getElementById('useBardcorePlaylist')
+    .classList.toggle('disabled', !playMusic);
+  document
+    .getElementById('useAtmosphericPlaylist')
     .classList.toggle('disabled', !playMusic);
 
   if (playMusic) {

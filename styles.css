@@ -1074,3 +1074,31 @@ button:disabled {
   color: #666;
   pointer-events: none;
 }
+
+.playlist-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+  padding-right: 0.5rem;
+}
+
+.playlist-link {
+  font-size: 0.8rem;
+  color: #4caf50;
+  text-decoration: none;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.playlist-link:hover {
+  color: #81c784;
+  text-decoration: underline;
+}
+
+.playlist-link.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  color: #666;
+  pointer-events: none;
+}
