@@ -150,6 +150,7 @@ let selectedMinutes = 0;
 let normalInterval = 1000; // Normal 1 second interval
 let currentInterval = normalInterval;
 let wakeUpTimeout = null;
+let isEndSoundPlaying = false; // New state variable
 
 // Game pace multipliers
 const PACE_MULTIPLIERS = {
@@ -610,12 +611,27 @@ function updateFullscreenButton() {
 function playEndSound() {
   if (!playSoundEffects) return;
 
+  isEndSoundPlaying = true;
+  startBtn.disabled = true;
+
   endSound.currentTime = 0; // Reset the sound to start
   endSound.play().catch((error) => {
     console.log('Error playing sound:', error);
     // Fallback to beep if sound file fails
     createBeep();
+    isEndSoundPlaying = false;
+    updateDisplay();
   });
+
+  // Enable the button after the sound finishes
+  endSound.addEventListener(
+    'ended',
+    () => {
+      isEndSoundPlaying = false;
+      updateDisplay();
+    },
+    { once: true }
+  ); // Use once: true to automatically remove the listener after it fires
 }
 
 // Create beep sound (fallback if mp3 fails to load)
@@ -667,7 +683,7 @@ function updateDisplay() {
     accelerateBtn.disabled = true;
   } else {
     startBtn.textContent = BUTTON_LABELS.WAKE_UP;
-    startBtn.disabled = false;
+    startBtn.disabled = isEndSoundPlaying; // Disable during end sound
     accelerateBtn.disabled = true;
   }
 }
