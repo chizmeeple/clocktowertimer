@@ -673,18 +673,22 @@ function updateDisplay() {
     startBtn.textContent = BUTTON_LABELS.WAKE_UP;
     startBtn.disabled = true;
     accelerateBtn.disabled = true;
+    resetBtn.disabled = true; // Disable reset during wake-up countdown
   } else if (isRunning) {
     startBtn.textContent = BUTTON_LABELS.PAUSE;
     startBtn.disabled = false;
     accelerateBtn.disabled = false;
+    resetBtn.disabled = false; // Enable reset while running
   } else if (timeLeft > 0) {
     startBtn.textContent = BUTTON_LABELS.RESUME;
     startBtn.disabled = false;
     accelerateBtn.disabled = true;
+    resetBtn.disabled = false; // Enable reset when paused with time remaining
   } else {
     startBtn.textContent = BUTTON_LABELS.WAKE_UP;
     startBtn.disabled = isEndSoundPlaying; // Disable during end sound
     accelerateBtn.disabled = true;
+    resetBtn.disabled = true; // Disable reset when timer is at 0
   }
 }
 
@@ -763,6 +767,7 @@ function resetTimer() {
   startBtn.disabled = true;
   startBtn.textContent = BUTTON_LABELS.RESUME;
   accelerateBtn.disabled = true;
+  resetBtn.disabled = true; // Disable reset button after resetting
 
   youtubeUtils.stop();
 
