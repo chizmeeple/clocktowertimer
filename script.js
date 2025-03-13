@@ -436,6 +436,25 @@ function loadSettings() {
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
+
+    // Restore day state if it exists
+    const dayState = settings.dayState || '';
+    updateDayDisplay(dayState);
+
+    // Set correct button states based on day state
+    if (dayState === 'dusk') {
+      timeLeft = 0;
+      isRunning = false;
+      startBtn.disabled = false;
+      startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+      accelerateBtn.disabled = true;
+      resetBtn.disabled = true;
+    } else {
+      startBtn.disabled = true;
+      startBtn.textContent = BUTTON_LABELS.RESUME;
+      accelerateBtn.disabled = true;
+      resetBtn.disabled = true;
+    }
   } else {
     isFirstLoad = true;
     currentDay = 1; // Set to Day 1 on first load
@@ -462,7 +481,6 @@ function loadSettings() {
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
-  updateDayDisplay();
   updateYoutubeLink();
 
   // Apply background theme
@@ -513,6 +531,13 @@ function loadSettings() {
 
 // Save settings to localStorage
 function saveSettings() {
+  const dayInfo = document.querySelector('.day-display');
+  const dayState = dayInfo.classList.contains('dusk')
+    ? 'dusk'
+    : dayInfo.classList.contains('dawn')
+    ? 'dawn'
+    : '';
+
   const settings = {
     playerCount,
     travellerCount,
@@ -523,6 +548,7 @@ function saveSettings() {
     youtubeVolume,
     youtubePlaylistUrl,
     backgroundTheme,
+    dayState,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
@@ -1033,6 +1059,11 @@ function updateDayDisplay(state = '') {
   } else if (state === 'dusk') {
     dayInfo.classList.add('dusk');
     dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+    // Ensure button states are correct for dusk
+    startBtn.disabled = false;
+    startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+    accelerateBtn.disabled = true;
+    resetBtn.disabled = true;
   } else {
     dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   }
@@ -1044,6 +1075,9 @@ function updateDayDisplay(state = '') {
       parseInt(btn.dataset.day) === currentDay
     );
   });
+
+  // Save the current state
+  saveSettings();
 }
 
 // Generate QR code for the website
