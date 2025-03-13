@@ -648,20 +648,24 @@ function updateDisplay() {
   minutesDisplay.textContent = minutes.toString().padStart(2, '0');
   secondsDisplay.textContent = seconds.toString().padStart(2, '0');
 
+  const timerDisplay = document.querySelector('.timer-display');
+  const isWakeUpCountdown =
+    timerDisplay.classList.contains('wake-up-countdown');
+
   // Handle the combined button states
-  if (isRunning) {
+  if (isWakeUpCountdown) {
+    startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+    startBtn.disabled = true;
+    accelerateBtn.disabled = true;
+  } else if (isRunning) {
     startBtn.textContent = BUTTON_LABELS.PAUSE;
     startBtn.disabled = false;
-    // Only enable accelerate button during day timer (not during wake-up countdown)
-    const timerDisplay = document.querySelector('.timer-display');
-    accelerateBtn.disabled =
-      timerDisplay.classList.contains('wake-up-countdown');
+    accelerateBtn.disabled = false;
   } else if (timeLeft > 0) {
     startBtn.textContent = BUTTON_LABELS.RESUME;
     startBtn.disabled = false;
     accelerateBtn.disabled = true;
   } else {
-    // When timer is complete or not started, show Wake Up
     startBtn.textContent = BUTTON_LABELS.WAKE_UP;
     startBtn.disabled = false;
     accelerateBtn.disabled = true;
@@ -844,8 +848,9 @@ function playWakeUpSound() {
   // Show dawn state for current day
   updateDayDisplay('dawn');
 
-  // Disable buttons during countdown
+  // Keep Wake Up label but disable the button during countdown
   startBtn.disabled = true;
+  startBtn.textContent = BUTTON_LABELS.WAKE_UP;
   accelerateBtn.disabled = true;
 
   let countdownSeconds = 10;
