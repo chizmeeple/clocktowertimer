@@ -739,6 +739,16 @@ h1 {
   letter-spacing: 0.05em;
 }
 
+.day-display.dusk::before {
+  content: 'DUSK';
+  background: #654321;
+}
+
+.day-display.dawn::before {
+  content: 'DAWN';
+  background: #b87d3b;
+}
+
 .day-display span {
   color: #2c3e2c;
   padding: 0.35rem 0;
@@ -762,14 +772,6 @@ h1 {
   background: #f5f1e6;
 }
 
-.day-display.dawn::before {
-  background: #b87d3b;
-}
-
-.day-display.dawn span {
-  color: #2c3e2c;
-}
-
 .day-display.dawn .pace-indicator {
   background: rgba(184, 125, 59, 0.2);
   color: #2c3e2c;
@@ -777,14 +779,6 @@ h1 {
 
 .day-display.dusk {
   background: #f5f1e6;
-}
-
-.day-display.dusk::before {
-  background: #654321;
-}
-
-.day-display.dusk span {
-  color: #2c3e2c;
 }
 
 .day-display.dusk .pace-indicator {
