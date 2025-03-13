@@ -499,6 +499,16 @@ function loadSettings() {
       settingsDialog.showModal();
     });
   }
+
+  // Update playlist title on load
+  const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
+  if (playlistId) {
+    fetchPlaylistTitle(playlistId).then((title) => {
+      if (title) {
+        updatePlaylistBadge(title);
+      }
+    });
+  }
 }
 
 // Save settings to localStorage
@@ -1210,6 +1220,20 @@ function createYoutubePlayer() {
         onStateChange: function (event) {
           if (event.data === YT.PlayerState.CUED && playlistId) {
             event.target.setShuffle(true);
+            // Use predefined playlist names if they match
+            if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
+              updatePlaylistBadge('Bardcore Playlist');
+            } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
+              updatePlaylistBadge('Atmospheric Playlist');
+            } else {
+              updatePlaylistBadge('Custom Playlist');
+            }
+          }
+          if (event.data === YT.PlayerState.PLAYING) {
+            // Keep the playlist title, don't update with song title
+            if (!document.getElementById('playlistBadge').textContent) {
+              updatePlaylistBadge('Custom Playlist');
+            }
           }
           if (event.data === YT.PlayerState.ENDED) {
             if (playlistId) {
@@ -1251,6 +1275,7 @@ function createYoutubePlayer() {
     });
   } catch (e) {
     console.log('Error creating YouTube player:', e);
+    updatePlaylistBadge(''); // Clear badge on error
     retryCount++;
     container.dataset.retryCount = retryCount;
 
@@ -1287,6 +1312,9 @@ function updateYoutubePlaylist() {
   if (videoId || playlistId) {
     youtubePlaylistUrl = newUrl;
     saveSettings();
+
+    // Clear the badge - it will be updated when the player loads
+    updatePlaylistBadge('');
 
     // If music is enabled, update the player immediately
     if (playMusic) {
@@ -1388,4 +1416,16 @@ function updateYoutubeLink() {
   const youtubeLink = document.getElementById('openYoutubePlaylist');
   youtubeLink.href = youtubePlaylistUrl;
   youtubeLink.classList.toggle('disabled', !playMusic);
+}
+
+// Update the badge function
+function updatePlaylistBadge(title) {
+  const badge = document.getElementById('playlistBadge');
+  if (title) {
+    badge.textContent = title;
+    badge.title = title; // Add tooltip for full title
+  } else {
+    badge.textContent = '';
+    badge.title = '';
+  }
 }

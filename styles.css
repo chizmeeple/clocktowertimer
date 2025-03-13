@@ -479,10 +479,34 @@ h1 {
 }
 
 .number-input-group {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-width: 120px;
+}
+
+.playlist-badge {
+  position: absolute;
+  top: -1.25rem;
+  right: 0.5rem;
+  background: #2c3e2c;
+  color: #ffffff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  z-index: 1;
+  opacity: 1;
+  max-width: calc(100% - 2rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.playlist-badge:not(:empty) {
+  display: block;
 }
 
 .number-input-group button {
