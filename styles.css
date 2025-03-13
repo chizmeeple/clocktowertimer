@@ -714,7 +714,7 @@ h1 {
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  background: #ffffff;
+  background: #f5f1e6;
   border-radius: 6px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(8px);
@@ -724,13 +724,14 @@ h1 {
   z-index: 1;
   overflow: hidden;
   min-width: 120px;
+  border: 1px solid rgba(139, 69, 19, 0.2);
 }
 
 .day-display::before {
   content: 'DAY';
   display: block;
-  background: #e53935;
-  color: #ffffff;
+  background: #8b4513;
+  color: #f5f1e6;
   width: 100%;
   padding: 0.2rem 0;
   font-size: 0.8rem;
@@ -739,55 +740,56 @@ h1 {
 }
 
 .day-display span {
-  color: #333333;
+  color: #2c3e2c;
   padding: 0.35rem 0;
   font-size: 2.5rem;
   line-height: 1;
+  font-weight: 800;
 }
 
 .pace-indicator {
   font-size: 0.8rem;
   padding: 0.15rem 0.5rem;
   margin: 0 0 0.5rem 0;
-  background: rgba(76, 175, 80, 0.3);
+  background: rgba(44, 62, 44, 0.15);
   border-radius: 4px;
   display: inline-block;
   line-height: 1;
-  color: #333333;
+  color: #2c3e2c;
 }
 
 .day-display.dawn {
-  background: #ffffff;
+  background: #f5f1e6;
 }
 
 .day-display.dawn::before {
-  background: #ffa000;
+  background: #b87d3b;
 }
 
 .day-display.dawn span {
-  color: #333333;
+  color: #2c3e2c;
 }
 
 .day-display.dawn .pace-indicator {
-  background: rgba(255, 160, 0, 0.2);
-  color: #333333;
+  background: rgba(184, 125, 59, 0.2);
+  color: #2c3e2c;
 }
 
 .day-display.dusk {
-  background: #ffffff;
+  background: #f5f1e6;
 }
 
 .day-display.dusk::before {
-  background: #7b1fa2;
+  background: #654321;
 }
 
 .day-display.dusk span {
-  color: #333333;
+  color: #2c3e2c;
 }
 
 .day-display.dusk .pace-indicator {
-  background: rgba(123, 31, 162, 0.2);
-  color: #333333;
+  background: rgba(101, 67, 33, 0.2);
+  color: #2c3e2c;
 }
 
 .dialog-buttons {
