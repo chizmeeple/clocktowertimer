@@ -1015,7 +1015,7 @@ function updateDayDisplay(state = '') {
   dayInfo.classList.remove('dawn', 'dusk');
 
   if (currentDay === null) {
-    dayInfo.innerHTML = 'Day&nbsp;-';
+    dayInfo.innerHTML = '<span>-</span>';
     return;
   }
 
@@ -1029,12 +1029,12 @@ function updateDayDisplay(state = '') {
 
   if (state === 'dawn') {
     dayInfo.classList.add('dawn');
-    dayInfo.innerHTML = `Dawn of Day&nbsp;${currentDay}<div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+    dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   } else if (state === 'dusk') {
     dayInfo.classList.add('dusk');
-    dayInfo.innerHTML = `Day&nbsp;${currentDay}, Dusk<div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+    dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   } else {
-    dayInfo.innerHTML = `Day&nbsp;${currentDay}<div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+    dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   }
 
   // Update preset button highlighting
