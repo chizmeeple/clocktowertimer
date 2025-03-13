@@ -1089,6 +1089,9 @@ button:disabled {
   color: #4caf50;
   text-decoration: none;
   transition: color 0.2s ease, opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .playlist-link:hover {
@@ -1097,6 +1100,24 @@ button:disabled {
 }
 
 .playlist-link.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  color: #666;
+  pointer-events: none;
+}
+
+.youtube-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.youtube-link:hover .youtube-icon {
+  opacity: 1;
+}
+
+.youtube-link.disabled {
   opacity: 0.35;
   cursor: not-allowed;
   color: #666;

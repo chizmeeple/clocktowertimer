@@ -296,6 +296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (playMusic) {
         initYoutubePlayer();
       }
+      updateYoutubeLink();
     });
 
   document
@@ -308,6 +309,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       saveSettings();
       if (playMusic) {
         initYoutubePlayer();
+      }
+      updateYoutubeLink();
+    });
+
+  // Add event listener for YouTube playlist input
+  document.getElementById('youtubePlaylist').addEventListener('change', () => {
+    updateYoutubePlaylist();
+    updateYoutubeLink();
+  });
+
+  // Add event listener for YouTube link
+  document
+    .getElementById('openYoutubePlaylist')
+    .addEventListener('click', (e) => {
+      if (!playMusic) {
+        e.preventDefault();
       }
     });
 
@@ -446,6 +463,7 @@ function loadSettings() {
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
   updateDayDisplay();
+  updateYoutubeLink();
 
   // Apply background theme
   document.body.setAttribute('data-theme', backgroundTheme);
@@ -1309,6 +1327,9 @@ function updateMusicPlayback() {
   document
     .getElementById('useAtmosphericPlaylist')
     .classList.toggle('disabled', !playMusic);
+  document
+    .getElementById('openYoutubePlaylist')
+    .classList.toggle('disabled', !playMusic);
 
   if (playMusic) {
     initYoutubePlayer();
@@ -1360,4 +1381,11 @@ function extractVideoAndPlaylistIds(url) {
     videoId: videoMatch ? videoMatch[1] : null,
     playlistId: playlistMatch ? playlistMatch[1] : null,
   };
+}
+
+// Update YouTube link URL
+function updateYoutubeLink() {
+  const youtubeLink = document.getElementById('openYoutubePlaylist');
+  youtubeLink.href = youtubePlaylistUrl;
+  youtubeLink.classList.toggle('disabled', !playMusic);
 }
