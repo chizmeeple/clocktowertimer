@@ -7,6 +7,7 @@ export const CHANGELOG = {
     changes: {
       improvements: [
         'Updated website URL to <a href="https://timer.arcane-scripts.net">timer.arcane-scripts.net</a>',
+        'Added Open Graph metadata for better link sharing previews',
       ],
     },
   },
