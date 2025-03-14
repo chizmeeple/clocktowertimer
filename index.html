@@ -3,7 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tower Timer</title>
+    <meta
+      name="description"
+      content="A customisable timer for Blood on the Clocktower games with sound effects, background music, and game state tracking."
+    />
+    <meta name="theme-color" content="#1a1a1a" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="images/icons/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="images/icons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="images/icons/favicon-16x16.png"
+    />
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="styles.css" as="style" />
+    <link
+      rel="preload"
+      href="sounds/end-of-day/cathedral-bell.mp3"
+      as="audio"
+    />
+    <link
+      rel="preload"
+      href="sounds/wake-up/chisel-bell-01-loud.mp3"
+      as="audio"
+    />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -31,8 +68,15 @@
       content="https://timer.arcane-scripts.net/images/preview/app.png"
     />
 
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <title>Tower Timer</title>
     <link rel="stylesheet" href="styles.css" />
+
+    <!-- Content Security Policy -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://api.qrserver.com https://img.youtube.com data:; media-src 'self'; frame-src https://www.youtube.com; connect-src 'self' https://www.google-analytics.com;"
+    />
+
     <!-- Google tag (gtag.js) -->
     <script
       async
@@ -75,53 +119,158 @@
     </div>
 
     <div class="container">
-      <div class="timer-display">
-        <div class="day-display">Day&nbsp;<span id="currentDay">-</span></div>
-        <div class="time">
-          <span id="minutes">00</span>:<span id="seconds">00</span>
+      <div class="timer-display" role="timer" aria-live="polite">
+        <div class="day-display" role="status" aria-label="Current game day">
+          Day&nbsp;<span id="currentDay">-</span>
+        </div>
+        <div class="time" aria-label="Timer display">
+          <span id="minutes" aria-label="minutes">00</span>:<span
+            id="seconds"
+            aria-label="seconds"
+            >00</span
+          >
         </div>
       </div>
-      <div class="controls">
+      <div class="controls" role="group" aria-label="Timer controls">
         <div class="time-inputs">
           <div id="regularTimerControls">
-            <div class="minutes-presets" id="regularPresets">
-              <button class="preset-btn minute-btn" data-minutes="0">0</button>
-              <button class="preset-btn minute-btn" data-minutes="1">1</button>
-              <button class="preset-btn minute-btn" data-minutes="2">2</button>
-              <button class="preset-btn minute-btn" data-minutes="3">3</button>
-              <button class="preset-btn minute-btn" data-minutes="4">4</button>
-              <button class="preset-btn minute-btn" data-minutes="5">5</button>
-              <button class="preset-btn minute-btn" data-minutes="6">6</button>
-              <button class="preset-btn minute-btn" data-minutes="7">7</button>
-              <button class="preset-btn minute-btn" data-minutes="8">8</button>
-              <button class="preset-btn minute-btn" data-minutes="9">9</button>
-              <button class="preset-btn minute-btn" data-minutes="10">
+            <div
+              class="minutes-presets"
+              id="regularPresets"
+              role="group"
+              aria-label="Minute presets"
+            >
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="0"
+                aria-label="Set 0 minutes"
+              >
+                0
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="1"
+                aria-label="Set 1 minute"
+              >
+                1
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="2"
+                aria-label="Set 2 minutes"
+              >
+                2
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="3"
+                aria-label="Set 3 minutes"
+              >
+                3
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="4"
+                aria-label="Set 4 minutes"
+              >
+                4
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="5"
+                aria-label="Set 5 minutes"
+              >
+                5
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="6"
+                aria-label="Set 6 minutes"
+              >
+                6
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="7"
+                aria-label="Set 7 minutes"
+              >
+                7
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="8"
+                aria-label="Set 8 minutes"
+              >
+                8
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="9"
+                aria-label="Set 9 minutes"
+              >
+                9
+              </button>
+              <button
+                class="preset-btn minute-btn"
+                data-minutes="10"
+                aria-label="Set 10 minutes"
+              >
                 10
               </button>
             </div>
-            <div class="seconds-presets" id="regularSecondsPresets">
-              <button class="preset-btn second-btn" data-seconds="0">
+            <div
+              class="seconds-presets"
+              id="regularSecondsPresets"
+              role="group"
+              aria-label="Second presets"
+            >
+              <button
+                class="preset-btn second-btn"
+                data-seconds="0"
+                aria-label="Set 0 seconds"
+              >
                 :00
               </button>
-              <button class="preset-btn second-btn" data-seconds="15">
+              <button
+                class="preset-btn second-btn"
+                data-seconds="15"
+                aria-label="Set 15 seconds"
+              >
                 :15
               </button>
-              <button class="preset-btn second-btn" data-seconds="30">
+              <button
+                class="preset-btn second-btn"
+                data-seconds="30"
+                aria-label="Set 30 seconds"
+              >
                 :30
               </button>
-              <button class="preset-btn second-btn" data-seconds="45">
+              <button
+                class="preset-btn second-btn"
+                data-seconds="45"
+                aria-label="Set 45 seconds"
+              >
                 :45
               </button>
             </div>
           </div>
-          <div id="clocktowerPresets" class="clocktower-presets">
+          <div
+            id="clocktowerPresets"
+            class="clocktower-presets"
+            role="group"
+            aria-label="Day presets"
+          >
             <!-- Day presets will be inserted here dynamically -->
           </div>
         </div>
-        <div class="action-buttons">
-          <button id="startBtn" disabled>Pause</button>
-          <button id="resetBtn">Reset</button>
-          <button id="accelerateBtn">⏩ Accelerate Time</button>
+        <div class="action-buttons" role="group" aria-label="Timer actions">
+          <button id="startBtn" disabled aria-label="Start or pause timer">
+            Pause
+          </button>
+          <button id="resetBtn" aria-label="Reset timer">Reset</button>
+          <button id="accelerateBtn" aria-label="Hold to accelerate time">
+            ⏩ Accelerate Time
+          </button>
         </div>
       </div>
     </div>

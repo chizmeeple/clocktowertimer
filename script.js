@@ -245,7 +245,13 @@ document.addEventListener('visibilitychange', async () => {
 
 // Request wake lock and initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
-  await requestWakeLock();
+  try {
+    await requestWakeLock();
+  } catch (error) {
+    console.error('Error requesting wake lock:', error);
+  }
+
+  setupKeyboardNavigation();
 
   // Initialize audio
   endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
@@ -906,6 +912,12 @@ function updateDisplay() {
     accelerateBtn.disabled = true;
     resetBtn.disabled = true; // Disable reset when timer is at 0
   }
+
+  // Update ARIA labels
+  timerDisplay.setAttribute(
+    'aria-label',
+    `Timer: ${minutes} minutes and ${seconds} seconds remaining`
+  );
 }
 
 // Acceleration functionality
@@ -1329,152 +1341,153 @@ window.onYouTubeIframeAPIReady = function () {
   }
 };
 
-function createYoutubePlayer() {
-  // Check for internet connectivity first
+async function createYoutubePlayer() {
   if (!connectivityUtils.isOnline()) {
     console.log('Cannot initialize YouTube player: offline');
     return;
   }
 
-  // Remove existing player if any
-  if (youtubePlayer) {
-    try {
-      youtubePlayer.destroy();
-    } catch (e) {
-      console.log('Error destroying player:', e);
-    }
-    youtubePlayer = null;
-  }
-
-  const existingContainer = document.querySelector('.youtube-player-container');
-  if (existingContainer) {
-    existingContainer.remove();
-  }
-
-  // Create container for YouTube player
-  const container = document.createElement('div');
-  container.className = 'youtube-player-container';
-  document.body.appendChild(container);
-
-  // Extract video and playlist IDs from URL
-  const { videoId, playlistId } =
-    extractVideoAndPlaylistIds(youtubePlaylistUrl);
-  if (!videoId && !playlistId) return;
-
-  // Track creation attempts to prevent infinite loops
-  const maxRetries = 3;
-  let retryCount = parseInt(container.dataset.retryCount || '0');
-  container.dataset.retryCount = retryCount;
-
-  if (retryCount >= maxRetries) {
-    console.log('Max retry attempts reached for YouTube player creation');
-    return;
-  }
-
   try {
-    youtubePlayer = new YT.Player(container, {
-      height: '135',
-      width: '240',
-      playerVars: {
-        autoplay: 0,
-        controls: 1,
-        disablekb: 1,
-        fs: 0,
-        modestbranding: 1,
-        playsinline: 1,
-        rel: 0,
-        loop: 1,
-        playlist: playlistId,
-      },
-      events: {
-        onReady: function (event) {
-          // Reset retry count on successful creation
-          container.dataset.retryCount = '0';
-          event.target.setVolume(youtubeVolume);
-          if (playlistId) {
-            event.target.setShuffle(true);
-            event.target.cuePlaylist({
-              list: playlistId,
-              listType: 'playlist',
-              index: Math.floor(Math.random() * 50),
-              suggestedQuality: 'small',
-            });
-          } else if (videoId) {
-            event.target.cueVideoById(videoId);
-          }
-        },
-        onStateChange: function (event) {
-          if (event.data === YT.PlayerState.CUED && playlistId) {
-            event.target.setShuffle(true);
-            // Use predefined playlist names if they match
-            if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
-              updatePlaylistBadge('Bardcore');
-            } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
-              updatePlaylistBadge('Atmospheric');
-            } else {
-              updatePlaylistBadge('Custom');
-            }
-          }
-          if (event.data === YT.PlayerState.PLAYING) {
-            // Keep the playlist title, don't update with song title
-            if (!document.getElementById('playlistBadge').textContent) {
-              updatePlaylistBadge('Custom');
-            }
-          }
-          if (event.data === YT.PlayerState.ENDED) {
-            if (playlistId) {
-              event.target.setShuffle(true);
-              event.target.playVideoAt(0);
-            } else {
-              event.target.playVideo();
-            }
-          }
-        },
-        onError: function (event) {
-          console.log('YouTube player error:', event);
-          const errorCode = event.data;
+    // Remove existing player
+    if (youtubePlayer) {
+      try {
+        youtubePlayer.destroy();
+      } catch (e) {
+        console.log('Error destroying player:', e);
+      }
+      youtubePlayer = null;
+    }
 
-          // Don't retry for certain error codes
-          if (errorCode === 101 || errorCode === 150) {
-            console.log('Video playback not allowed. Skipping retry.');
-            return;
-          }
+    const existingContainer = document.querySelector(
+      '.youtube-player-container'
+    );
+    if (existingContainer) {
+      existingContainer.remove();
+    }
 
-          // Increment retry count
-          retryCount++;
-          container.dataset.retryCount = retryCount;
+    // Create container for YouTube player
+    const container = document.createElement('div');
+    container.className = 'youtube-player-container';
+    document.body.appendChild(container);
 
-          if (retryCount < maxRetries) {
-            console.log(
-              `Retrying YouTube player creation (attempt ${
-                retryCount + 1
-              }/${maxRetries})`
-            );
-            setTimeout(createYoutubePlayer, 1000);
-          } else {
-            console.log(
-              'Max retry attempts reached for YouTube player creation'
-            );
-          }
-        },
-      },
-    });
-  } catch (e) {
-    console.log('Error creating YouTube player:', e);
-    updatePlaylistBadge(''); // Clear badge on error
-    retryCount++;
+    // Extract video and playlist IDs from URL
+    const { videoId, playlistId } =
+      extractVideoAndPlaylistIds(youtubePlaylistUrl);
+    if (!videoId && !playlistId) return;
+
+    // Track creation attempts to prevent infinite loops
+    const maxRetries = 3;
+    let retryCount = parseInt(container.dataset.retryCount || '0');
     container.dataset.retryCount = retryCount;
 
-    if (retryCount < maxRetries) {
-      console.log(
-        `Retrying YouTube player creation (attempt ${
-          retryCount + 1
-        }/${maxRetries})`
-      );
-      setTimeout(createYoutubePlayer, 1000);
-    } else {
+    if (retryCount >= maxRetries) {
       console.log('Max retry attempts reached for YouTube player creation');
+      return;
     }
+
+    try {
+      youtubePlayer = new YT.Player(container, {
+        height: '135',
+        width: '240',
+        playerVars: {
+          autoplay: 0,
+          controls: 1,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          playsinline: 1,
+          rel: 0,
+          loop: 1,
+          playlist: playlistId,
+        },
+        events: {
+          onReady: function (event) {
+            container.dataset.retryCount = '0';
+            event.target.setVolume(youtubeVolume);
+            if (playlistId) {
+              event.target.setShuffle(true);
+              event.target.cuePlaylist({
+                list: playlistId,
+                listType: 'playlist',
+                index: Math.floor(Math.random() * 50),
+                suggestedQuality: 'small',
+              });
+            } else if (videoId) {
+              event.target.cueVideoById(videoId);
+            }
+          },
+          onStateChange: function (event) {
+            if (event.data === YT.PlayerState.CUED && playlistId) {
+              event.target.setShuffle(true);
+              if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
+                updatePlaylistBadge('Bardcore');
+              } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
+                updatePlaylistBadge('Atmospheric');
+              } else {
+                updatePlaylistBadge('Custom');
+              }
+            }
+            if (event.data === YT.PlayerState.PLAYING) {
+              if (!document.getElementById('playlistBadge').textContent) {
+                updatePlaylistBadge('Custom');
+              }
+            }
+            if (event.data === YT.PlayerState.ENDED) {
+              if (playlistId) {
+                event.target.setShuffle(true);
+                event.target.playVideoAt(0);
+              } else {
+                event.target.playVideo();
+              }
+            }
+          },
+          onError: function (event) {
+            console.log('YouTube player error:', event);
+            const errorCode = event.data;
+
+            if (errorCode === 101 || errorCode === 150) {
+              console.log('Video playback not allowed. Skipping retry.');
+              return;
+            }
+
+            retryCount++;
+            container.dataset.retryCount = retryCount;
+
+            if (retryCount < maxRetries) {
+              console.log(
+                `Retrying YouTube player creation (attempt ${
+                  retryCount + 1
+                }/${maxRetries})`
+              );
+              setTimeout(createYoutubePlayer, 1000);
+            } else {
+              console.log(
+                'Max retry attempts reached for YouTube player creation'
+              );
+            }
+          },
+        },
+      });
+    } catch (e) {
+      console.log('Error creating YouTube player:', e);
+      updatePlaylistBadge('');
+      retryCount++;
+      container.dataset.retryCount = retryCount;
+
+      if (retryCount < maxRetries) {
+        console.log(
+          `Retrying YouTube player creation (attempt ${
+            retryCount + 1
+          }/${maxRetries})`
+        );
+        setTimeout(createYoutubePlayer, 1000);
+      } else {
+        console.log('Max retry attempts reached for YouTube player creation');
+      }
+    }
+  } catch (error) {
+    console.error('Error creating YouTube player:', error);
+    updatePlaylistBadge('');
   }
 }
 
@@ -1773,4 +1786,48 @@ function closeWhatsNew() {
 // Close Change History dialog
 function closeChangeHistory() {
   changeHistoryDialog.close();
+}
+
+// Add keyboard navigation support
+function setupKeyboardNavigation() {
+  document.addEventListener('keydown', (e) => {
+    // Existing keyboard shortcuts
+    if (e.key.toLowerCase() === 'q' && !settingsDialog.open) {
+      openSettings();
+    }
+    if (e.key.toLowerCase() === 'i' && !infoDialog.open) {
+      openInfo();
+    }
+
+    // New keyboard shortcuts
+    if (e.key === ' ' || e.key === 'Enter') {
+      // Space or Enter
+      if (!settingsDialog.open && !infoDialog.open) {
+        e.preventDefault();
+        startTimer();
+      }
+    }
+    if (e.key === 'r' && !settingsDialog.open && !infoDialog.open) {
+      // R key
+      resetTimer();
+    }
+    if (e.key === 'f') {
+      // F key
+      e.preventDefault();
+      toggleFullscreen();
+    }
+    if (e.key === 'Escape' && document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  });
+}
+
+// Enhance error handling for async operations
+async function safeAsyncOperation(operation, fallback = null) {
+  try {
+    return await operation();
+  } catch (error) {
+    console.error(`Operation failed: ${error.message}`);
+    return fallback;
+  }
 }

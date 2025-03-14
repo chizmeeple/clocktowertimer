@@ -8,6 +8,9 @@ export const CHANGELOG = {
       improvements: [
         'Updated website URL to <a href="https://timer.arcane-scripts.net">timer.arcane-scripts.net</a>',
         'Added Open Graph metadata for better link sharing previews',
+        'Improved accessibility with ARIA labels and keyboard navigation',
+        'Enhanced performance with resource preloading',
+        'Added Content Security Policy for better security',
       ],
     },
   },
