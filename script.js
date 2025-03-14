@@ -1567,22 +1567,38 @@ function showWhatsNew(lastVersion) {
   if (versions.length === 0) return;
 
   // Combine all features and improvements from these versions
-  const features = versions.flatMap(([_, data]) => data.changes.features);
+  const features = versions.flatMap(([_, data]) => data.changes.features || []);
   const improvements = versions.flatMap(
-    ([_, data]) => data.changes.improvements
+    ([_, data]) => data.changes.improvements || []
   );
 
-  // Update features list
+  // Update features list if there are features
+  const featuresSection = document.querySelector(
+    '.changes-section:has(.features-list)'
+  );
   const featuresList = document.querySelector('.features-list');
-  featuresList.innerHTML = features
-    .map((feature) => `<li>${feature}</li>`)
-    .join('');
+  if (features.length > 0) {
+    featuresList.innerHTML = features
+      .map((feature) => `<li>${feature}</li>`)
+      .join('');
+    featuresSection.style.display = 'block';
+  } else {
+    featuresSection.style.display = 'none';
+  }
 
-  // Update improvements list
+  // Update improvements list if there are improvements
+  const improvementsSection = document.querySelector(
+    '.changes-section:has(.improvements-list)'
+  );
   const improvementsList = document.querySelector('.improvements-list');
-  improvementsList.innerHTML = improvements
-    .map((improvement) => `<li>${improvement}</li>`)
-    .join('');
+  if (improvements.length > 0) {
+    improvementsList.innerHTML = improvements
+      .map((improvement) => `<li>${improvement}</li>`)
+      .join('');
+    improvementsSection.style.display = 'block';
+  } else {
+    improvementsSection.style.display = 'none';
+  }
 
   // Show dialog
   whatsNewDialog.showModal();
@@ -1596,32 +1612,45 @@ function showChangeHistory() {
   );
 
   content.innerHTML = versions
-    .map(
-      ([version, data]) => `
-    <div class="version-info">
-      <span class="version-number">Version ${version}</span>
-      <span class="version-date">${data.date}</span>
-    </div>
-    <div class="changes-container">
-      <div class="changes-section">
-        <h3>New Features</h3>
-        <ul class="features-list">
-          ${data.changes.features
-            .map((feature) => `<li>${feature}</li>`)
-            .join('')}
-        </ul>
-      </div>
-      <div class="changes-section">
-        <h3>Improvements</h3>
-        <ul class="improvements-list">
-          ${data.changes.improvements
-            .map((improvement) => `<li>${improvement}</li>`)
-            .join('')}
-        </ul>
-      </div>
-    </div>
-  `
-    )
+    .map(([version, data]) => {
+      const features = data.changes.features || [];
+      const improvements = data.changes.improvements || [];
+
+      return `
+        <div class="version-info">
+          <span class="version-number">Version ${version}</span>
+          <span class="version-date">${data.date}</span>
+        </div>
+        <div class="changes-container">
+          ${
+            features.length > 0
+              ? `
+            <div class="changes-section">
+              <h3>New Features</h3>
+              <ul class="features-list">
+                ${features.map((feature) => `<li>${feature}</li>`).join('')}
+              </ul>
+            </div>
+          `
+              : ''
+          }
+          ${
+            improvements.length > 0
+              ? `
+            <div class="changes-section">
+              <h3>Improvements</h3>
+              <ul class="improvements-list">
+                ${improvements
+                  .map((improvement) => `<li>${improvement}</li>`)
+                  .join('')}
+              </ul>
+            </div>
+          `
+              : ''
+          }
+        </div>
+      `;
+    })
     .join('<hr class="version-separator">');
 
   changeHistoryDialog.showModal();
