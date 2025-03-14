@@ -1061,8 +1061,8 @@ function updateDayDisplay(state = '') {
   }
 
   const paceEmojis = {
-    relaxed: '🐢',
-    normal: '🚶',
+    relaxed: '🐌',
+    normal: '🏃',
     speedy: '⚡',
   };
   const paceEmoji = paceEmojis[currentPace];
