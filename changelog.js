@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.2';
+export const APP_VERSION = '1.0.3';
 
 export const CHANGELOG = {
+  '1.0.3': {
+    date: '2025-03-15',
+    changes: {
+      improvements: [
+        'Updated website URL to <a href="https://timer.arcane-scripts.net">timer.arcane-scripts.net</a>',
+      ],
+    },
+  },
   '1.0.2': {
     date: '2025-03-14',
     changes: {
