@@ -1037,7 +1037,8 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 
 .website-link {
   margin: 0;
-  word-break: break-all;
+  word-break: normal;
+  white-space: nowrap;
 }
 
 .website-link a {
@@ -1045,6 +1046,7 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   text-decoration: none;
   font-family: monospace;
   font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .website-link a:hover {
