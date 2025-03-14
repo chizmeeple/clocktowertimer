@@ -1422,10 +1422,10 @@ button:disabled {
 }
 
 .changes-section li {
-  padding-left: 1.5rem;
-  position: relative;
   margin-bottom: 0.5rem;
   line-height: 1.4;
+  position: relative;
+  padding-left: 1.5rem;
 }
 
 .changes-section li::before {
@@ -1433,6 +1433,17 @@ button:disabled {
   color: #4caf50;
   position: absolute;
   left: 0;
+}
+
+.changes-section li a {
+  color: #72a4f2;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.changes-section li a:hover {
+  color: #9abff5;
+  text-decoration: underline;
 }
 
 .version-separator {
