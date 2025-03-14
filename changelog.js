@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.3';
+export const APP_VERSION = '1.0.4';
 
 export const CHANGELOG = {
+  '1.0.4': {
+    date: '2025-03-16',
+    changes: {
+      improvements: [
+        'Fixed issue where Day number was not displaying correctly after initial setup',
+      ],
+    },
+  },
   '1.0.3': {
     date: '2025-03-15',
     changes: {

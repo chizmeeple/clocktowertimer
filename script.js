@@ -545,7 +545,7 @@ function loadSettings() {
     const settings = JSON.parse(savedSettings);
     playerCount = settings.playerCount || 10;
     travellerCount = settings.travellerCount || 0;
-    currentDay = settings.currentDay || null;
+    currentDay = settings.currentDay || 1;
     currentPace = settings.currentPace || 'normal';
     playMusic = settings.playMusic !== undefined ? settings.playMusic : false;
     playSoundEffects =
@@ -805,6 +805,8 @@ function openSettings() {
 
 function closeSettings() {
   saveSettings(); // Always save when closing
+  updateDayDisplay(); // Force update of the day display
+  updateClocktowerPresets(); // Update the presets to match current day
   settingsDialog.close();
 }
 
@@ -1195,9 +1197,9 @@ function updateDayDisplay(state = '') {
   // Remove existing state classes
   dayInfo.classList.remove('dawn', 'dusk');
 
-  if (currentDay === null) {
-    dayInfo.innerHTML = '<span>-</span>';
-    return;
+  // Ensure currentDay is at least 1
+  if (currentDay === null || currentDay === undefined) {
+    currentDay = 1;
   }
 
   const paceEmojis = {
