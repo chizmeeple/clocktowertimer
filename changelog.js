@@ -1,17 +1,27 @@
 // Version tracking
-export const APP_VERSION = '1.0.1';
+export const APP_VERSION = '1.0.2';
 
 export const CHANGELOG = {
+  '1.0.2': {
+    date: '2025-03-14',
+    changes: {
+      features: [
+        'Added customisable sound selection for end-of-day and wake-up sounds',
+        'Added sound preview functionality with play buttons',
+      ],
+      improvements: ['Minor style and display improvements'],
+    },
+  },
   '1.0.1': {
     date: '2025-03-14',
     changes: {
       features: [
-        "Added What's New dialog to show version changes",
+        "Added What's New dialogue to show version changes",
         'Added version information and changelog to About screen',
       ],
       improvements: [
-        'Improved About dialog layout and usability',
-        'Added keyboard shortcut (<code>i</code>) to open About dialog',
+        'Improved About dialogue layout and usability',
+        'Added keyboard shortcut (<code>i</code>) to open About dialogue',
       ],
     },
   },
