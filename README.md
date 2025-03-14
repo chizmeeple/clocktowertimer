@@ -5,7 +5,7 @@
 ## Finding It
 
 Simply visit
-[https://chizmw.github.io/clocktowertimer/](https://chizmw.github.io/clocktowertimer/)
+[https://timer.arcane-scripts.net](https://timer.arcane-scripts.net)
 to use this timer.
 
 ## Features
