@@ -3,7 +3,7 @@ export const APP_VERSION = '1.0.1';
 
 export const CHANGELOG = {
   '1.0.1': {
-    date: '2024-03-21',
+    date: '2025-03-14',
     changes: {
       features: [
         "Added What's New dialog to show version changes",
@@ -16,7 +16,7 @@ export const CHANGELOG = {
     },
   },
   '1.0.0': {
-    date: '2024-03-21',
+    date: '2025-03-13',
     changes: {
       features: [
         'Initial release with core timer functionality',
