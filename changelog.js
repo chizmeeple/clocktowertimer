@@ -3,7 +3,7 @@ export const APP_VERSION = '1.0.4';
 
 export const CHANGELOG = {
   '1.0.4': {
-    date: '2025-03-16',
+    date: '2025-03-14',
     changes: {
       improvements: [
         'Fixed issue where Day number was not displaying correctly after initial setup',
@@ -11,7 +11,7 @@ export const CHANGELOG = {
     },
   },
   '1.0.3': {
-    date: '2025-03-15',
+    date: '2025-03-14',
     changes: {
       improvements: [
         'Updated website URL to <a href="https://timer.arcane-scripts.net">timer.arcane-scripts.net</a>',
