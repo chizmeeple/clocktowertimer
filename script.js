@@ -182,6 +182,8 @@ let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
 let youtubePlayer = null;
+let endOfDaySound = 'cathedral-bell.mp3'; // Default end of day sound
+let wakeUpSoundFile = 'chisel-bell-01-loud.mp3'; // Default wake up sound
 
 // Character amounts mapping
 const characterAmounts = {
@@ -245,8 +247,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await requestWakeLock();
 
   // Initialize audio
-  endSound = new Audio('sounds/end-of-day/cathedral-bell.mp3');
-  wakeUpSound = new Audio('sounds/wake-up/chisel-bell-01-loud.mp3');
+  endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+  wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
 
   // Add connectivity listeners
   connectivityUtils.addStatusListener(
@@ -445,6 +447,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Add event listeners for sound selection
+  document.getElementById('endOfDaySound').addEventListener('change', (e) => {
+    endOfDaySound = e.target.value;
+    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+    saveSettings();
+  });
+
+  document.getElementById('wakeUpSound').addEventListener('change', (e) => {
+    wakeUpSoundFile = e.target.value;
+    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
+    saveSettings();
+  });
+
   // Initialize settings and update display
   loadSettings();
   updateClocktowerPresets();
@@ -486,6 +501,8 @@ function loadSettings() {
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
+    endOfDaySound = settings.endOfDaySound || 'cathedral-bell.mp3';
+    wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud.mp3';
 
     // Check for new version - only if we have a valid lastSeenVersion
     const lastSeenVersion = settings.lastSeenVersion;
@@ -514,9 +531,20 @@ function loadSettings() {
       accelerateBtn.disabled = true;
       resetBtn.disabled = true;
     }
+
+    // Update sound selection dropdowns
+    document.getElementById('endOfDaySound').value = endOfDaySound;
+    document.getElementById('wakeUpSound').value = wakeUpSoundFile;
+
+    // Initialize audio with selected sounds
+    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
   } else {
     isFirstLoad = true;
     currentDay = 1; // Set to Day 1 on first load
+    // Initialize audio with default sounds
+    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
   }
 
   // Always update UI to reflect settings
@@ -611,6 +639,8 @@ function saveSettings() {
     backgroundTheme,
     dayState,
     lastSeenVersion: APP_VERSION,
+    endOfDaySound,
+    wakeUpSoundFile,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
