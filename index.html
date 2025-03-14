@@ -104,126 +104,150 @@
       <div class="dialog-content">
         <h2>Settings</h2>
 
-        <!-- Game Setup -->
-        <div class="setting-group">
-          <h3>Game Setup</h3>
-          <label>
-            <span>Number of Players</span>
-            <div class="number-input-group">
-              <button class="decrement" data-input="playerCount">−</button>
-              <input
-                type="number"
-                id="playerCount"
-                min="5"
-                max="15"
-                value="10"
-                inputmode="numeric"
-                pattern="[0-9]*"
-              />
-              <button class="increment" data-input="playerCount">+</button>
+        <div class="settings-groups-container">
+          <div class="settings-column">
+            <!-- Game Setup -->
+            <div class="setting-group">
+              <h3>Game Setup</h3>
+              <label>
+                <span>Number of Players</span>
+                <div class="number-input-group">
+                  <button class="decrement" data-input="playerCount">−</button>
+                  <input
+                    type="number"
+                    id="playerCount"
+                    min="5"
+                    max="15"
+                    value="10"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  <button class="increment" data-input="playerCount">+</button>
+                </div>
+              </label>
+              <label>
+                <span>Number of Travellers</span>
+                <div class="number-input-group">
+                  <button class="decrement" data-input="travellerCount">
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    id="travellerCount"
+                    min="0"
+                    max="5"
+                    value="0"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  <button class="increment" data-input="travellerCount">
+                    +
+                  </button>
+                </div>
+              </label>
+              <label>
+                <span>Game Pace</span>
+                <select id="gamePace" class="game-pace-select">
+                  <option value="relaxed">Relaxed 🐢</option>
+                  <option value="normal" selected>Normal 🚶</option>
+                  <option value="speedy">Speedy ⚡</option>
+                </select>
+              </label>
             </div>
-          </label>
-          <label>
-            <span>Number of Travellers</span>
-            <div class="number-input-group">
-              <button class="decrement" data-input="travellerCount">−</button>
-              <input
-                type="number"
-                id="travellerCount"
-                min="0"
-                max="5"
-                value="0"
-                inputmode="numeric"
-                pattern="[0-9]*"
-              />
-              <button class="increment" data-input="travellerCount">+</button>
-            </div>
-          </label>
-          <label>
-            <span>Game Pace</span>
-            <select id="gamePace" class="game-pace-select">
-              <option value="relaxed">Relaxed 🐢</option>
-              <option value="normal" selected>Normal 🚶</option>
-              <option value="speedy">Speedy ⚡</option>
-            </select>
-          </label>
-        </div>
 
-        <!-- Audio Settings -->
-        <div class="setting-group">
-          <h3>Audio Settings</h3>
-          <label>
-            <span>Play Sound Effects</span>
-            <input type="checkbox" id="playSoundEffects" checked />
-          </label>
-          <label>
-            <span>Play Background Music</span>
-            <input type="checkbox" id="playMusic" />
-          </label>
-          <label>
-            <span>YouTube Playlist URL</span>
-            <input
-              type="text"
-              id="youtubePlaylist"
-              class="youtube-playlist-input"
-              disabled
-            />
-          </label>
-          <div class="playlist-links">
-            <a href="#" id="useBardcorePlaylist" class="restore-link"
-              >Use Bardcore Playlist</a
-            >
-            <a href="#" id="useAtmosphericPlaylist" class="restore-link"
-              >Use Atmospheric Playlist</a
-            >
-            <a
-              href="#"
-              id="openYoutubePlaylist"
-              target="_blank"
-              rel="noopener"
-              class="restore-link"
-            >
-              Open on YouTube
-            </a>
+            <!-- Display Settings -->
+            <div class="setting-group">
+              <h3>Display Settings</h3>
+              <label>
+                <span>Keep Display On</span>
+                <input type="checkbox" id="keepDisplayOn" checked />
+              </label>
+              <label>
+                <span>Background Theme</span>
+                <select id="backgroundTheme" class="background-theme-select">
+                  <option value="none">None</option>
+                  <option value="gothic-city">Gothic City</option>
+                  <option value="medieval-cartoon" selected>
+                    Medieval Cartoon
+                  </option>
+                  <option value="tower-in-forest">Tower in Forest</option>
+                  <option value="infested-city">Infested City</option>
+                  <option value="circle-of-people">Circle of People</option>
+                  <option value="large-clock-face">Large Clock Face</option>
+                </select>
+              </label>
+            </div>
           </div>
-          <label>
-            <span>Music Volume</span>
-            <div class="volume-control">
-              <input
-                type="range"
-                id="youtubeVolume"
-                class="volume-slider"
-                min="0"
-                max="100"
-                value="20"
-                disabled
-              />
-              <span class="volume-value">20%</span>
-            </div>
-          </label>
-        </div>
 
-        <!-- Display Settings -->
-        <div class="setting-group">
-          <h3>Display Settings</h3>
-          <label>
-            <span>Keep Display On</span>
-            <input type="checkbox" id="keepDisplayOn" checked />
-          </label>
-          <label>
-            <span>Background Theme</span>
-            <select id="backgroundTheme" class="background-theme-select">
-              <option value="none">None</option>
-              <option value="gothic-city">Gothic City</option>
-              <option value="medieval-cartoon" selected>
-                Medieval Cartoon
-              </option>
-              <option value="tower-in-forest">Tower in Forest</option>
-              <option value="infested-city">Infested City</option>
-              <option value="circle-of-people">Circle of People</option>
-              <option value="large-clock-face">Large Clock Face</option>
-            </select>
-          </label>
+          <div class="settings-column">
+            <!-- Audio Settings -->
+            <div class="setting-group">
+              <h3>Audio Settings</h3>
+              <label>
+                <span>Play Sound Effects</span>
+                <input type="checkbox" id="playSoundEffects" checked />
+              </label>
+              <label>
+                <span>Play Background Music</span>
+                <input type="checkbox" id="playMusic" />
+              </label>
+              <label>
+                <span>YouTube Playlist</span>
+                <div class="number-input-group">
+                  <div class="playlist-badge" id="playlistBadge"></div>
+                  <input
+                    type="text"
+                    id="youtubePlaylist"
+                    class="youtube-playlist-input"
+                    placeholder="Enter playlist URL"
+                  />
+                </div>
+              </label>
+              <div class="playlist-links">
+                <a href="#" id="useBardcorePlaylist" class="playlist-link"
+                  >Bardcore</a
+                >
+                <a href="#" id="useAtmosphericPlaylist" class="playlist-link"
+                  >Atmospheric</a
+                >
+                <a
+                  href="#"
+                  id="openYoutubePlaylist"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="playlist-link youtube-link"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    class="youtube-icon"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"
+                    />
+                  </svg>
+                  Open
+                </a>
+              </div>
+              <label>
+                <span>Music Volume</span>
+                <div class="volume-control">
+                  <input
+                    type="range"
+                    id="youtubeVolume"
+                    class="volume-slider"
+                    min="0"
+                    max="100"
+                    value="20"
+                    disabled
+                  />
+                  <span class="volume-value">20%</span>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="dialog-buttons">

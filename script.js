@@ -1271,17 +1271,17 @@ function createYoutubePlayer() {
             event.target.setShuffle(true);
             // Use predefined playlist names if they match
             if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
-              updatePlaylistBadge('Bardcore Playlist');
+              updatePlaylistBadge('Bardcore');
             } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
-              updatePlaylistBadge('Atmospheric Playlist');
+              updatePlaylistBadge('Atmospheric');
             } else {
-              updatePlaylistBadge('Custom Playlist');
+              updatePlaylistBadge('Custom');
             }
           }
           if (event.data === YT.PlayerState.PLAYING) {
             // Keep the playlist title, don't update with song title
             if (!document.getElementById('playlistBadge').textContent) {
-              updatePlaylistBadge('Custom Playlist');
+              updatePlaylistBadge('Custom');
             }
           }
           if (event.data === YT.PlayerState.ENDED) {
