@@ -2,6 +2,20 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Startup tasks",
+      "dependsOn": ["Open Regular Terminal", "Simple Web Server"],
+      "dependsOrder": "parallel",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "group": "develop"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Simple Web Server",
       "type": "shell",
       "command": "python3 -m http.server 8000",
@@ -9,12 +23,28 @@
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new"
+        "panel": "new",
+        "group": "startup"
       },
       "group": {
         "kind": "test",
         "isDefault": true
       }
+    },
+    {
+      "label": "Open Regular Terminal",
+      "type": "shell",
+      "command": "/usr/bin/env zsh",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "group": "startup"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "isBackground": true,
+      "problemMatcher": []
     }
   ]
 }
