@@ -1537,15 +1537,6 @@ function updatePlaylistBadge(title) {
 
 // Show What's New dialog (for version updates)
 function showWhatsNew(lastVersion) {
-  const currentVersion = CHANGELOG[APP_VERSION];
-  if (!currentVersion) return;
-
-  // Update dialog content
-  document.querySelector(
-    '.version-number'
-  ).textContent = `Version ${APP_VERSION}`;
-  document.querySelector('.version-date').textContent = currentVersion.date;
-
   // Compare versions properly using string comparison
   const versions = Object.entries(CHANGELOG)
     .filter(([version]) => {
@@ -1573,39 +1564,69 @@ function showWhatsNew(lastVersion) {
 
   if (versions.length === 0) return;
 
-  // Combine all features and improvements from these versions
-  const features = versions.flatMap(([_, data]) => data.changes.features || []);
-  const improvements = versions.flatMap(
-    ([_, data]) => data.changes.improvements || []
-  );
+  // Get the most recent version for the header
+  const [latestVersion, latestData] = versions[0];
 
-  // Update features list if there are features
-  const featuresSection = document.querySelector(
-    '.changes-section:has(.features-list)'
-  );
-  const featuresList = document.querySelector('.features-list');
-  if (features.length > 0) {
-    featuresList.innerHTML = features
-      .map((feature) => `<li>${feature}</li>`)
-      .join('');
-    featuresSection.style.display = 'block';
-  } else {
-    featuresSection.style.display = 'none';
-  }
+  // Update dialog header with latest version
+  document.querySelector(
+    '.version-number'
+  ).textContent = `Version ${latestVersion}`;
+  document.querySelector('.version-date').textContent = latestData.date;
 
-  // Update improvements list if there are improvements
-  const improvementsSection = document.querySelector(
-    '.changes-section:has(.improvements-list)'
-  );
-  const improvementsList = document.querySelector('.improvements-list');
-  if (improvements.length > 0) {
-    improvementsList.innerHTML = improvements
-      .map((improvement) => `<li>${improvement}</li>`)
-      .join('');
-    improvementsSection.style.display = 'block';
-  } else {
-    improvementsSection.style.display = 'none';
-  }
+  // Create the content for all versions
+  const content = document.querySelector('.changes-container');
+  content.innerHTML = versions
+    .map(([version, data]) => {
+      const features = data.changes.features || [];
+      const improvements = data.changes.improvements || [];
+
+      return `
+        ${
+          version !== latestVersion
+            ? `
+          <div class="version-info">
+            <span class="version-number">Version ${version}</span>
+            <span class="version-date">${data.date}</span>
+          </div>
+        `
+            : ''
+        }
+        <div class="changes-container">
+          ${
+            features.length > 0
+              ? `
+            <div class="changes-section">
+              <h3>New Features</h3>
+              <ul class="features-list">
+                ${features.map((feature) => `<li>${feature}</li>`).join('')}
+              </ul>
+            </div>
+          `
+              : ''
+          }
+          ${
+            improvements.length > 0
+              ? `
+            <div class="changes-section">
+              <h3>Improvements</h3>
+              <ul class="improvements-list">
+                ${improvements
+                  .map((improvement) => `<li>${improvement}</li>`)
+                  .join('')}
+              </ul>
+            </div>
+          `
+              : ''
+          }
+        </div>
+        ${
+          version !== versions[versions.length - 1][0]
+            ? '<hr class="version-separator">'
+            : ''
+        }
+      `;
+    })
+    .join('');
 
   // Show dialog
   whatsNewDialog.showModal();
