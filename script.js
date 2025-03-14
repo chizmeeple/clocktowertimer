@@ -14,7 +14,11 @@ let minutesDisplay,
   secondButtons,
   infoBtn,
   infoDialog,
-  closeInfoBtn;
+  closeInfoBtn,
+  whatsNewDialog,
+  closeWhatsNewBtn,
+  changeHistoryDialog,
+  closeChangeHistoryBtn;
 
 // Utility functions
 const connectivityUtils = {
@@ -136,6 +140,9 @@ const DEFAULT_YOUTUBE_PLAYLIST =
 
 const ATMOSPHERIC_PLAYLIST =
   'https://www.youtube.com/watch?v=1oCIZjPxthY&list=PLhCDyBm6z1NyrifTlGYj55uPb6xrlgBih';
+
+// Import version tracking from changelog
+import { APP_VERSION, CHANGELOG } from './changelog.js';
 
 // Audio Elements
 let endSound = null;
@@ -285,6 +292,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   infoBtn = document.getElementById('infoBtn');
   infoDialog = document.getElementById('infoDialog');
   closeInfoBtn = document.getElementById('closeInfo');
+  whatsNewDialog = document.getElementById('whatsNewDialog');
+  closeWhatsNewBtn = document.getElementById('closeWhatsNew');
+  changeHistoryDialog = document.getElementById('changeHistoryDialog');
+  closeChangeHistoryBtn = document.getElementById('closeChangeHistory');
 
   // Add event listener for "Use original playlist" link
   document
@@ -408,6 +419,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.addEventListener('click', handleSecondClick);
   });
 
+  // Add What's New dialog event listeners
+  closeWhatsNewBtn.addEventListener('click', closeWhatsNew);
+  whatsNewDialog.addEventListener('click', (e) => {
+    if (e.target === whatsNewDialog) {
+      closeWhatsNew();
+    }
+  });
+
+  // Add Change History dialog event listeners
+  closeChangeHistoryBtn.addEventListener('click', closeChangeHistory);
+  changeHistoryDialog.addEventListener('click', (e) => {
+    if (e.target === changeHistoryDialog) {
+      closeChangeHistory();
+    }
+  });
+
   // Initialize settings and update display
   loadSettings();
   updateClocktowerPresets();
@@ -449,6 +476,15 @@ function loadSettings() {
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
+
+    // Check for new version - only if we have a valid lastSeenVersion
+    const lastSeenVersion = settings.lastSeenVersion;
+    if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
+      showWhatsNew(lastSeenVersion);
+    }
+    // Always update the last seen version
+    settings.lastSeenVersion = APP_VERSION;
+    localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 
     // Restore day state if it exists
     const dayState = settings.dayState || '';
@@ -564,6 +600,7 @@ function saveSettings() {
     youtubePlaylistUrl,
     backgroundTheme,
     dayState,
+    lastSeenVersion: APP_VERSION,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
@@ -1107,8 +1144,17 @@ function generateQRCode() {
 // Info dialog functionality
 function openInfo() {
   generateQRCode();
+  // Display current version
+  document.getElementById('currentVersion').textContent = APP_VERSION;
   infoDialog.showModal();
 }
+
+// Add event listener for changelog link
+document.getElementById('viewChangelog').addEventListener('click', (e) => {
+  e.preventDefault();
+  infoDialog.close();
+  showChangeHistory();
+});
 
 function closeInfo() {
   infoDialog.close();
@@ -1477,4 +1523,113 @@ function updatePlaylistBadge(title) {
     badge.textContent = '';
     badge.title = '';
   }
+}
+
+// Show What's New dialog (for version updates)
+function showWhatsNew(lastVersion) {
+  const currentVersion = CHANGELOG[APP_VERSION];
+  if (!currentVersion) return;
+
+  // Update dialog content
+  document.querySelector(
+    '.version-number'
+  ).textContent = `Version ${APP_VERSION}`;
+  document.querySelector('.version-date').textContent = currentVersion.date;
+
+  // Compare versions properly using string comparison
+  const versions = Object.entries(CHANGELOG)
+    .filter(([version]) => {
+      const [lastMajor, lastMinor, lastPatch] = lastVersion
+        .split('.')
+        .map(Number);
+      const [verMajor, verMinor, verPatch] = version.split('.').map(Number);
+      const [currMajor, currMinor, currPatch] =
+        APP_VERSION.split('.').map(Number);
+
+      // Create comparable numbers (e.g., 1.0.0 -> 100000)
+      const lastNum = lastMajor * 10000 + lastMinor * 100 + lastPatch;
+      const verNum = verMajor * 10000 + verMinor * 100 + verPatch;
+      const currNum = currMajor * 10000 + currMinor * 100 + currPatch;
+
+      return verNum > lastNum && verNum <= currNum;
+    })
+    .sort(([a], [b]) => {
+      const [aMajor, aMinor, aPatch] = a.split('.').map(Number);
+      const [bMajor, bMinor, bPatch] = b.split('.').map(Number);
+      const aNum = aMajor * 10000 + aMinor * 100 + aPatch;
+      const bNum = bMajor * 10000 + bMinor * 100 + bPatch;
+      return bNum - aNum;
+    });
+
+  if (versions.length === 0) return;
+
+  // Combine all features and improvements from these versions
+  const features = versions.flatMap(([_, data]) => data.changes.features);
+  const improvements = versions.flatMap(
+    ([_, data]) => data.changes.improvements
+  );
+
+  // Update features list
+  const featuresList = document.querySelector('.features-list');
+  featuresList.innerHTML = features
+    .map((feature) => `<li>${feature}</li>`)
+    .join('');
+
+  // Update improvements list
+  const improvementsList = document.querySelector('.improvements-list');
+  improvementsList.innerHTML = improvements
+    .map((improvement) => `<li>${improvement}</li>`)
+    .join('');
+
+  // Show dialog
+  whatsNewDialog.showModal();
+}
+
+// Show Change History dialog (shows all versions)
+function showChangeHistory() {
+  const content = document.getElementById('changeHistoryContent');
+  const versions = Object.entries(CHANGELOG).sort(
+    ([a], [b]) => parseFloat(b) - parseFloat(a)
+  );
+
+  content.innerHTML = versions
+    .map(
+      ([version, data]) => `
+    <div class="version-info">
+      <span class="version-number">Version ${version}</span>
+      <span class="version-date">${data.date}</span>
+    </div>
+    <div class="changes-container">
+      <div class="changes-section">
+        <h3>New Features</h3>
+        <ul class="features-list">
+          ${data.changes.features
+            .map((feature) => `<li>${feature}</li>`)
+            .join('')}
+        </ul>
+      </div>
+      <div class="changes-section">
+        <h3>Improvements</h3>
+        <ul class="improvements-list">
+          ${data.changes.improvements
+            .map((improvement) => `<li>${improvement}</li>`)
+            .join('')}
+        </ul>
+      </div>
+    </div>
+  `
+    )
+    .join('<hr class="version-separator">');
+
+  changeHistoryDialog.showModal();
+}
+
+// Close What's New dialog
+function closeWhatsNew() {
+  whatsNewDialog.close();
+}
+
+// Close Change History dialog
+function closeChangeHistory() {
+  changeHistoryDialog.close();
 }

@@ -318,8 +318,17 @@
             >Github</a
           >.
         </p>
-        <div class="dialog-buttons">
-          <button id="closeInfo">Close</button>
+        <div class="dialog-footer">
+          <div class="version-display">
+            <span>Version</span>
+            <span id="currentVersion"></span>
+            <a href="#" id="viewChangelog" class="changelog-link"
+              >View Change History</a
+            >
+          </div>
+          <div class="dialog-buttons">
+            <button id="closeInfo">Close</button>
+          </div>
         </div>
       </div>
     </dialog>
@@ -335,6 +344,40 @@
     </button>
 
     <!-- YouTube player will be injected here by JavaScript -->
-    <script src="script.js"></script>
+    <dialog id="whatsNewDialog" class="whats-new-dialog">
+      <div class="dialog-content">
+        <h2>What's New</h2>
+        <div class="version-info">
+          <span class="version-number"></span>
+          <span class="version-date"></span>
+        </div>
+        <div class="changes-container">
+          <div class="changes-section">
+            <h3>New Features</h3>
+            <ul class="features-list"></ul>
+          </div>
+          <div class="changes-section">
+            <h3>Improvements</h3>
+            <ul class="improvements-list"></ul>
+          </div>
+        </div>
+        <div class="dialog-buttons">
+          <button id="closeWhatsNew">Close</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Change History Dialog -->
+    <dialog id="changeHistoryDialog" class="whats-new-dialog">
+      <div class="dialog-content">
+        <h2>Change History</h2>
+        <div id="changeHistoryContent"></div>
+        <div class="dialog-buttons">
+          <button id="closeChangeHistory">Close</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="script.js" type="module"></script>
   </body>
 </html>
