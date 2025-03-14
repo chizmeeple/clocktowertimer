@@ -173,6 +173,7 @@ let playSoundEffects = true; // Default to true for sound effects
 let youtubeVolume = 20; // Default volume
 let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
+let keepDisplayOn = true; // Default to true for wake lock
 let youtubePlayer = null;
 
 // Character amounts mapping
@@ -201,6 +202,7 @@ function updateCharacterAmounts(count) {
 
 // Request wake lock
 async function requestWakeLock() {
+  if (!keepDisplayOn) return;
   try {
     wakeLock = await navigator.wakeLock.request('screen');
     console.log('Wake Lock is active');
@@ -377,6 +379,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('playSoundEffects')
     .addEventListener('change', updateSoundEffects);
+  document.getElementById('keepDisplayOn').addEventListener('change', (e) => {
+    keepDisplayOn = e.target.checked;
+    saveSettings();
+    if (keepDisplayOn) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+  });
   document
     .getElementById('backgroundTheme')
     .addEventListener('change', updateBackgroundTheme);
@@ -432,6 +443,8 @@ function loadSettings() {
       settings.playSoundEffects !== undefined
         ? settings.playSoundEffects
         : true;
+    keepDisplayOn =
+      settings.keepDisplayOn !== undefined ? settings.keepDisplayOn : true;
     youtubeVolume = settings.youtubeVolume || 20;
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
@@ -465,6 +478,7 @@ function loadSettings() {
   travellerCountInput.value = travellerCount;
   document.getElementById('gamePace').value = currentPace;
   document.getElementById('playSoundEffects').checked = playSoundEffects;
+  document.getElementById('keepDisplayOn').checked = keepDisplayOn;
   document.getElementById('playMusic').checked = playMusic;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
   document.getElementById('youtubePlaylist').disabled = !playMusic;
@@ -545,6 +559,7 @@ function saveSettings() {
     currentPace,
     playMusic,
     playSoundEffects,
+    keepDisplayOn,
     youtubeVolume,
     youtubePlaylistUrl,
     backgroundTheme,
