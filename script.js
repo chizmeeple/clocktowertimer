@@ -430,6 +430,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Add View Full History link event listener
+  document.getElementById('viewFullHistory').addEventListener('click', (e) => {
+    e.preventDefault();
+    closeWhatsNew();
+    showChangeHistory();
+  });
+
   // Add Change History dialog event listeners
   closeChangeHistoryBtn.addEventListener('click', closeChangeHistory);
   changeHistoryDialog.addEventListener('click', (e) => {

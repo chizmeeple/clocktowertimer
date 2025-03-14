@@ -1451,3 +1451,30 @@ button:disabled {
 #closeChangeHistory:hover {
   background-color: #555;
 }
+
+.whats-new-dialog .dialog-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: 1rem;
+  gap: 0.5rem;
+}
+
+.whats-new-dialog .dialog-buttons .changelog-link {
+  color: #4caf50;
+  text-decoration: none;
+  font-size: 0.8rem;
+  padding: 0;
+  margin-bottom: 0.25rem;
+  border: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.whats-new-dialog .dialog-buttons button {
+  width: 100%;
+}
+
+.whats-new-dialog .dialog-buttons .changelog-link:hover {
+  text-decoration: underline;
+}
