@@ -189,26 +189,40 @@
               </label>
               <label>
                 <span>End of Day Sound</span>
-                <select id="endOfDaySound">
-                  <option value="cathedral-bell.mp3">
-                    Cathedral Bell (Default)
-                  </option>
-                  <option value="bell-and-crows.mp3">Bell and Crows</option>
-                  <option value="single-church-bell.mp3">
-                    Single Church Bell
-                  </option>
-                  <option value="alarm-siren-fast.mp3">Alarm Siren</option>
-                </select>
+                <div class="sound-selection">
+                  <select id="endOfDaySound">
+                    <option value="cathedral-bell.mp3">
+                      Cathedral Bell (Default)
+                    </option>
+                    <option value="bell-and-crows.mp3">Bell and Crows</option>
+                    <option value="single-church-bell.mp3">
+                      Single Church Bell
+                    </option>
+                    <option value="alarm-siren-fast.mp3">Alarm Siren</option>
+                  </select>
+                  <button class="preview-sound" data-type="end-of-day">
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path fill="currentColor" d="M8 5v14l11-7z" />
+                    </svg>
+                  </button>
+                </div>
               </label>
               <label>
                 <span>Wake Up Sound</span>
-                <select id="wakeUpSound">
-                  <option value="chisel-bell-01-loud.mp3">
-                    Chisel Bell (Default)
-                  </option>
-                  <option value="rooster.mp3">Rooster</option>
-                  <option value="quick-bell.mp3">Quick Bell</option>
-                </select>
+                <div class="sound-selection">
+                  <select id="wakeUpSound">
+                    <option value="chisel-bell-01-loud.mp3">
+                      Chisel Bell (Default)
+                    </option>
+                    <option value="rooster.mp3">Rooster</option>
+                    <option value="quick-bell.mp3">Quick Bell</option>
+                  </select>
+                  <button class="preview-sound" data-type="wake-up">
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path fill="currentColor" d="M8 5v14l11-7z" />
+                    </svg>
+                  </button>
+                </div>
               </label>
               <label>
                 <span>Play Background Music</span>

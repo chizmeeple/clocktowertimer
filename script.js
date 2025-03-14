@@ -147,6 +147,7 @@ import { APP_VERSION, CHANGELOG } from './changelog.js';
 // Audio Elements
 let endSound = null;
 let wakeUpSound = null;
+let previewSound = null; // New audio element for previews
 
 // Wake Lock state
 let wakeLock = null;
@@ -447,14 +448,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Add event listeners for sound selection
+  // Add event listeners for sound preview buttons
+  document.querySelectorAll('.preview-sound').forEach((button) => {
+    button.addEventListener('click', () => {
+      const type = button.dataset.type;
+      const select = button.parentElement.querySelector('select');
+      const soundFile = select.value;
+
+      // Stop any currently playing preview
+      if (previewSound) {
+        previewSound.pause();
+        previewSound.currentTime = 0;
+        document
+          .querySelectorAll('.preview-sound')
+          .forEach((btn) => btn.classList.remove('playing'));
+      }
+
+      // Create and play the new preview
+      previewSound = new Audio(`sounds/${type}/${soundFile}`);
+      button.classList.add('playing');
+
+      previewSound.addEventListener(
+        'ended',
+        () => {
+          button.classList.remove('playing');
+          previewSound = null;
+        },
+        { once: true }
+      );
+
+      previewSound.play().catch((error) => {
+        console.log('Error playing preview sound:', error);
+        button.classList.remove('playing');
+      });
+    });
+  });
+
+  // Update the sound change handlers to stop any preview when changing sounds
   document.getElementById('endOfDaySound').addEventListener('change', (e) => {
+    if (previewSound) {
+      previewSound.pause();
+      previewSound.currentTime = 0;
+      document
+        .querySelectorAll('.preview-sound')
+        .forEach((btn) => btn.classList.remove('playing'));
+    }
     endOfDaySound = e.target.value;
     endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
     saveSettings();
   });
 
   document.getElementById('wakeUpSound').addEventListener('change', (e) => {
+    if (previewSound) {
+      previewSound.pause();
+      previewSound.currentTime = 0;
+      document
+        .querySelectorAll('.preview-sound')
+        .forEach((btn) => btn.classList.remove('playing'));
+    }
     wakeUpSoundFile = e.target.value;
     wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
     saveSettings();
