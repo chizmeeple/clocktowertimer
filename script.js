@@ -408,6 +408,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key.toLowerCase() === 'q' && !settingsDialog.open) {
       openSettings();
     }
+    if (e.key.toLowerCase() === 'i' && !infoDialog.open) {
+      openInfo();
+    }
   });
 
   // Add click handlers for preset buttons

@@ -9,7 +9,10 @@ export const CHANGELOG = {
         "Added What's New dialog to show version changes",
         'Added version information and changelog to About screen',
       ],
-      improvements: ['Improved About dialog layout and usability'],
+      improvements: [
+        'Improved About dialog layout and usability',
+        'Added keyboard shortcut (<code>i</code>) to open About dialog',
+      ],
     },
   },
   '1.0.0': {
