@@ -570,41 +570,17 @@ function loadSettings() {
     endOfDaySound = settings.endOfDaySound || 'cathedral-bell.mp3';
     wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud.mp3';
 
-    // Check for new version - only if we have a valid lastSeenVersion
+    // Check for new version
     const lastSeenVersion = settings.lastSeenVersion;
     if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
       showWhatsNew(lastSeenVersion);
     }
-    // Always update the last seen version
     settings.lastSeenVersion = APP_VERSION;
     localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 
     // Restore day state if it exists
     const dayState = settings.dayState || '';
     updateDayDisplay(dayState);
-
-    // Set correct button states based on day state
-    if (dayState === 'dusk') {
-      timeLeft = 0;
-      isRunning = false;
-      startBtn.disabled = false;
-      startBtn.textContent = BUTTON_LABELS.WAKE_UP;
-      accelerateBtn.disabled = true;
-      resetBtn.disabled = true;
-    } else {
-      startBtn.disabled = true;
-      startBtn.textContent = BUTTON_LABELS.RESUME;
-      accelerateBtn.disabled = true;
-      resetBtn.disabled = true;
-    }
-
-    // Update sound selection dropdowns
-    document.getElementById('endOfDaySound').value = endOfDaySound;
-    document.getElementById('wakeUpSound').value = wakeUpSoundFile;
-
-    // Initialize audio with selected sounds
-    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
-    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
   } else {
     isFirstLoad = true;
     currentDay = 1;
@@ -621,61 +597,58 @@ function loadSettings() {
   document.getElementById('playMusic').checked = playMusic;
   document.getElementById('playMusicAtNight').checked = playMusicAtNight;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
-
-  // Update disabled states for music-related elements
-  const playMusicAtNightLabel = document
-    .getElementById('playMusicAtNight')
-    .closest('label');
-  const youtubePlaylistLabel = document
-    .getElementById('youtubePlaylist')
-    .closest('label');
-
-  document.getElementById('youtubePlaylist').disabled = !playMusic;
-  document.getElementById('youtubeVolume').disabled = !playMusic;
-  document.getElementById('playMusicAtNight').disabled = !playMusic;
-
-  playMusicAtNightLabel.classList.toggle('disabled', !playMusic);
-  youtubePlaylistLabel.classList.toggle('disabled', !playMusic);
-
-  document
-    .getElementById('useBardcorePlaylist')
-    .classList.toggle('disabled', !playMusic);
-  document
-    .getElementById('useAtmosphericPlaylist')
-    .classList.toggle('disabled', !playMusic);
-  document
-    .getElementById('openYoutubePlaylist')
-    .classList.toggle('disabled', !playMusic);
-
   document.getElementById('youtubeVolume').value = youtubeVolume;
-  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
   document.getElementById('backgroundTheme').value = backgroundTheme;
-
   document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+
+  // Update states for music-related elements
+  const musicDependentElements = [
+    {
+      element: document.getElementById('playMusicAtNight').closest('label'),
+      type: 'label',
+    },
+    {
+      element: document.getElementById('youtubePlaylist').closest('label'),
+      type: 'label',
+    },
+    {
+      element: document.getElementById('useBardcorePlaylist'),
+      type: 'link',
+    },
+    {
+      element: document.getElementById('useAtmosphericPlaylist'),
+      type: 'link',
+    },
+    {
+      element: document.getElementById('openYoutubePlaylist'),
+      type: 'link',
+    },
+  ];
+
+  // Apply inactive state to all dependent elements
+  musicDependentElements.forEach(({ element, type }) => {
+    if (element) {
+      element.classList.toggle('inactive', !playMusic);
+      if (type === 'label') {
+        const input = element.querySelector('input, select');
+        if (input) {
+          input.setAttribute('aria-hidden', !playMusic);
+        }
+      }
+    }
+  });
+
+  // Update display elements
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
   updateYoutubeLink();
-
-  // Apply background theme
   document.body.setAttribute('data-theme', backgroundTheme);
 
-  // Check if we're in a wake-up countdown and disable the button
-  const timerDisplay = document.querySelector('.timer-display');
-  if (timerDisplay.classList.contains('wake-up-countdown')) {
-    startBtn.disabled = true;
-  }
-
-  // Update character amounts and presets
-  updateCharacterAmounts(playerCount);
-  document.getElementById('travellerAmount').textContent = travellerCount;
-  updateClocktowerPresets();
-
-  // Initialize YouTube player only if music is enabled
+  // Initialize YouTube player if music is enabled
   if (playMusic) {
     initYoutubePlayer();
   } else {
-    // Remove existing player if music is disabled
     const existingContainer = document.querySelector(
       '.youtube-player-container'
     );
@@ -685,14 +658,18 @@ function loadSettings() {
     youtubePlayer = null;
   }
 
-  // Show settings dialog on first load after a short delay to ensure content is ready
+  // Update character amounts and presets
+  updateCharacterAmounts(playerCount);
+  updateClocktowerPresets();
+
+  // Show settings dialog on first load
   if (isFirstLoad) {
     requestAnimationFrame(() => {
       settingsDialog.showModal();
     });
   }
 
-  // Update playlist title on load
+  // Update playlist title
   const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
   if (playlistId) {
     fetchPlaylistTitle(playlistId).then((title) => {
