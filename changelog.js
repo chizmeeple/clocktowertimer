@@ -1,7 +1,16 @@
 // Version tracking
-export const APP_VERSION = '1.0.5';
+export const APP_VERSION = '1.0.6';
 
 export const CHANGELOG = {
+  '1.0.6': {
+    date: '2025-03-17',
+    changes: {
+      improvements: [
+        'Fixed styling of sound effect options when "Play Sound Effects" is disabled',
+        "Fixed What's New dialog not showing when updating from older versions",
+      ],
+    },
+  },
   '1.0.5': {
     date: '2025-03-17',
     changes: {
