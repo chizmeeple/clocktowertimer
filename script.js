@@ -1570,7 +1570,7 @@ function updateYoutubePlaylist() {
 function updateMusicPlayback() {
   playMusic = document.getElementById('playMusic').checked;
 
-  // Update disabled states and classes for music-related elements
+  // Update states for music-related elements
   const playMusicAtNightLabel = document
     .getElementById('playMusicAtNight')
     .closest('label');
@@ -1578,22 +1578,28 @@ function updateMusicPlayback() {
     .getElementById('youtubePlaylist')
     .closest('label');
 
-  document.getElementById('youtubePlaylist').disabled = !playMusic;
-  document.getElementById('youtubeVolume').disabled = !playMusic;
-  document.getElementById('playMusicAtNight').disabled = !playMusic;
+  document
+    .getElementById('youtubePlaylist')
+    .setAttribute('aria-hidden', !playMusic);
+  document
+    .getElementById('youtubeVolume')
+    .setAttribute('aria-hidden', !playMusic);
+  document
+    .getElementById('playMusicAtNight')
+    .setAttribute('aria-hidden', !playMusic);
 
-  playMusicAtNightLabel.classList.toggle('disabled', !playMusic);
-  youtubePlaylistLabel.classList.toggle('disabled', !playMusic);
+  playMusicAtNightLabel.classList.toggle('inactive', !playMusic);
+  youtubePlaylistLabel.classList.toggle('inactive', !playMusic);
 
   document
     .getElementById('useBardcorePlaylist')
-    .classList.toggle('disabled', !playMusic);
+    .classList.toggle('inactive', !playMusic);
   document
     .getElementById('useAtmosphericPlaylist')
-    .classList.toggle('disabled', !playMusic);
+    .classList.toggle('inactive', !playMusic);
   document
     .getElementById('openYoutubePlaylist')
-    .classList.toggle('disabled', !playMusic);
+    .classList.toggle('inactive', !playMusic);
 
   if (playMusic) {
     initYoutubePlayer();

@@ -1541,7 +1541,7 @@ button:disabled {
   box-shadow: 0 0 12px rgba(76, 175, 80, 0.4);
 }
 
-.setting-group label.disabled {
+.setting-group label.inactive {
   opacity: 0.35;
   cursor: not-allowed;
   background: rgba(0, 0, 0, 0.2);
@@ -1549,7 +1549,7 @@ button:disabled {
   position: relative;
 }
 
-.setting-group label.disabled::before {
+.setting-group label.inactive::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1567,7 +1567,7 @@ button:disabled {
   pointer-events: none;
 }
 
-.setting-group label.disabled::after {
+.setting-group label.inactive::after {
   content: 'Enable "Play Music" first';
   position: absolute;
   right: 8px;
@@ -1583,31 +1583,31 @@ button:disabled {
   transition: opacity 0.2s;
 }
 
-.setting-group label.disabled:hover::after {
+.setting-group label.inactive:hover::after {
   opacity: 1;
 }
 
-.setting-group label.disabled input,
-.setting-group label.disabled select,
-.setting-group label.disabled .number-input-group {
+.setting-group label.inactive input,
+.setting-group label.inactive select,
+.setting-group label.inactive .number-input-group {
   pointer-events: none;
   background: rgba(0, 0, 0, 0.3);
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-.setting-group label.disabled .playlist-badge {
+.setting-group label.inactive .playlist-badge {
   opacity: 0.35;
   background: rgba(0, 0, 0, 0.3);
 }
 
-.playlist-links a.disabled {
+.playlist-links a.inactive {
   opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
   filter: grayscale(100%);
 }
 
-.youtube-playlist-input:disabled {
+.youtube-playlist-input[aria-hidden='true'] {
   background: rgba(0, 0, 0, 0.3);
   border-color: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.5);

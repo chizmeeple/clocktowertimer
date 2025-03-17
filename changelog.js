@@ -1,7 +1,16 @@
 // Version tracking
-export const APP_VERSION = '1.0.4';
+export const APP_VERSION = '1.0.5';
 
 export const CHANGELOG = {
+  '1.0.5': {
+    date: '2025-03-17',
+    changes: {
+      features: [
+        'Added "Play Music at Night" setting to allow background music to continue playing during night phase',
+      ],
+      improvements: ['Enhanced visual feedback for dependent music settings'],
+    },
+  },
   '1.0.4': {
     date: '2025-03-14',
     changes: {
