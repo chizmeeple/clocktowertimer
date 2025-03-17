@@ -662,6 +662,9 @@ function loadSettings() {
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
 
+  // Update sound effects dependent elements
+  updateSoundEffects();
+
   // Show settings dialog on first load
   if (isFirstLoad) {
     requestAnimationFrame(() => {
@@ -1628,6 +1631,36 @@ function updateYoutubeVolume() {
 // Update sound effects playback
 function updateSoundEffects() {
   playSoundEffects = document.getElementById('playSoundEffects').checked;
+
+  // Get all sound effect dependent elements
+  const soundDependentElements = [
+    {
+      element: document.querySelector('label:has(#endOfDaySound)'),
+      type: 'label',
+    },
+    {
+      element: document.querySelector('label:has(#wakeUpSound)'),
+      type: 'label',
+    },
+  ];
+
+  // Apply inactive state to all dependent elements
+  soundDependentElements.forEach(({ element, type }) => {
+    if (element) {
+      element.classList.toggle('inactive', !playSoundEffects);
+      element.setAttribute(
+        'data-inactive-message',
+        'Enable "Play Sound Effects" first'
+      );
+      if (type === 'label') {
+        const input = element.querySelector('select, input');
+        if (input) {
+          input.setAttribute('aria-hidden', !playSoundEffects);
+        }
+      }
+    }
+  });
+
   saveSettings();
 }
 

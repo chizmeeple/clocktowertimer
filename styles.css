@@ -1568,7 +1568,7 @@ button:disabled {
 }
 
 .setting-group label.inactive::after {
-  content: 'Enable "Play Music" first';
+  content: attr(data-inactive-message, 'Enable "Play Music" first');
   position: absolute;
   right: 8px;
   top: 50%;
