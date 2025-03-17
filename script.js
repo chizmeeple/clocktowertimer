@@ -785,27 +785,26 @@ function updateClocktowerPresets() {
   });
 }
 
+// Update player count
 function updatePlayerCount() {
   playerCount = Math.min(
     Math.max(parseInt(playerCountInput.value) || 5, 5),
     15
   );
-  playerCountInput.value = playerCount;
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
   saveSettings();
 }
 
+// Update traveller count
 function updateTravellerCount() {
   travellerCount = Math.min(
     Math.max(parseInt(travellerCountInput.value) || 0, 0),
     5
   );
-  travellerCountInput.value = travellerCount;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
-  document.getElementById('travellerAmount').textContent = travellerCount;
   saveSettings();
 }
 
@@ -1722,6 +1721,7 @@ function showWhatsNew(lastVersion) {
       const verNum = verMajor * 10000 + verMinor * 100 + verPatch;
       const currNum = currMajor * 10000 + currMinor * 100 + currPatch;
 
+      // Show all versions between lastSeenVersion and current version
       return verNum > lastNum && verNum <= currNum;
     })
     .sort(([a], [b]) => {
@@ -1761,34 +1761,32 @@ function showWhatsNew(lastVersion) {
         `
             : ''
         }
-        <div class="changes-container">
-          ${
-            features.length > 0
-              ? `
-            <div class="changes-section">
-              <h3>New Features</h3>
-              <ul class="features-list">
-                ${features.map((feature) => `<li>${feature}</li>`).join('')}
-              </ul>
-            </div>
-          `
-              : ''
-          }
-          ${
-            improvements.length > 0
-              ? `
-            <div class="changes-section">
-              <h3>Improvements</h3>
-              <ul class="improvements-list">
-                ${improvements
-                  .map((improvement) => `<li>${improvement}</li>`)
-                  .join('')}
-              </ul>
-            </div>
-          `
-              : ''
-          }
-        </div>
+        ${
+          features.length > 0
+            ? `
+          <div class="changes-section">
+            <h3>New Features</h3>
+            <ul class="features-list">
+              ${features.map((feature) => `<li>${feature}</li>`).join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
+        ${
+          improvements.length > 0
+            ? `
+          <div class="changes-section">
+            <h3>Improvements</h3>
+            <ul class="improvements-list">
+              ${improvements
+                .map((improvement) => `<li>${improvement}</li>`)
+                .join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
         ${
           version !== versions[versions.length - 1][0]
             ? '<hr class="version-separator">'
