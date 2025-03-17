@@ -588,12 +588,24 @@
     </dialog>
 
     <!-- Change History Dialog -->
-    <dialog id="changeHistoryDialog" class="whats-new-dialog">
+    <dialog id="changeHistoryDialog" class="change-history-dialog">
       <div class="dialog-content">
-        <h2>Change History</h2>
         <div id="changeHistoryContent"></div>
-        <div class="dialog-buttons">
+        <div class="dialog-footer">
           <button id="closeChangeHistory">Close</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="portraitWarningDialog" class="portrait-warning-dialog">
+      <div class="dialog-content">
+        <h2>Portrait Mode Notice</h2>
+        <p>
+          This app was designed to be used in landscape mode and may not look or
+          function optimally in portrait orientation.
+        </p>
+        <div class="dialog-footer">
+          <button id="acceptPortraitWarning">I Understand</button>
         </div>
       </div>
     </dialog>

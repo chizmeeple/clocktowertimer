@@ -33,6 +33,22 @@ const connectivityUtils = {
   },
 };
 
+const orientationUtils = {
+  isPortrait: () => window.matchMedia('(orientation: portrait)').matches,
+  addOrientationListener: (callback) => {
+    window
+      .matchMedia('(orientation: portrait)')
+      .addEventListener('change', (e) => {
+        callback(e.matches);
+      });
+  },
+  removeOrientationListener: (callback) => {
+    window
+      .matchMedia('(orientation: portrait)')
+      .removeEventListener('change', callback);
+  },
+};
+
 const youtubeUtils = {
   play: () => {
     if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
@@ -186,6 +202,7 @@ let keepDisplayOn = true; // Default to true for wake lock
 let youtubePlayer = null;
 let endOfDaySound = 'cathedral-bell.mp3'; // Default end of day sound
 let wakeUpSoundFile = 'chisel-bell-01-loud.mp3'; // Default wake up sound
+let acceptedPortraitWarning = false; // Default to false for portrait warning
 
 // Character amounts mapping
 const characterAmounts = {
@@ -306,6 +323,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   closeWhatsNewBtn = document.getElementById('closeWhatsNew');
   changeHistoryDialog = document.getElementById('changeHistoryDialog');
   closeChangeHistoryBtn = document.getElementById('closeChangeHistory');
+
+  // Add portrait warning dialog elements
+  const portraitWarningDialog = document.getElementById(
+    'portraitWarningDialog'
+  );
+  const acceptPortraitWarningBtn = document.getElementById(
+    'acceptPortraitWarning'
+  );
+
+  // Add event listener for accepting portrait warning
+  acceptPortraitWarningBtn.addEventListener('click', () => {
+    acceptedPortraitWarning = true;
+    saveSettings();
+    portraitWarningDialog.close();
+  });
+
+  // Check for portrait mode and show warning if needed
+  if (orientationUtils.isPortrait() && !acceptedPortraitWarning) {
+    portraitWarningDialog.showModal();
+  }
+
+  // Add orientation change listener
+  orientationUtils.addOrientationListener((isPortrait) => {
+    if (isPortrait && !acceptedPortraitWarning) {
+      portraitWarningDialog.showModal();
+    }
+  });
 
   // Add event listener for "Use original playlist" link
   document
@@ -569,6 +613,7 @@ function loadSettings() {
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
     endOfDaySound = settings.endOfDaySound || 'cathedral-bell.mp3';
     wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud.mp3';
+    acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
 
     // Check for new version
     const lastSeenVersion = settings.lastSeenVersion;
@@ -708,6 +753,7 @@ function saveSettings() {
     lastSeenVersion: APP_VERSION,
     endOfDaySound,
     wakeUpSoundFile,
+    acceptedPortraitWarning,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }

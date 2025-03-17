@@ -1612,3 +1612,91 @@ button:disabled {
   border-color: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.5);
 }
+
+.change-history-dialog {
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background-color: #1a2b1a;
+  color: white;
+  max-width: 600px;
+  width: 90%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+  max-height: 90vh;
+}
+
+.portrait-warning-dialog {
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background-color: #1a2b1a;
+  color: white;
+  max-width: 400px;
+  width: 90%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+}
+
+.portrait-warning-dialog[open] {
+  opacity: 1;
+  visibility: visible;
+  display: block;
+}
+
+.portrait-warning-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.portrait-warning-dialog .dialog-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.portrait-warning-dialog h2 {
+  margin: 0;
+  color: #4caf50;
+  font-size: 1.5rem;
+}
+
+.portrait-warning-dialog p {
+  margin: 0;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.portrait-warning-dialog .dialog-footer {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.portrait-warning-dialog button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.portrait-warning-dialog button:hover {
+  background-color: #45a049;
+}
