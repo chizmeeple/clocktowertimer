@@ -177,6 +177,7 @@ let isFirstLoad = false;
 let currentDay = null;
 let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
+let playMusicAtNight = false; // Default to false for new users
 let playSoundEffects = true; // Default to true for sound effects
 let youtubeVolume = 20; // Default volume
 let backgroundTheme = 'medieval-cartoon'; // Default background theme
@@ -390,6 +391,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('playMusic')
     .addEventListener('change', updateMusicPlayback);
+  document.getElementById('playMusicAtNight').addEventListener('change', () => {
+    playMusicAtNight = document.getElementById('playMusicAtNight').checked;
+    saveSettings();
+  });
   document
     .getElementById('youtubePlaylist')
     .addEventListener('change', updateYoutubePlaylist);
@@ -548,6 +553,10 @@ function loadSettings() {
     currentDay = settings.currentDay || 1;
     currentPace = settings.currentPace || 'normal';
     playMusic = settings.playMusic !== undefined ? settings.playMusic : false;
+    playMusicAtNight =
+      settings.playMusicAtNight !== undefined
+        ? settings.playMusicAtNight
+        : false;
     playSoundEffects =
       settings.playSoundEffects !== undefined
         ? settings.playSoundEffects
@@ -598,8 +607,7 @@ function loadSettings() {
     wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
   } else {
     isFirstLoad = true;
-    currentDay = 1; // Set to Day 1 on first load
-    // Initialize audio with default sounds
+    currentDay = 1;
     endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
     wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
   }
@@ -611,18 +619,39 @@ function loadSettings() {
   document.getElementById('playSoundEffects').checked = playSoundEffects;
   document.getElementById('keepDisplayOn').checked = keepDisplayOn;
   document.getElementById('playMusic').checked = playMusic;
+  document.getElementById('playMusicAtNight').checked = playMusicAtNight;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
+
+  // Update disabled states for music-related elements
+  const playMusicAtNightLabel = document
+    .getElementById('playMusicAtNight')
+    .closest('label');
+  const youtubePlaylistLabel = document
+    .getElementById('youtubePlaylist')
+    .closest('label');
+
   document.getElementById('youtubePlaylist').disabled = !playMusic;
-  document.getElementById('youtubeVolume').value = youtubeVolume;
   document.getElementById('youtubeVolume').disabled = !playMusic;
-  document.getElementById('backgroundTheme').value = backgroundTheme;
-  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+  document.getElementById('playMusicAtNight').disabled = !playMusic;
+
+  playMusicAtNightLabel.classList.toggle('disabled', !playMusic);
+  youtubePlaylistLabel.classList.toggle('disabled', !playMusic);
+
   document
     .getElementById('useBardcorePlaylist')
     .classList.toggle('disabled', !playMusic);
   document
     .getElementById('useAtmosphericPlaylist')
     .classList.toggle('disabled', !playMusic);
+  document
+    .getElementById('openYoutubePlaylist')
+    .classList.toggle('disabled', !playMusic);
+
+  document.getElementById('youtubeVolume').value = youtubeVolume;
+  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+  document.getElementById('backgroundTheme').value = backgroundTheme;
+
+  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
@@ -689,6 +718,7 @@ function saveSettings() {
     currentDay,
     currentPace,
     playMusic,
+    playMusicAtNight,
     playSoundEffects,
     keepDisplayOn,
     youtubeVolume,
@@ -835,6 +865,11 @@ function updateFullscreenButton() {
 function playEndSound() {
   if (!playSoundEffects) return;
 
+  // Stop music if playing and not set to play at night
+  if (playMusic && !playMusicAtNight) {
+    youtubeUtils.pause();
+  }
+
   isEndSoundPlaying = true;
   startBtn.disabled = true;
 
@@ -853,9 +888,13 @@ function playEndSound() {
     () => {
       isEndSoundPlaying = false;
       updateDisplay();
+      // Resume music if playMusicAtNight is enabled
+      if (playMusic && playMusicAtNight) {
+        youtubeUtils.play();
+      }
     },
     { once: true }
-  ); // Use once: true to automatically remove the listener after it fires
+  );
 }
 
 // Create beep sound (fallback if mp3 fails to load)
@@ -1078,6 +1117,11 @@ function playWakeUpSound() {
   }
 
   if (playSoundEffects) {
+    // Stop music if playing and not set to play at night
+    if (playMusic && !playMusicAtNight) {
+      youtubeUtils.pause();
+    }
+
     wakeUpSound.currentTime = 0;
     wakeUpSound.play().catch((error) => {
       console.log('Error playing wake-up sound:', error);
@@ -1548,8 +1592,22 @@ function updateYoutubePlaylist() {
 // Toggle music playback
 function updateMusicPlayback() {
   playMusic = document.getElementById('playMusic').checked;
+
+  // Update disabled states and classes for music-related elements
+  const playMusicAtNightLabel = document
+    .getElementById('playMusicAtNight')
+    .closest('label');
+  const youtubePlaylistLabel = document
+    .getElementById('youtubePlaylist')
+    .closest('label');
+
   document.getElementById('youtubePlaylist').disabled = !playMusic;
   document.getElementById('youtubeVolume').disabled = !playMusic;
+  document.getElementById('playMusicAtNight').disabled = !playMusic;
+
+  playMusicAtNightLabel.classList.toggle('disabled', !playMusic);
+  youtubePlaylistLabel.classList.toggle('disabled', !playMusic);
+
   document
     .getElementById('useBardcorePlaylist')
     .classList.toggle('disabled', !playMusic);

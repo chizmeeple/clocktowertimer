@@ -1540,3 +1540,75 @@ button:disabled {
   color: white;
   box-shadow: 0 0 12px rgba(76, 175, 80, 0.4);
 }
+
+.setting-group label.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.2);
+  filter: grayscale(100%);
+  position: relative;
+}
+
+.setting-group label.disabled::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 10px,
+    rgba(0, 0, 0, 0.2) 10px,
+    rgba(0, 0, 0, 0.2) 20px
+  );
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.setting-group label.disabled::after {
+  content: 'Enable "Play Music" first';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.setting-group label.disabled:hover::after {
+  opacity: 1;
+}
+
+.setting-group label.disabled input,
+.setting-group label.disabled select,
+.setting-group label.disabled .number-input-group {
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.setting-group label.disabled .playlist-badge {
+  opacity: 0.35;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.playlist-links a.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(100%);
+}
+
+.youtube-playlist-input:disabled {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
