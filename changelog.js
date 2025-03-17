@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.6';
+export const APP_VERSION = '1.0.7';
 
 export const CHANGELOG = {
+  '1.0.7': {
+    date: '2025-03-17',
+    changes: {
+      features: [
+        'Added portrait mode warning for better user experience on mobile devices',
+      ],
+    },
+  },
   '1.0.6': {
     date: '2025-03-17',
     changes: {
