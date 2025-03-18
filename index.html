@@ -34,12 +34,14 @@
     <link
       rel="preload"
       href="sounds/end-of-day/cathedral-bell.mp3"
-      as="audio"
+      as="fetch"
+      crossorigin
     />
     <link
       rel="preload"
       href="sounds/wake-up/chisel-bell-01-loud.mp3"
-      as="audio"
+      as="fetch"
+      crossorigin
     />
 
     <!-- Open Graph / Facebook -->
@@ -74,7 +76,13 @@
     <!-- Content Security Policy -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://api.qrserver.com https://img.youtube.com data:; media-src 'self'; frame-src https://www.youtube.com; connect-src 'self' https://www.google-analytics.com;"
+      content="default-src 'self'; script-src 'self' https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com https://storage.ko-fi.com 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://api.qrserver.com https://img.youtube.com https://storage.ko-fi.com data:; media-src 'self'; frame-src https://www.youtube.com https://ko-fi.com; connect-src 'self' https://www.google-analytics.com;"
+    />
+
+    <!-- Ko-Fi fonts -->
+    <link
+      href="https://fonts.googleapis.com/css?family=Quicksand:400,700"
+      rel="stylesheet"
     />
 
     <!-- Google tag (gtag.js) -->
@@ -511,14 +519,16 @@
           </p>
         </div>
         <div class="kofi-container">
-          <script
-            type="text/javascript"
-            src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"
-          ></script>
-          <script type="text/javascript">
-            kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'H2H06CBE');
-            kofiwidget2.draw();
-          </script>
+          <a
+            href="https://ko-fi.com/chizmw"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="https://storage.ko-fi.com/cdn/kofi3.png?v=3"
+              alt="Support Me on Ko-fi"
+            />
+          </a>
         </div>
         <p class="disclaimer">
           This timer is an open source project and is not affiliated with

@@ -621,7 +621,18 @@ function loadSettings() {
   youtubePlaylistUrl = settings.youtubePlaylistUrl || '';
   youtubeVolume = settings.youtubeVolume ?? 50;
   playSoundEffects = settings.playSoundEffects ?? true;
-  endOfDaySound = settings.endOfDaySound || 'cathedral-bell.mp3';
+
+  // Validate sound files exist
+  const validEndOfDaySounds = [
+    'cathedral-bell.mp3',
+    'single-church-bell.mp3',
+    'alarm-siren-fast.mp3',
+    'bell-and-crows.mp3',
+  ];
+  endOfDaySound = validEndOfDaySounds.includes(settings.endOfDaySound)
+    ? settings.endOfDaySound
+    : 'cathedral-bell.mp3';
+
   backgroundTheme = settings.backgroundTheme || 'gothic-city';
   currentDay = settings.currentDay ?? null;
 
