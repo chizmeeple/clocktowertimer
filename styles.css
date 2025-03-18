@@ -1638,10 +1638,23 @@ button:disabled {
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
-  opacity: 0;
-  visibility: hidden;
-  display: none;
-  max-height: 90vh;
+}
+
+.change-history-dialog[open] {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+}
+
+.change-history-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.change-history-dialog .dialog-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  max-height: 80vh;
 }
 
 .portrait-warning-dialog {
