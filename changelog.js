@@ -1,7 +1,18 @@
 // Version tracking
-export const APP_VERSION = '1.0.7';
+export const APP_VERSION = '1.0.8';
 
 export const CHANGELOG = {
+  '1.0.8': {
+    date: '2025-03-18',
+    changes: {
+      improvements: [
+        'Fixed changelog dialog functionality',
+        'Updated styling for settings dialog',
+        'Simplified Ko-Fi support button to use a static image',
+        'Fixed sound effect selections not showing correctly in settings dialog',
+      ],
+    },
+  },
   '1.0.7': {
     date: '2025-03-17',
     changes: {
