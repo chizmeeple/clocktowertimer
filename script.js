@@ -645,6 +645,8 @@ function loadSettings() {
   document.getElementById('youtubeVolume').value = youtubeVolume;
   document.getElementById('backgroundTheme').value = backgroundTheme;
   document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+  document.getElementById('endOfDaySound').value = endOfDaySound;
+  document.getElementById('wakeUpSound').value = wakeUpSoundFile;
 
   // Update states for music-related elements
   const musicDependentElements = [
@@ -837,6 +839,7 @@ function updatePlayerCount() {
     Math.max(parseInt(playerCountInput.value) || 5, 5),
     15
   );
+  playerCountInput.value = playerCount;
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
   saveSettings();
@@ -848,6 +851,7 @@ function updateTravellerCount() {
     Math.max(parseInt(travellerCountInput.value) || 0, 0),
     5
   );
+  travellerCountInput.value = travellerCount;
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
