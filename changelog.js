@@ -1,7 +1,17 @@
 // Version tracking
-export const APP_VERSION = '1.0.7';
+export const APP_VERSION = '1.0.8';
 
 export const CHANGELOG = {
+  '1.0.8': {
+    date: '2025-03-18',
+    changes: {
+      improvements: [
+        'Improved settings dialog layout for better display on all screen sizes',
+        'Optimised spacing and controls for better usability',
+        'Fixed sound effect selection menu not displaying saved values after page refresh',
+      ],
+    },
+  },
   '1.0.7': {
     date: '2025-03-17',
     changes: {
