@@ -611,146 +611,68 @@ function roundToNearestQuarter(n) {
 
 // Load settings from localStorage
 function loadSettings() {
-  const savedSettings = localStorage.getItem('quickTimerSettings');
-  if (savedSettings) {
-    const settings = JSON.parse(savedSettings);
-    playerCount = settings.playerCount || 10;
-    travellerCount = settings.travellerCount || 0;
-    currentDay = settings.currentDay || 1;
-    currentPace = settings.currentPace || 'normal';
-    playMusic = settings.playMusic !== undefined ? settings.playMusic : false;
-    playMusicAtNight =
-      settings.playMusicAtNight !== undefined
-        ? settings.playMusicAtNight
-        : false;
-    playSoundEffects =
-      settings.playSoundEffects !== undefined
-        ? settings.playSoundEffects
-        : true;
-    keepDisplayOn =
-      settings.keepDisplayOn !== undefined ? settings.keepDisplayOn : true;
-    youtubeVolume = settings.youtubeVolume || 20;
-    backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
-    youtubePlaylistUrl =
-      settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
-    endOfDaySound = settings.endOfDaySound || 'cathedral-bell.mp3';
-    wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud.mp3';
-    acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
+  const settings = JSON.parse(localStorage.getItem('clocktowerSettings')) || {};
 
-    // Check for new version
-    const lastSeenVersion = settings.lastSeenVersion;
-    if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
-      showWhatsNew(lastSeenVersion);
-    }
-    settings.lastSeenVersion = APP_VERSION;
-    localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+  // Load settings with defaults
+  playerCount = settings.playerCount || 5;
+  currentPace = settings.currentPace || 'normal';
+  playMusic = settings.playMusic ?? false;
+  playMusicAtNight = settings.playMusicAtNight ?? false;
+  youtubePlaylistUrl = settings.youtubePlaylistUrl || '';
+  youtubeVolume = settings.youtubeVolume ?? 50;
+  playSoundEffects = settings.playSoundEffects ?? true;
+  endOfDaySound = settings.endOfDaySound || 'cathedral-bell.mp3';
+  backgroundTheme = settings.backgroundTheme || 'gothic-city';
+  currentDay = settings.currentDay ?? null;
 
-    // Restore day state if it exists
-    const dayState = settings.dayState || '';
-    updateDayDisplay(dayState);
-  } else {
-    isFirstLoad = true;
-    currentDay = 1;
-    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
-    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
-  }
+  // Safely update UI elements
+  const safeSetValue = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.value = value;
+  };
 
-  // Always update UI to reflect settings
-  playerCountInput.value = playerCount;
-  travellerCountInput.value = travellerCount;
-  document.getElementById('gamePace').value = currentPace;
-  document.getElementById('playSoundEffects').checked = playSoundEffects;
-  document.getElementById('keepDisplayOn').checked = keepDisplayOn;
-  document.getElementById('playMusic').checked = playMusic;
-  document.getElementById('playMusicAtNight').checked = playMusicAtNight;
-  document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
-  document.getElementById('youtubeVolume').value = youtubeVolume;
-  document.getElementById('backgroundTheme').value = backgroundTheme;
-  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+  const safeSetChecked = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.checked = value;
+  };
 
-  // Update sound effect select elements
-  document.getElementById('endOfDaySound').value = endOfDaySound;
-  document.getElementById('wakeUpSound').value = wakeUpSoundFile;
+  safeSetValue('playerCount', playerCount);
+  safeSetValue('gamePace', currentPace);
+  safeSetChecked('playMusic', playMusic);
+  safeSetChecked('playMusicAtNight', playMusicAtNight);
+  safeSetChecked('playSoundEffects', playSoundEffects);
+  safeSetValue('endOfDaySound', endOfDaySound);
+  safeSetValue('youtubeVolume', youtubeVolume);
+  safeSetValue('youtubePlaylistUrl', youtubePlaylistUrl);
+  safeSetValue('backgroundTheme', backgroundTheme);
 
-  // Update states for music-related elements
-  const musicDependentElements = [
-    {
-      element: document.getElementById('playMusicAtNight').closest('label'),
-      type: 'label',
-    },
-    {
-      element: document.getElementById('youtubePlaylist').closest('label'),
-      type: 'label',
-    },
-    {
-      element: document.getElementById('useBardcorePlaylist'),
-      type: 'link',
-    },
-    {
-      element: document.getElementById('useAtmosphericPlaylist'),
-      type: 'link',
-    },
-    {
-      element: document.getElementById('openYoutubePlaylist'),
-      type: 'link',
-    },
-  ];
+  // Safely update volume display
+  const volumeValue = document.querySelector('.volume-value');
+  if (volumeValue) volumeValue.textContent = `${youtubeVolume}%`;
 
-  // Apply inactive state to all dependent elements
-  musicDependentElements.forEach(({ element, type }) => {
-    if (element) {
-      element.classList.toggle('inactive', !playMusic);
-      if (type === 'label') {
-        const input = element.querySelector('input, select');
-        if (input) {
-          input.setAttribute('aria-hidden', !playMusic);
-        }
-      }
-    }
-  });
-
-  // Update display elements
-  document
-    .getElementById('travellerDisplay')
-    .classList.toggle('visible', travellerCount > 0);
-  updateYoutubeLink();
-  document.body.setAttribute('data-theme', backgroundTheme);
-
-  // Initialize YouTube player if music is enabled
-  if (playMusic) {
-    initYoutubePlayer();
-  } else {
-    const existingContainer = document.querySelector(
-      '.youtube-player-container'
-    );
-    if (existingContainer) {
-      existingContainer.remove();
-    }
-    youtubePlayer = null;
-  }
+  // Set background theme
+  document.body.dataset.theme = backgroundTheme;
 
   // Update character amounts and presets
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
 
-  // Update sound effects dependent elements
-  updateSoundEffects();
-
-  // Show settings dialog on first load
-  if (isFirstLoad) {
-    requestAnimationFrame(() => {
-      settingsDialog.showModal();
-    });
+  // Update display
+  updateDisplay();
+  if (currentDay !== null) {
+    updateDayDisplay();
   }
 
-  // Update playlist title
-  const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
-  if (playlistId) {
-    fetchPlaylistTitle(playlistId).then((title) => {
-      if (title) {
-        updatePlaylistBadge(title);
-      }
-    });
+  // Only fetch playlist title if music is enabled and we're online
+  if (playMusic && youtubePlaylistUrl && connectivityUtils.isOnline()) {
+    const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
+    if (playlistId) {
+      fetchPlaylistTitle(playlistId).then((title) => {
+        if (title) {
+          updatePlaylistBadge(title);
+        }
+      });
+    }
   }
 }
 
