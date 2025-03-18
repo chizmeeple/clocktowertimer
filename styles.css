@@ -1077,13 +1077,18 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 }
 
 .kofi-container {
-  margin: 0;
+  margin: 1rem 0;
   text-align: center;
 }
 
-.kofi-container iframe {
-  border: 0;
-  margin: 0 auto;
+.kofi-container img {
+  height: 36px;
+  width: auto;
+  transition: transform 0.2s ease;
+}
+
+.kofi-container a:hover img {
+  transform: translateY(-2px);
 }
 
 .game-pace-select {
