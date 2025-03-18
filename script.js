@@ -271,10 +271,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setupKeyboardNavigation();
 
-  // Initialize audio
-  endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
-  wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
-
   // Add connectivity listeners
   connectivityUtils.addStatusListener(
     () => {
@@ -568,8 +564,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize settings and update display
   loadSettings();
+
+  // Initialize audio
+  endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+  wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
+
+  // Update character amounts and presets
+  updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
-  updateDisplay();
+
+  // Update sound effects dependent elements
+  updateSoundEffects();
+
+  // Show settings dialog on first load
+  if (isFirstLoad) {
+    requestAnimationFrame(() => {
+      settingsDialog.showModal();
+    });
+  }
+
+  // Update playlist title
+  const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
+  if (playlistId) {
+    fetchPlaylistTitle(playlistId).then((title) => {
+      if (title) {
+        updatePlaylistBadge(title);
+      }
+    });
+  }
 });
 
 // Helper functions for timer calculations
@@ -645,6 +667,10 @@ function loadSettings() {
   document.getElementById('youtubeVolume').value = youtubeVolume;
   document.getElementById('backgroundTheme').value = backgroundTheme;
   document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+
+  // Update sound effect select elements
+  document.getElementById('endOfDaySound').value = endOfDaySound;
+  document.getElementById('wakeUpSound').value = wakeUpSoundFile;
 
   // Update states for music-related elements
   const musicDependentElements = [
@@ -833,10 +859,7 @@ function updateClocktowerPresets() {
 
 // Update player count
 function updatePlayerCount() {
-  playerCount = Math.min(
-    Math.max(parseInt(playerCountInput.value) || 5, 5),
-    15
-  );
+  playerCount = Math.min(Math.max(parseInt(playerCountInput.value) || 5, 15));
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
   saveSettings();
@@ -845,8 +868,7 @@ function updatePlayerCount() {
 // Update traveller count
 function updateTravellerCount() {
   travellerCount = Math.min(
-    Math.max(parseInt(travellerCountInput.value) || 0, 0),
-    5
+    Math.max(parseInt(travellerCountInput.value) || 0, 5)
   );
   document
     .getElementById('travellerDisplay')
