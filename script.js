@@ -1853,48 +1853,49 @@ function showChangeHistory() {
     ([a], [b]) => parseFloat(b) - parseFloat(a)
   );
 
-  content.innerHTML = versions
-    .map(([version, data]) => {
-      const features = data.changes.features || [];
-      const improvements = data.changes.improvements || [];
+  let html = '';
+  versions.forEach(([version, data], index) => {
+    const features = data.changes.features || [];
+    const improvements = data.changes.improvements || [];
 
-      return `
-        <div class="version-info">
-          <span class="version-number">Version ${version}</span>
-          <span class="version-date">${data.date}</span>
-        </div>
-        <div class="changes-container">
-          ${
-            features.length > 0
-              ? `
-            <div class="changes-section">
-              <h3>New Features</h3>
-              <ul class="features-list">
-                ${features.map((feature) => `<li>${feature}</li>`).join('')}
-              </ul>
-            </div>
-          `
-              : ''
-          }
-          ${
-            improvements.length > 0
-              ? `
-            <div class="changes-section">
-              <h3>Improvements</h3>
-              <ul class="improvements-list">
-                ${improvements
-                  .map((improvement) => `<li>${improvement}</li>`)
-                  .join('')}
-              </ul>
-            </div>
-          `
-              : ''
-          }
-        </div>
-      `;
-    })
-    .join('<hr class="version-separator">');
+    html += `
+      <div class="version-info">
+        <span class="version-number">Version ${version}</span>
+        <span class="version-date">${data.date}</span>
+      </div>
+      <div class="changes-container">
+        ${
+          features.length > 0
+            ? `
+          <div class="changes-section">
+            <h3>New Features</h3>
+            <ul class="features-list">
+              ${features.map((feature) => `<li>${feature}</li>`).join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
+        ${
+          improvements.length > 0
+            ? `
+          <div class="changes-section">
+            <h3>Improvements</h3>
+            <ul class="improvements-list">
+              ${improvements
+                .map((improvement) => `<li>${improvement}</li>`)
+                .join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
+      </div>
+      ${index < versions.length - 1 ? '<hr class="version-separator">' : ''}
+    `;
+  });
 
+  content.innerHTML = html;
   changeHistoryDialog.showModal();
 }
 
