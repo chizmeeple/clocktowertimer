@@ -195,7 +195,8 @@ let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
 let playMusicAtNight = false; // Default to false for new users
 let playSoundEffects = true; // Default to true for sound effects
-let youtubeVolume = 20; // Default volume
+let youtubeVolume = 50; // Default to 50%
+let soundEffectsVolume = 100; // Default to 100%
 let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
@@ -448,6 +449,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('playSoundEffects')
     .addEventListener('change', updateSoundEffects);
+  document
+    .getElementById('soundEffectsVolume')
+    .addEventListener('input', updateSoundEffectsVolume);
   document.getElementById('keepDisplayOn').addEventListener('change', (e) => {
     keepDisplayOn = e.target.checked;
     saveSettings();
@@ -605,9 +609,10 @@ function loadSettings() {
       settings.playSoundEffects !== undefined
         ? settings.playSoundEffects
         : true;
+    soundEffectsVolume = settings.soundEffectsVolume || 100;
     keepDisplayOn =
       settings.keepDisplayOn !== undefined ? settings.keepDisplayOn : true;
-    youtubeVolume = settings.youtubeVolume || 20;
+    youtubeVolume = settings.youtubeVolume || 50;
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
@@ -643,10 +648,27 @@ function loadSettings() {
   document.getElementById('playMusicAtNight').checked = playMusicAtNight;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
   document.getElementById('youtubeVolume').value = youtubeVolume;
+  document.getElementById('soundEffectsVolume').value = soundEffectsVolume;
   document.getElementById('backgroundTheme').value = backgroundTheme;
-  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+  document.querySelector(
+    'label:has(#youtubeVolume) .volume-value'
+  ).textContent = `${youtubeVolume}%`;
+  document.querySelector(
+    'label:has(#soundEffectsVolume) .volume-value'
+  ).textContent = `${soundEffectsVolume}%`;
   document.getElementById('endOfDaySound').value = endOfDaySound;
   document.getElementById('wakeUpSound').value = wakeUpSoundFile;
+
+  // Enable/disable volume controls based on their respective settings
+  const youtubeVolumeInput = document.getElementById('youtubeVolume');
+  youtubeVolumeInput.disabled = !playMusic;
+  youtubeVolumeInput.closest('label').classList.toggle('inactive', !playMusic);
+
+  const soundEffectsVolumeInput = document.getElementById('soundEffectsVolume');
+  soundEffectsVolumeInput.disabled = !playSoundEffects;
+  soundEffectsVolumeInput
+    .closest('label')
+    .classList.toggle('inactive', !playSoundEffects);
 
   // Update states for music-related elements
   const musicDependentElements = [
@@ -747,6 +769,7 @@ function saveSettings() {
     playMusic,
     playMusicAtNight,
     playSoundEffects,
+    soundEffectsVolume,
     keepDisplayOn,
     youtubeVolume,
     youtubePlaylistUrl,
@@ -903,6 +926,7 @@ function playEndSound() {
   startBtn.disabled = true;
 
   endSound.currentTime = 0; // Reset the sound to start
+  endSound.volume = soundEffectsVolume / 100; // Apply volume control
   endSound.play().catch((error) => {
     console.log('Error playing sound:', error);
     // Fallback to beep if sound file fails
@@ -939,7 +963,7 @@ function createBeep() {
 
   oscillator.type = 'sine';
   oscillator.frequency.value = 440;
-  gainNode.gain.value = 0.5;
+  gainNode.gain.value = (soundEffectsVolume / 100) * 0.5; // Apply volume control
 
   oscillator.start();
 
@@ -1152,6 +1176,7 @@ function playWakeUpSound() {
     }
 
     wakeUpSound.currentTime = 0;
+    wakeUpSound.volume = soundEffectsVolume / 100; // Apply volume control
     wakeUpSound.play().catch((error) => {
       console.log('Error playing wake-up sound:', error);
       createBeep();
@@ -1670,7 +1695,9 @@ function updateMusicPlayback() {
 // Update YouTube volume
 function updateYoutubeVolume() {
   youtubeVolume = parseInt(document.getElementById('youtubeVolume').value);
-  document.querySelector('.volume-value').textContent = `${youtubeVolume}%`;
+  document.querySelector(
+    'label:has(#youtubeVolume) .volume-value'
+  ).textContent = `${youtubeVolume}%`;
   if (youtubePlayer && youtubePlayer.setVolume) {
     youtubePlayer.setVolume(youtubeVolume);
   }
@@ -1689,6 +1716,10 @@ function updateSoundEffects() {
     },
     {
       element: document.querySelector('label:has(#wakeUpSound)'),
+      type: 'label',
+    },
+    {
+      element: document.querySelector('label:has(#soundEffectsVolume)'),
       type: 'label',
     },
   ];
@@ -1710,6 +1741,17 @@ function updateSoundEffects() {
     }
   });
 
+  saveSettings();
+}
+
+// Update sound effects volume
+function updateSoundEffectsVolume() {
+  soundEffectsVolume = parseInt(
+    document.getElementById('soundEffectsVolume').value
+  );
+  document.querySelector(
+    'label:has(#soundEffectsVolume) .volume-value'
+  ).textContent = `${soundEffectsVolume}%`;
   saveSettings();
 }
 

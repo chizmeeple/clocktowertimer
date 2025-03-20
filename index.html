@@ -364,6 +364,20 @@
                 <input type="checkbox" id="playSoundEffects" checked />
               </label>
               <label>
+                <span>Sound Effects Volume</span>
+                <div class="volume-control">
+                  <input
+                    type="range"
+                    id="soundEffectsVolume"
+                    class="volume-slider"
+                    min="0"
+                    max="100"
+                    value="100"
+                  />
+                  <span class="volume-value">100%</span>
+                </div>
+              </label>
+              <label>
                 <span>End of Day</span>
                 <div class="sound-selection">
                   <select id="endOfDaySound">
@@ -403,6 +417,20 @@
               <label>
                 <span>Play Background Music</span>
                 <input type="checkbox" id="playMusic" />
+              </label>
+              <label>
+                <span>Music Volume</span>
+                <div class="volume-control">
+                  <input
+                    type="range"
+                    id="youtubeVolume"
+                    class="volume-slider"
+                    min="0"
+                    max="100"
+                    value="50"
+                  />
+                  <span class="volume-value">50%</span>
+                </div>
               </label>
               <label>
                 <span>Play Music at Night</span>
@@ -448,21 +476,6 @@
                   Open
                 </a>
               </div>
-              <label>
-                <span>Music Volume</span>
-                <div class="volume-control">
-                  <input
-                    type="range"
-                    id="youtubeVolume"
-                    class="volume-slider"
-                    min="0"
-                    max="100"
-                    value="20"
-                    disabled
-                  />
-                  <span class="volume-value">20%</span>
-                </div>
-              </label>
             </div>
           </div>
         </div>
