@@ -574,6 +574,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadSettings();
   updateClocktowerPresets();
   updateDisplay();
+
+  // Add event listeners for settings tabs
+  document.querySelectorAll('.tab-button').forEach((button) => {
+    console.log('Adding click listener to tab button:', button.dataset.tab);
+    button.addEventListener('click', () => {
+      console.log('Tab button clicked:', button.dataset.tab);
+      switchSettingsTab(button.dataset.tab);
+    });
+  });
 });
 
 // Helper functions for timer calculations
@@ -883,13 +892,50 @@ function updateTravellerCount() {
 
 function openSettings() {
   settingsDialog.showModal();
+
+  // Add event listeners for settings tabs
+  document.querySelectorAll('.tab-button').forEach((button) => {
+    console.log('Adding click listener to tab button:', button.dataset.tab);
+    button.addEventListener('click', () => {
+      console.log('Tab button clicked:', button.dataset.tab);
+      switchSettingsTab(button.dataset.tab);
+    });
+  });
+
+  // Set initial tab
+  switchSettingsTab('game');
 }
 
 function closeSettings() {
   saveSettings(); // Always save when closing
   updateDayDisplay(); // Force update of the day display
   updateClocktowerPresets(); // Update the presets to match current day
+
+  // Remove event listeners from tab buttons
+  document.querySelectorAll('.tab-button').forEach((button) => {
+    button.replaceWith(button.cloneNode(true));
+  });
+
   settingsDialog.close();
+}
+
+// Handle settings tab switching
+function switchSettingsTab(tabName) {
+  console.log('Switching to tab:', tabName);
+
+  // Update tab buttons
+  document.querySelectorAll('.tab-button').forEach((button) => {
+    const isActive = button.dataset.tab === tabName;
+    console.log('Tab button:', button.dataset.tab, 'Active:', isActive);
+    button.classList.toggle('active', isActive);
+  });
+
+  // Update panels
+  document.querySelectorAll('.settings-panel').forEach((panel) => {
+    const isActive = panel.dataset.panel === tabName;
+    console.log('Panel:', panel.dataset.panel, 'Active:', isActive);
+    panel.classList.toggle('active', isActive);
+  });
 }
 
 // Fullscreen functionality

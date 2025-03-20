@@ -280,9 +280,15 @@
       <div class="dialog-content">
         <h2>Settings</h2>
 
-        <div class="settings-groups-container">
-          <div class="settings-column">
-            <!-- Game Setup -->
+        <div class="settings-tabs">
+          <button class="tab-button active" data-tab="game">Game</button>
+          <button class="tab-button" data-tab="display">Display</button>
+          <button class="tab-button" data-tab="audio">Audio</button>
+        </div>
+
+        <div class="settings-panels">
+          <!-- Game Settings Panel -->
+          <div class="settings-panel active" data-panel="game">
             <div class="setting-group">
               <h3>Game Setup</h3>
               <label>
@@ -330,8 +336,10 @@
                 </select>
               </label>
             </div>
+          </div>
 
-            <!-- Display Settings -->
+          <!-- Display Settings Panel -->
+          <div class="settings-panel" data-panel="display">
             <div class="setting-group">
               <h3>Display Settings</h3>
               <label>
@@ -355,10 +363,10 @@
             </div>
           </div>
 
-          <div class="settings-column">
-            <!-- Audio Settings -->
+          <!-- Audio Settings Panel -->
+          <div class="settings-panel" data-panel="audio">
             <div class="setting-group">
-              <h3>Audio Settings</h3>
+              <h3>Sound Effects</h3>
               <label>
                 <span>Play Sound Effects</span>
                 <input type="checkbox" id="playSoundEffects" checked />
@@ -414,6 +422,10 @@
                   </button>
                 </div>
               </label>
+            </div>
+
+            <div class="setting-group">
+              <h3>Background Music</h3>
               <label>
                 <span>Play Background Music</span>
                 <input type="checkbox" id="playMusic" />
