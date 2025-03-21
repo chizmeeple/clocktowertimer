@@ -1548,14 +1548,23 @@ function createYoutubePlayerContainer() {
 
   const playlistNameSpan = document.createElement('span');
   playlistNameSpan.className = 'playlist-name';
-  // Set initial playlist name based on URL
+
+  const playlistLabel = document.createElement('span');
+  playlistLabel.className = 'playlist-label';
   if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
-    playlistNameSpan.textContent = 'Bardcore';
+    playlistLabel.textContent = 'Bardcore';
   } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
-    playlistNameSpan.textContent = 'Atmospheric';
+    playlistLabel.textContent = 'Atmospheric';
   } else {
-    playlistNameSpan.textContent = 'Custom';
+    playlistLabel.textContent = 'Custom';
   }
+
+  const trackTitle = document.createElement('span');
+  trackTitle.className = 'track-title';
+  trackTitle.textContent = 'Not Playing';
+
+  playlistNameSpan.appendChild(playlistLabel);
+  playlistNameSpan.appendChild(trackTitle);
   container.appendChild(playlistNameSpan);
 
   const playPauseBtn = document.createElement('button');
@@ -1684,6 +1693,11 @@ function onPlayerStateChange(event) {
       playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
         <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
       </svg>`;
+    }
+    // Get and display the current track title
+    const title = player.getVideoData().title;
+    if (title) {
+      updatePlaylistBadge(title);
     }
   } else if (
     event.data === YT.PlayerState.PAUSED ||
@@ -1900,17 +1914,27 @@ function updatePlaylistBadge(title) {
   const playlistName = document.querySelector('.playlist-name');
   if (!playlistName) return;
 
-  // If no title provided, set based on current URL
+  const playlistLabel = playlistName.querySelector('.playlist-label');
+  const trackTitle = playlistName.querySelector('.track-title');
+
+  // Update playlist label if needed
   if (!title) {
     if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
-      playlistName.textContent = 'Bardcore';
+      playlistLabel.textContent = 'Bardcore';
     } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
-      playlistName.textContent = 'Atmospheric';
+      playlistLabel.textContent = 'Atmospheric';
     } else {
-      playlistName.textContent = 'Custom';
+      playlistLabel.textContent = 'Custom';
     }
+    trackTitle.textContent = 'Not Playing';
   } else {
-    playlistName.textContent = title;
+    // Update track title
+    if (title.length > 40) {
+      trackTitle.textContent = title.substring(0, 37) + '...';
+    } else {
+      trackTitle.textContent = title;
+    }
+    trackTitle.title = title; // Add full title as tooltip
   }
 }
 

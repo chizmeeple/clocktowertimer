@@ -1188,10 +1188,25 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  max-width: 200px;
   margin: 0;
-  padding-right: 0.5rem;
+  padding-right: 0.75rem;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: help;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  line-height: 1.1;
+}
+
+.playlist-name .playlist-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+}
+
+.playlist-name .track-title {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
 }
 
 button:disabled {
