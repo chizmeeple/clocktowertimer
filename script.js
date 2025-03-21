@@ -305,8 +305,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   secondsDisplay = document.getElementById('seconds');
   startBtn = document.getElementById('startBtn');
   startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+  startBtn.disabled = false; // Ensure Wake Up button is enabled on load
   resetBtn = document.getElementById('resetBtn');
   resetBtn.textContent = BUTTON_LABELS.RESET;
+  resetBtn.disabled = true; // Reset button should be disabled initially
   fullscreenBtn = document.getElementById('fullscreenBtn');
   settingsBtn = document.getElementById('settingsBtn');
   settingsDialog = document.getElementById('settingsDialog');
@@ -315,6 +317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   travellerCountInput = document.getElementById('travellerCount');
   accelerateBtn = document.getElementById('accelerateBtn');
   accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE;
+  accelerateBtn.disabled = true; // Accelerate button should be disabled initially
   minuteButtons = document.querySelectorAll('.minute-btn');
   secondButtons = document.querySelectorAll('.second-btn');
   infoBtn = document.getElementById('infoBtn');
@@ -583,6 +586,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       switchSettingsTab(button.dataset.tab);
     });
   });
+
+  // Create YouTube container immediately if music is enabled
+  if (playMusic) {
+    createYoutubePlayer();
+  }
 });
 
 // Helper functions for timer calculations
@@ -831,34 +839,10 @@ function updateClocktowerPresets() {
       updateDisplay();
 
       // Start the timer
-      isRunning = true;
+      startCountdown();
       startBtn.disabled = false;
       startBtn.textContent = BUTTON_LABELS.PAUSE;
-
-      // Start YouTube player
-      if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
-        youtubePlayer.playVideo();
-      }
-
-      timerId = setInterval(() => {
-        timeLeft--;
-        updateDisplay();
-
-        if (timeLeft === 0) {
-          clearInterval(timerId);
-          playEndSound();
-          isRunning = false;
-          startBtn.disabled = true;
-          startBtn.textContent = BUTTON_LABELS.RESUME;
-          // Stop YouTube player when timer ends
-          if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
-            youtubePlayer.pauseVideo();
-          }
-          if (currentDay !== null) {
-            updateDayDisplay('dusk');
-          }
-        }
-      }, normalInterval);
+      accelerateBtn.disabled = false;
     });
 
     clocktowerPresetsDiv.appendChild(button);
@@ -964,8 +948,14 @@ function playEndSound() {
   if (!playSoundEffects) return;
 
   // Stop music if playing and not set to play at night
-  if (playMusic && !playMusicAtNight) {
-    youtubeUtils.pause();
+  if (playMusic && !playMusicAtNight && player) {
+    player.pauseVideo();
+    const playPauseBtn = document.querySelector('.youtube-control');
+    if (playPauseBtn) {
+      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>`;
+    }
   }
 
   isEndSoundPlaying = true;
@@ -988,8 +978,14 @@ function playEndSound() {
       isEndSoundPlaying = false;
       updateDisplay();
       // Resume music if playMusicAtNight is enabled
-      if (playMusic && playMusicAtNight) {
-        youtubeUtils.play();
+      if (playMusic && playMusicAtNight && player) {
+        player.playVideo();
+        const playPauseBtn = document.querySelector('.youtube-control');
+        if (playPauseBtn) {
+          playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>`;
+        }
       }
     },
     { once: true }
@@ -1107,14 +1103,30 @@ function startTimer() {
   if (isRunning) {
     // Pause timer
     timerUtils.stop();
-    youtubeUtils.pause();
+    if (playMusic && player) {
+      player.pauseVideo();
+      const playPauseBtn = document.querySelector('.youtube-control');
+      if (playPauseBtn) {
+        playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>`;
+      }
+    }
     return;
   }
 
   // If we have remaining time, resume the timer
   if (timeLeft > 0) {
     isRunning = true;
-    youtubeUtils.play();
+    if (playMusic && player) {
+      player.playVideo();
+      const playPauseBtn = document.querySelector('.youtube-control');
+      if (playPauseBtn) {
+        playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>`;
+      }
+    }
     startCountdown();
     return;
   }
@@ -1135,9 +1147,18 @@ function resetTimer() {
   startBtn.disabled = true;
   startBtn.textContent = BUTTON_LABELS.RESUME;
   accelerateBtn.disabled = true;
-  resetBtn.disabled = true; // Disable reset button after resetting
+  resetBtn.disabled = true;
 
-  youtubeUtils.stop();
+  // Stop music and update play/pause button
+  if (playMusic && player) {
+    player.stopVideo();
+    const playPauseBtn = document.querySelector('.youtube-control');
+    if (playPauseBtn) {
+      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>`;
+    }
+  }
 
   // Reset day display to normal state
   updateDayDisplay();
@@ -1279,6 +1300,24 @@ function playWakeUpSound() {
 }
 
 function startCountdown() {
+  isRunning = true;
+
+  // Start music if enabled and not in dusk state
+  const dayInfo = document.querySelector('.day-display');
+  const isDusk = dayInfo && dayInfo.classList.contains('dusk');
+  if (playMusic && !isDusk) {
+    if (player && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+      player.playVideo();
+      // Update play/pause button state
+      const playPauseBtn = document.querySelector('.youtube-control');
+      if (playPauseBtn) {
+        playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>`;
+      }
+    }
+  }
+
   timerId = setInterval(() => {
     timeLeft--;
     updateDisplay();
@@ -1287,8 +1326,15 @@ function startCountdown() {
       clearInterval(timerId);
       playEndSound();
       isRunning = false;
-      if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
-        youtubePlayer.pauseVideo();
+      if (playMusic && player && player.pauseVideo) {
+        player.pauseVideo();
+        // Update play/pause button state
+        const playPauseBtn = document.querySelector('.youtube-control');
+        if (playPauseBtn) {
+          playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>`;
+        }
       }
       if (currentDay !== null) {
         updateDayDisplay('dusk');
@@ -1465,6 +1511,7 @@ document.getElementById('gamePace').addEventListener('change', (e) => {
 
 // YouTube player functionality
 let youtubeApiReady = false;
+let player = null;
 
 // Load YouTube IFrame API
 function loadYoutubeApi() {
@@ -1479,6 +1526,14 @@ function loadYoutubeApi() {
   }
 }
 
+function initYoutubePlayer() {
+  if (!window.YT || !youtubeApiReady) {
+    loadYoutubeApi();
+  } else {
+    createYoutubePlayer();
+  }
+}
+
 // Called by YouTube API when ready
 window.onYouTubeIframeAPIReady = function () {
   youtubeApiReady = true;
@@ -1487,21 +1542,61 @@ window.onYouTubeIframeAPIReady = function () {
   }
 };
 
-async function createYoutubePlayer() {
-  if (!connectivityUtils.isOnline()) {
-    console.log('Cannot initialize YouTube player: offline');
-    return;
-  }
+function createYoutubePlayerContainer() {
+  const container = document.createElement('div');
+  container.className = 'youtube-player-container';
 
+  const playlistNameSpan = document.createElement('span');
+  playlistNameSpan.className = 'playlist-name';
+  // Set initial playlist name based on URL
+  if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
+    playlistNameSpan.textContent = 'Bardcore';
+  } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
+    playlistNameSpan.textContent = 'Atmospheric';
+  } else {
+    playlistNameSpan.textContent = 'Custom';
+  }
+  container.appendChild(playlistNameSpan);
+
+  const playPauseBtn = document.createElement('button');
+  playPauseBtn.className = 'youtube-control';
+  playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M8 5v14l11-7z"/>
+  </svg>`;
+  playPauseBtn.addEventListener('click', () => {
+    if (!player) return;
+    if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+      player.pauseVideo();
+      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>`;
+    } else {
+      player.playVideo();
+      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+      </svg>`;
+    }
+  });
+  container.appendChild(playPauseBtn);
+
+  const playerDiv = document.createElement('div');
+  playerDiv.id = 'youtube-player';
+  container.appendChild(playerDiv);
+
+  document.body.appendChild(container);
+  return container;
+}
+
+async function createYoutubePlayer() {
   try {
-    // Remove existing player
-    if (youtubePlayer) {
+    // Remove existing player and container
+    if (player) {
       try {
-        youtubePlayer.destroy();
+        player.destroy();
       } catch (e) {
         console.log('Error destroying player:', e);
       }
-      youtubePlayer = null;
+      player = null;
     }
 
     const existingContainer = document.querySelector(
@@ -1511,138 +1606,108 @@ async function createYoutubePlayer() {
       existingContainer.remove();
     }
 
-    // Create container for YouTube player
-    const container = document.createElement('div');
-    container.className = 'youtube-player-container';
-    document.body.appendChild(container);
+    // Create new container with controls
+    createYoutubePlayerContainer();
 
-    // Extract video and playlist IDs from URL
+    // Extract video and playlist IDs
     const { videoId, playlistId } =
       extractVideoAndPlaylistIds(youtubePlaylistUrl);
     if (!videoId && !playlistId) return;
 
-    // Track creation attempts to prevent infinite loops
-    const maxRetries = 3;
-    let retryCount = parseInt(container.dataset.retryCount || '0');
-    container.dataset.retryCount = retryCount;
-
-    if (retryCount >= maxRetries) {
-      console.log('Max retry attempts reached for YouTube player creation');
-      return;
+    // Set initial playlist name
+    if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
+      updatePlaylistBadge('Bardcore');
+    } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
+      updatePlaylistBadge('Atmospheric');
+    } else {
+      updatePlaylistBadge('Custom');
     }
 
-    try {
-      youtubePlayer = new YT.Player(container, {
-        height: '135',
-        width: '240',
-        playerVars: {
-          autoplay: 0,
-          controls: 1,
-          disablekb: 1,
-          fs: 0,
-          modestbranding: 1,
-          playsinline: 1,
-          rel: 0,
-          loop: 1,
-          playlist: playlistId,
-        },
-        events: {
-          onReady: function (event) {
-            container.dataset.retryCount = '0';
-            event.target.setVolume(youtubeVolume);
-            if (playlistId) {
-              event.target.setShuffle(true);
-              event.target.cuePlaylist({
-                list: playlistId,
-                listType: 'playlist',
-                index: Math.floor(Math.random() * 50),
-                suggestedQuality: 'small',
-              });
-            } else if (videoId) {
-              event.target.cueVideoById(videoId);
-            }
-          },
-          onStateChange: function (event) {
-            if (event.data === YT.PlayerState.CUED && playlistId) {
-              event.target.setShuffle(true);
-              if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
-                updatePlaylistBadge('Bardcore');
-              } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
-                updatePlaylistBadge('Atmospheric');
-              } else {
-                updatePlaylistBadge('Custom');
-              }
-            }
-            if (event.data === YT.PlayerState.PLAYING) {
-              if (!document.getElementById('playlistBadge').textContent) {
-                updatePlaylistBadge('Custom');
-              }
-            }
-            if (event.data === YT.PlayerState.ENDED) {
-              if (playlistId) {
-                event.target.setShuffle(true);
-                event.target.playVideoAt(0);
-              } else {
-                event.target.playVideo();
-              }
-            }
-          },
-          onError: function (event) {
-            console.log('YouTube player error:', event);
-            const errorCode = event.data;
-
-            if (errorCode === 101 || errorCode === 150) {
-              console.log('Video playback not allowed. Skipping retry.');
-              return;
-            }
-
-            retryCount++;
-            container.dataset.retryCount = retryCount;
-
-            if (retryCount < maxRetries) {
-              console.log(
-                `Retrying YouTube player creation (attempt ${
-                  retryCount + 1
-                }/${maxRetries})`
-              );
-              setTimeout(createYoutubePlayer, 1000);
-            } else {
-              console.log(
-                'Max retry attempts reached for YouTube player creation'
-              );
-            }
-          },
-        },
-      });
-    } catch (e) {
-      console.log('Error creating YouTube player:', e);
-      updatePlaylistBadge('');
-      retryCount++;
-      container.dataset.retryCount = retryCount;
-
-      if (retryCount < maxRetries) {
-        console.log(
-          `Retrying YouTube player creation (attempt ${
-            retryCount + 1
-          }/${maxRetries})`
-        );
-        setTimeout(createYoutubePlayer, 1000);
-      } else {
-        console.log('Max retry attempts reached for YouTube player creation');
-      }
-    }
+    // Create new player
+    player = new YT.Player('youtube-player', {
+      height: '1',
+      width: '1',
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        disablekb: 1,
+        fs: 0,
+        modestbranding: 1,
+        playsinline: 1,
+        rel: 0,
+        loop: 1,
+        playlist: playlistId,
+        iv_load_policy: 3,
+        cc_load_policy: 0,
+        showinfo: 0,
+      },
+      events: {
+        onReady: onPlayerReady,
+        onStateChange: onPlayerStateChange,
+        onError: onPlayerError,
+      },
+    });
   } catch (error) {
-    console.error('Error creating YouTube player:', error);
+    console.error('Error initializing YouTube player:', error);
     updatePlaylistBadge('');
   }
 }
 
-function initYoutubePlayer() {
-  if (!window.YT || !youtubeApiReady) {
-    loadYoutubeApi();
-  } else {
-    createYoutubePlayer();
+function onPlayerReady(event) {
+  event.target.setVolume(youtubeVolume);
+  const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
+
+  if (playlistId) {
+    event.target.cuePlaylist({
+      list: playlistId,
+      listType: 'playlist',
+      index: Math.floor(Math.random() * 50),
+      suggestedQuality: 'small',
+    });
   }
+
+  // If timer is already running, start playing
+  if (isRunning && timeLeft > 0) {
+    const dayInfo = document.querySelector('.day-display');
+    const isDusk = dayInfo && dayInfo.classList.contains('dusk');
+    if (!isDusk) {
+      event.target.playVideo();
+    }
+  }
+}
+
+function onPlayerStateChange(event) {
+  const playPauseBtn = document.querySelector('.youtube-control');
+
+  if (event.data === YT.PlayerState.PLAYING) {
+    if (playPauseBtn) {
+      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+      </svg>`;
+    }
+  } else if (
+    event.data === YT.PlayerState.PAUSED ||
+    event.data === YT.PlayerState.CUED
+  ) {
+    if (playPauseBtn) {
+      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>`;
+    }
+  } else if (event.data === YT.PlayerState.ENDED) {
+    const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
+    if (playlistId) {
+      event.target.setShuffle(true);
+      event.target.playVideoAt(0);
+    } else {
+      event.target.playVideo();
+    }
+  }
+}
+
+function onPlayerError(event) {
+  console.error('YouTube player error:', event);
+  updatePlaylistBadge('');
 }
 
 // Update YouTube playlist URL
@@ -1832,13 +1897,20 @@ function updateYoutubeLink() {
 
 // Update the badge function
 function updatePlaylistBadge(title) {
-  const badge = document.getElementById('playlistBadge');
-  if (title) {
-    badge.textContent = title;
-    badge.title = title; // Add tooltip for full title
+  const playlistName = document.querySelector('.playlist-name');
+  if (!playlistName) return;
+
+  // If no title provided, set based on current URL
+  if (!title) {
+    if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
+      playlistName.textContent = 'Bardcore';
+    } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
+      playlistName.textContent = 'Atmospheric';
+    } else {
+      playlistName.textContent = 'Custom';
+    }
   } else {
-    badge.textContent = '';
-    badge.title = '';
+    playlistName.textContent = title;
   }
 }
 
