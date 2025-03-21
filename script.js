@@ -137,10 +137,10 @@ const timerUtils = {
 
 // Button Labels
 const BUTTON_LABELS = {
-  RESUME: '▶ Resume',
-  PAUSE: '⏸ Pause',
-  WAKE_UP: '🔔 Wake Up!',
-  RESET: '↺ Reset',
+  WAKE_UP: '⏰ Wake Up!',
+  PAUSE: '⏸️ Pause Day',
+  RESUME: '▶️ Resume Day',
+  RESET: '🔄 Reset Day',
   ACCELERATE: '⏩ Accelerate Time',
   START_DAY: (day) => `▶ Start Day ${day}`,
   FULLSCREEN: {
