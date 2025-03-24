@@ -54,4 +54,24 @@ describe('Character Count Changes', () => {
       }
     );
   });
+
+  it('updates traveller count and visibility', () => {
+    // Visit the page
+    cy.visit('/');
+
+    // Check that the settings dialog is visible
+    cy.get('#settingsDialog').should('be.visible');
+
+    // Verify initial traveller state
+    cy.get('#travellerCount').should('have.value', '0');
+    cy.get('#travellerDisplay').should('not.have.class', 'visible');
+
+    // Click increment button for traveller count
+    cy.get('button.increment[data-input="travellerCount"]').click();
+
+    // Verify traveller count is 1 and display is visible
+    cy.get('#travellerCount').should('have.value', '1');
+    cy.get('#travellerDisplay').should('have.class', 'visible');
+    cy.get('#travellerAmount').should('have.text', '1');
+  });
 });
