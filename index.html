@@ -283,7 +283,8 @@
         <div class="settings-tabs">
           <button class="tab-button active" data-tab="game">Game</button>
           <button class="tab-button" data-tab="display">Display</button>
-          <button class="tab-button" data-tab="audio">Audio</button>
+          <button class="tab-button" data-tab="effects">Effects</button>
+          <button class="tab-button" data-tab="music">Music</button>
         </div>
 
         <div class="settings-panels">
@@ -363,8 +364,8 @@
             </div>
           </div>
 
-          <!-- Audio Settings Panel -->
-          <div class="settings-panel" data-panel="audio">
+          <!-- Sound Effects Panel -->
+          <div class="settings-panel" data-panel="effects">
             <div class="setting-group">
               <h3>Sound Effects</h3>
               <label>
@@ -423,11 +424,14 @@
                 </div>
               </label>
             </div>
+          </div>
 
+          <!-- Music Settings Panel -->
+          <div class="settings-panel" data-panel="music">
             <div class="setting-group">
               <h3>Background Music</h3>
               <label>
-                <span>Play Background Music</span>
+                <span>Play Music</span>
                 <input type="checkbox" id="playMusic" />
               </label>
               <label>
@@ -435,7 +439,7 @@
                 <div class="volume-control">
                   <input
                     type="range"
-                    id="youtubeVolume"
+                    id="musicVolume"
                     class="volume-slider"
                     min="0"
                     max="100"

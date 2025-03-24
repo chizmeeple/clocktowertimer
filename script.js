@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     .getElementById('youtubePlaylist')
     .addEventListener('change', updateYoutubePlaylist);
   document
-    .getElementById('youtubeVolume')
+    .getElementById('musicVolume')
     .addEventListener('input', updateYoutubeVolume);
   document
     .getElementById('playSoundEffects')
@@ -664,11 +664,11 @@ function loadSettings() {
   document.getElementById('playMusic').checked = playMusic;
   document.getElementById('playMusicAtNight').checked = playMusicAtNight;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
-  document.getElementById('youtubeVolume').value = youtubeVolume;
+  document.getElementById('musicVolume').value = youtubeVolume;
   document.getElementById('soundEffectsVolume').value = soundEffectsVolume;
   document.getElementById('backgroundTheme').value = backgroundTheme;
   document.querySelector(
-    'label:has(#youtubeVolume) .volume-value'
+    'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
   document.querySelector(
     'label:has(#soundEffectsVolume) .volume-value'
@@ -677,9 +677,9 @@ function loadSettings() {
   document.getElementById('wakeUpSound').value = wakeUpSoundFile;
 
   // Enable/disable volume controls based on their respective settings
-  const youtubeVolumeInput = document.getElementById('youtubeVolume');
-  youtubeVolumeInput.disabled = !playMusic;
-  youtubeVolumeInput.closest('label').classList.toggle('inactive', !playMusic);
+  const musicVolumeInput = document.getElementById('musicVolume');
+  musicVolumeInput.disabled = !playMusic;
+  musicVolumeInput.closest('label').classList.toggle('inactive', !playMusic);
 
   const soundEffectsVolumeInput = document.getElementById('soundEffectsVolume');
   soundEffectsVolumeInput.disabled = !playSoundEffects;
@@ -1784,7 +1784,7 @@ function updateMusicPlayback() {
     .getElementById('youtubePlaylist')
     .setAttribute('aria-hidden', !playMusic);
   document
-    .getElementById('youtubeVolume')
+    .getElementById('musicVolume')
     .setAttribute('aria-hidden', !playMusic);
   document
     .getElementById('playMusicAtNight')
@@ -1819,9 +1819,9 @@ function updateMusicPlayback() {
 
 // Update YouTube volume
 function updateYoutubeVolume() {
-  youtubeVolume = parseInt(document.getElementById('youtubeVolume').value);
+  youtubeVolume = parseInt(document.getElementById('musicVolume').value);
   document.querySelector(
-    'label:has(#youtubeVolume) .volume-value'
+    'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
   if (youtubePlayer && youtubePlayer.setVolume) {
     youtubePlayer.setVolume(youtubeVolume);
