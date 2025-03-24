@@ -728,6 +728,7 @@ function loadSettings() {
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
+  document.getElementById('travellerAmount').textContent = travellerCount;
   updateYoutubeLink();
   document.body.setAttribute('data-theme', backgroundTheme);
 
@@ -871,6 +872,7 @@ function updateTravellerCount() {
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
+  document.getElementById('travellerAmount').textContent = travellerCount;
   saveSettings();
 }
 

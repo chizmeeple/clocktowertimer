@@ -9,6 +9,7 @@ export const CHANGELOG = {
         'Added independent volume controls for sound effects and music',
       ],
       improvements: [
+        'Fixed traveller count not displaying correctly in character counts area',
         'Increased default sound effect volume for better audibility in social settings',
         'Reorganised settings dialog into Game, Display, and Audio tabs for better clarity',
         'Redesigned YouTube player into a minimal control showing playlist name and current track',
