@@ -98,4 +98,39 @@ describe('Character Count Changes', () => {
     // Verify player count is still at maximum (15)
     cy.get('#playerCount').should('have.value', '15');
   });
+
+  it('enforces min/max constraints for traveller count', () => {
+    cy.visit('/');
+    cy.get('#settingsDialog').should('be.visible');
+
+    // First increment to 1 to make the traveller count visible
+    cy.get('button.increment[data-input="travellerCount"]').click();
+    cy.get('#travellerCount').should('have.value', '1');
+    cy.get('#travellerAmount').should('have.text', '1');
+    cy.get('#travellerDisplay').should('have.class', 'visible');
+
+    // Try to go below zero
+    cy.get('button.decrement[data-input="travellerCount"]').click();
+    cy.get('#travellerCount').should('have.value', '0');
+    cy.get('#travellerDisplay').should('not.have.class', 'visible');
+
+    // Try to go below zero again
+    cy.get('button.decrement[data-input="travellerCount"]').click();
+    cy.get('#travellerCount').should('have.value', '0');
+    cy.get('#travellerDisplay').should('not.have.class', 'visible');
+
+    // Increment to 5
+    for (let i = 0; i < 5; i++) {
+      cy.get('button.increment[data-input="travellerCount"]').click();
+      cy.get('#travellerCount').should('have.value', (i + 1).toString());
+      cy.get('#travellerAmount').should('have.text', (i + 1).toString());
+      cy.get('#travellerDisplay').should('have.class', 'visible');
+    }
+
+    // Try to go above 5
+    cy.get('button.increment[data-input="travellerCount"]').click();
+    cy.get('#travellerCount').should('have.value', '5');
+    cy.get('#travellerAmount').should('have.text', '5');
+    cy.get('#travellerDisplay').should('have.class', 'visible');
+  });
 });
