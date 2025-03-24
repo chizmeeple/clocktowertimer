@@ -74,4 +74,28 @@ describe('Character Count Changes', () => {
     cy.get('#travellerDisplay').should('have.class', 'visible');
     cy.get('#travellerAmount').should('have.text', '1');
   });
+
+  it('enforces min/max constraints for player count', () => {
+    // Visit the page
+    cy.visit('/');
+
+    // Check that the settings dialog is visible
+    cy.get('#settingsDialog').should('be.visible');
+
+    // Click decrement button 10 times to try to go below minimum
+    for (let i = 0; i < 10; i++) {
+      cy.get('button.decrement[data-input="playerCount"]').click();
+    }
+
+    // Verify player count is still at minimum (5)
+    cy.get('#playerCount').should('have.value', '5');
+
+    // Click increment button 10 times to try to go above maximum
+    for (let i = 0; i < 20; i++) {
+      cy.get('button.increment[data-input="playerCount"]').click();
+    }
+
+    // Verify player count is still at maximum (15)
+    cy.get('#playerCount').should('have.value', '15');
+  });
 });
