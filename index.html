@@ -280,9 +280,16 @@
       <div class="dialog-content">
         <h2>Settings</h2>
 
-        <div class="settings-groups-container">
-          <div class="settings-column">
-            <!-- Game Setup -->
+        <div class="settings-tabs">
+          <button class="tab-button active" data-tab="game">Game</button>
+          <button class="tab-button" data-tab="display">Display</button>
+          <button class="tab-button" data-tab="effects">Effects</button>
+          <button class="tab-button" data-tab="music">Music</button>
+        </div>
+
+        <div class="settings-panels">
+          <!-- Game Settings Panel -->
+          <div class="settings-panel active" data-panel="game">
             <div class="setting-group">
               <h3>Game Setup</h3>
               <label>
@@ -330,8 +337,10 @@
                 </select>
               </label>
             </div>
+          </div>
 
-            <!-- Display Settings -->
+          <!-- Display Settings Panel -->
+          <div class="settings-panel" data-panel="display">
             <div class="setting-group">
               <h3>Display Settings</h3>
               <label>
@@ -355,13 +364,27 @@
             </div>
           </div>
 
-          <div class="settings-column">
-            <!-- Audio Settings -->
+          <!-- Sound Effects Panel -->
+          <div class="settings-panel" data-panel="effects">
             <div class="setting-group">
-              <h3>Audio Settings</h3>
+              <h3>Sound Effects</h3>
               <label>
                 <span>Play Sound Effects</span>
                 <input type="checkbox" id="playSoundEffects" checked />
+              </label>
+              <label>
+                <span>Sound Effects Volume</span>
+                <div class="volume-control">
+                  <input
+                    type="range"
+                    id="soundEffectsVolume"
+                    class="volume-slider"
+                    min="0"
+                    max="100"
+                    value="100"
+                  />
+                  <span class="volume-value">100%</span>
+                </div>
               </label>
               <label>
                 <span>End of Day</span>
@@ -400,9 +423,30 @@
                   </button>
                 </div>
               </label>
+            </div>
+          </div>
+
+          <!-- Music Settings Panel -->
+          <div class="settings-panel" data-panel="music">
+            <div class="setting-group">
+              <h3>Background Music</h3>
               <label>
-                <span>Play Background Music</span>
+                <span>Play Music</span>
                 <input type="checkbox" id="playMusic" />
+              </label>
+              <label>
+                <span>Music Volume</span>
+                <div class="volume-control">
+                  <input
+                    type="range"
+                    id="musicVolume"
+                    class="volume-slider"
+                    min="0"
+                    max="100"
+                    value="50"
+                  />
+                  <span class="volume-value">50%</span>
+                </div>
               </label>
               <label>
                 <span>Play Music at Night</span>
@@ -448,21 +492,6 @@
                   Open
                 </a>
               </div>
-              <label>
-                <span>Music Volume</span>
-                <div class="volume-control">
-                  <input
-                    type="range"
-                    id="youtubeVolume"
-                    class="volume-slider"
-                    min="0"
-                    max="100"
-                    value="20"
-                    disabled
-                  />
-                  <span class="volume-value">20%</span>
-                </div>
-              </label>
             </div>
           </div>
         </div>

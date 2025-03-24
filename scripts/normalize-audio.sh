@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Target mean volume in dB
-TARGET_MEAN_DB=-13.0
+TARGET_MEAN_DB=-8.0
 
 # Function to get mean volume of an audio file
 get_mean_volume() {

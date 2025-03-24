@@ -1,7 +1,22 @@
 // Version tracking
-export const APP_VERSION = '1.0.8';
+export const APP_VERSION = '1.0.9';
 
 export const CHANGELOG = {
+  '1.0.9': {
+    date: '2025-03-20',
+    changes: {
+      features: [
+        'Added independent volume controls for sound effects and music',
+      ],
+      improvements: [
+        'Fixed traveller count not displaying correctly in character counts area',
+        'Increased default sound effect volume for better audibility in social settings',
+        'Reorganised settings dialog into Game, Display, and Audio tabs for better clarity',
+        'Redesigned YouTube player into a minimal control showing playlist name and current track',
+        'Updated control button labels to be more explicit about day timer control',
+      ],
+    },
+  },
   '1.0.8': {
     date: '2025-03-18',
     changes: {
