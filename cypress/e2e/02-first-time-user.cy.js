@@ -11,11 +11,32 @@ describe('First Time User Flow', () => {
     // Check that the settings dialog is visible
     cy.get('#settingsDialog').should('be.visible');
 
+    // Verify default values in settings dialog
+    cy.get('#playerCount').should('have.value', '10');
+    cy.get('#travellerCount').should('have.value', '0');
+    cy.get('#gamePace').should('have.value', 'normal');
+
     // Click the Save and Close button
     cy.get('#closeSettings').click();
 
     // Verify the settings dialog is no longer visible
     cy.get('#settingsDialog').should('not.be.visible');
+
+    // Verify default character counts
+    cy.get('#townsfolkAmount').should('have.text', '7');
+    cy.get('#minionAmount').should('have.text', '2');
+    cy.get('#demonAmount').should('have.text', '1');
+    cy.get('#outsiderAmount').should('have.text', '0');
+
+    // Verify traveller information is not visible
+    cy.get('#travellerDisplay').should('not.have.class', 'visible');
+
+    // Verify day count is 1 and pace is Normal
+    cy.get('.day-display span').should('have.text', '1');
+    cy.get('.day-display .pace-indicator').should('contain', '🏃 Normal');
+
+    // Verify there are 8 preset buttons
+    cy.get('#clocktowerPresets .clocktower-btn').should('have.length', 8);
 
     // Verify localStorage has been updated with settings
     cy.window().then((win) => {
