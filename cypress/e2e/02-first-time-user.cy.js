@@ -35,6 +35,15 @@ describe('First Time User Flow', () => {
     cy.get('.day-display span').should('have.text', '1');
     cy.get('.day-display .pace-indicator').should('contain', '🏃 Normal');
 
+    // Verify button states
+    cy.get('#startBtn')
+      .should('have.text', '⏰ Wake Up!')
+      .and('not.be.disabled');
+    cy.get('#resetBtn').should('have.text', '🔄 Reset Day').and('be.disabled');
+    cy.get('#accelerateBtn')
+      .should('have.text', '⏩ Accelerate Time')
+      .and('be.disabled');
+
     // Verify there are 8 preset buttons
     cy.get('#clocktowerPresets .clocktower-btn').should('have.length', 8);
 
