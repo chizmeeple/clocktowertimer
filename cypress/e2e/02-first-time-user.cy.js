@@ -44,6 +44,11 @@ describe('First Time User Flow', () => {
       .should('have.text', '⏩ Accelerate Time')
       .and('be.disabled');
 
+    // Verify navigation buttons exist
+    cy.get('#settingsBtn').should('exist');
+    cy.get('#infoBtn').should('exist');
+    cy.get('#fullscreenBtn').should('exist');
+
     // Verify there are 8 preset buttons
     cy.get('#clocktowerPresets .clocktower-btn').should('have.length', 8);
 
