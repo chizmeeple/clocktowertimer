@@ -1781,19 +1781,20 @@ function updateMusicPlayback() {
   const youtubePlaylistLabel = document
     .getElementById('youtubePlaylist')
     .closest('label');
+  const musicVolumeInput = document.getElementById('musicVolume');
 
   document
     .getElementById('youtubePlaylist')
     .setAttribute('aria-hidden', !playMusic);
-  document
-    .getElementById('musicVolume')
-    .setAttribute('aria-hidden', !playMusic);
+  musicVolumeInput.setAttribute('aria-hidden', !playMusic);
+  musicVolumeInput.disabled = !playMusic;
   document
     .getElementById('playMusicAtNight')
     .setAttribute('aria-hidden', !playMusic);
 
   playMusicAtNightLabel.classList.toggle('inactive', !playMusic);
   youtubePlaylistLabel.classList.toggle('inactive', !playMusic);
+  musicVolumeInput.closest('label').classList.toggle('inactive', !playMusic);
 
   document
     .getElementById('useBardcorePlaylist')
