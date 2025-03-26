@@ -1,7 +1,17 @@
 // Version tracking
-export const APP_VERSION = '1.0.10';
+export const APP_VERSION = '1.0.11';
 
 export const CHANGELOG = {
+  '1.0.11': {
+    date: '2025-03-26',
+    changes: {
+      improvements: [
+        'Fixed Reset Day button behaviour to properly reset the timer and show Wake Up action',
+        'Extended test suite to include general behaviour tests',
+        'Fixed console error for fetchPlaylistTitle; removed test suite exclusion',
+      ],
+    },
+  },
   '1.0.10': {
     date: '2025-03-24',
     changes: {
