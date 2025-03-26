@@ -2156,3 +2156,19 @@ async function safeAsyncOperation(operation, fallback = null) {
     return fallback;
   }
 }
+
+async function fetchPlaylistTitle(playlistId) {
+  try {
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${playlistId}&key=${YOUTUBE_API_KEY}`
+    );
+    const data = await response.json();
+    if (data.items && data.items.length > 0) {
+      return data.items[0].snippet.title;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching playlist title:', error);
+    return null;
+  }
+}
