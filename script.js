@@ -178,6 +178,7 @@ let normalInterval = 1000; // Normal 1 second interval
 let currentInterval = normalInterval;
 let wakeUpTimeout = null;
 let isEndSoundPlaying = false; // New state variable
+let hasReset = false; // New state variable to track reset state
 
 // Game pace multipliers
 const PACE_MULTIPLIERS = {
@@ -844,6 +845,7 @@ function updateClocktowerPresets() {
       startBtn.disabled = false;
       startBtn.textContent = BUTTON_LABELS.PAUSE;
       accelerateBtn.disabled = false;
+      resetBtn.disabled = false; // Enable reset button when starting timer
     });
 
     clocktowerPresetsDiv.appendChild(button);
@@ -1039,7 +1041,7 @@ function updateDisplay() {
     startBtn.disabled = false;
     accelerateBtn.disabled = false;
     resetBtn.disabled = false; // Enable reset while running
-  } else if (timeLeft > 0) {
+  } else if (timeLeft > 0 && !hasReset) {
     startBtn.textContent = BUTTON_LABELS.RESUME;
     startBtn.disabled = false;
     accelerateBtn.disabled = true;
@@ -1048,7 +1050,7 @@ function updateDisplay() {
     startBtn.textContent = BUTTON_LABELS.WAKE_UP;
     startBtn.disabled = isEndSoundPlaying; // Disable during end sound
     accelerateBtn.disabled = true;
-    resetBtn.disabled = true; // Disable reset when timer is at 0
+    resetBtn.disabled = true; // Disable reset when timer is at 0 or after reset
   }
 
   // Update ARIA labels
@@ -1120,6 +1122,7 @@ function startTimer() {
   // If we have remaining time, resume the timer
   if (timeLeft > 0) {
     isRunning = true;
+    hasReset = false; // Clear the reset state when starting timer
     if (playMusic && player) {
       player.playVideo();
       const playPauseBtn = document.querySelector('.youtube-control');
@@ -1144,10 +1147,17 @@ function resetTimer() {
     clearTimeout(wakeUpTimeout);
     wakeUpTimeout = null;
   }
-  timeLeft = 0;
+
+  // Reset to the full day countdown time
+  const timerValues = calcTimerStartEndValues(playerCount);
+  timeLeft = timerValues.dayStartValue * 60; // Convert minutes to seconds
   currentInterval = normalInterval;
-  startBtn.disabled = true;
-  startBtn.textContent = BUTTON_LABELS.RESUME;
+  isRunning = false; // Ensure timer is marked as not running
+  hasReset = true; // Set the reset state
+
+  // Reset button states
+  startBtn.disabled = false;
+  startBtn.textContent = BUTTON_LABELS.WAKE_UP;
   accelerateBtn.disabled = true;
   resetBtn.disabled = true;
 
@@ -1172,6 +1182,9 @@ function resetTimer() {
 
   // Clear active state from preset buttons
   timerUtils.updateButtonStates(document.querySelectorAll('.clocktower-btn'));
+
+  // Update the display with the new time
+  updateDisplay();
 }
 
 // Handle minutes preset selection
