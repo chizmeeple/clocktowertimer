@@ -1,5 +1,1 @@
-Cypress.on('uncaught:exception', (err) => {
-  if (err.message.includes('fetchPlaylistTitle is not defined')) {
-    return false; // prevents Cypress from failing the test
-  }
-});
+// No need to ignore any console errors now
