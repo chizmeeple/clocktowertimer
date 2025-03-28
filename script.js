@@ -840,6 +840,16 @@ function updateClocktowerPresets() {
       timeLeft = selectedMinutes * 60 + selectedSeconds;
       updateDisplay();
 
+      // Play wake-up sound if sound effects are enabled
+      if (playSoundEffects) {
+        wakeUpSound.currentTime = 0;
+        wakeUpSound.volume = soundEffectsVolume / 100;
+        wakeUpSound.play().catch((error) => {
+          console.log('Error playing wake-up sound:', error);
+          createBeep();
+        });
+      }
+
       // Start the timer
       startCountdown();
       startBtn.disabled = false;
