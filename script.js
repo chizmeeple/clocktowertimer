@@ -755,9 +755,10 @@ function loadSettings() {
 
   // Show settings dialog on first load
   if (isFirstLoad) {
-    requestAnimationFrame(() => {
+    // Add a small delay to ensure other dialogs have had a chance to initialize
+    setTimeout(() => {
       settingsDialog.showModal();
-    });
+    }, 100);
   }
 
   // Update playlist title
