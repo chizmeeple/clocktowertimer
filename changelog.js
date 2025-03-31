@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.11';
+export const APP_VERSION = '1.0.12';
 
 export const CHANGELOG = {
+  '1.0.12': {
+    date: '2025-03-27',
+    changes: {
+      features: [
+        'Added wake-up sound effect when clicking on day preset buttons',
+      ],
+    },
+  },
   '1.0.11': {
     date: '2025-03-26',
     changes: {

@@ -755,9 +755,10 @@ function loadSettings() {
 
   // Show settings dialog on first load
   if (isFirstLoad) {
-    requestAnimationFrame(() => {
+    // Add a small delay to ensure other dialogs have had a chance to initialize
+    setTimeout(() => {
       settingsDialog.showModal();
-    });
+    }, 100);
   }
 
   // Update playlist title
@@ -836,9 +837,29 @@ function updateClocktowerPresets() {
       // Reset any existing timer
       clearInterval(timerId);
 
+      // Check if we're in dusk state and increment day if needed
+      const dayInfo = document.querySelector('.day-display');
+      if (currentDay !== null && dayInfo.classList.contains('dusk')) {
+        currentDay++;
+        saveSettings();
+      }
+
       // Set and display the new time
       timeLeft = selectedMinutes * 60 + selectedSeconds;
       updateDisplay();
+
+      // Clear dusk state before starting countdown
+      updateDayDisplay();
+
+      // Play wake-up sound if sound effects are enabled
+      if (playSoundEffects) {
+        wakeUpSound.currentTime = 0;
+        wakeUpSound.volume = soundEffectsVolume / 100;
+        wakeUpSound.play().catch((error) => {
+          console.log('Error playing wake-up sound:', error);
+          createBeep();
+        });
+      }
 
       // Start the timer
       startCountdown();
