@@ -475,6 +475,7 @@ h1 {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   height: fit-content;
+  position: relative;
 }
 
 .setting-group h3 {
@@ -503,25 +504,30 @@ h1 {
   color: #fff;
 }
 
-.setting-group select,
-.setting-group input[type='text'],
-.setting-group input[type='number'] {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.setting-group select {
+  background: #2a2a2a;
+  border: 1px solid #444;
   color: white;
-  padding: 0.5rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 1rem;
   min-width: 120px;
 }
 
-.setting-group select:hover,
+.setting-group select:hover {
+  border-color: #666;
+}
+
+.setting-group select:focus {
+  outline: none;
+  border-color: #72a4f2;
+}
+
 .setting-group input[type='text']:hover,
 .setting-group input[type='number']:hover {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.setting-group select:focus,
 .setting-group input[type='text']:focus,
 .setting-group input[type='number']:focus {
   border-color: #4caf50;
@@ -1943,5 +1949,16 @@ button:disabled {
   .settings-tabs {
     padding-bottom: 0.25rem;
     margin-bottom: 0.25rem;
+  }
+}
+
+/* Add specific styles for small viewports */
+@media (max-height: 700px) {
+  .setting-group {
+    transform: translateZ(0); /* Force a new stacking context */
+  }
+
+  .setting-group select {
+    transform: translateZ(0); /* Force a new stacking context */
   }
 }
