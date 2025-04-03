@@ -581,7 +581,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Add event listeners for settings tabs
   document.querySelectorAll('.tab-button').forEach((button) => {
-    console.log('Adding click listener to tab button:', button.dataset.tab);
     button.addEventListener('click', () => {
       console.log('Tab button clicked:', button.dataset.tab);
       switchSettingsTab(button.dataset.tab);
@@ -908,7 +907,6 @@ function openSettings() {
 
   // Add event listeners for settings tabs
   document.querySelectorAll('.tab-button').forEach((button) => {
-    console.log('Adding click listener to tab button:', button.dataset.tab);
     button.addEventListener('click', () => {
       console.log('Tab button clicked:', button.dataset.tab);
       switchSettingsTab(button.dataset.tab);
