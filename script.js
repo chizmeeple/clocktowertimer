@@ -196,8 +196,8 @@ let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
 let playMusicAtNight = false; // Default to false for new users
 let playSoundEffects = true; // Default to true for sound effects
-let youtubeVolume = 50; // Default to 50%
-let soundEffectsVolume = 100; // Default to 100%
+let youtubeVolume = 15; // Default to 15%
+let soundEffectsVolume = 75; // Default to 75%
 let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
@@ -627,10 +627,10 @@ function loadSettings() {
       settings.playSoundEffects !== undefined
         ? settings.playSoundEffects
         : true;
-    soundEffectsVolume = settings.soundEffectsVolume || 100;
+    soundEffectsVolume = settings.soundEffectsVolume || 75;
     keepDisplayOn =
       settings.keepDisplayOn !== undefined ? settings.keepDisplayOn : true;
-    youtubeVolume = settings.youtubeVolume || 50;
+    youtubeVolume = settings.youtubeVolume || 15;
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
@@ -851,8 +851,12 @@ function updateClocktowerPresets() {
       // Clear dusk state before starting countdown
       updateDayDisplay();
 
-      // Play wake-up sound if sound effects are enabled
-      if (playSoundEffects) {
+      // Play wake-up sound if sound effects are enabled and we're not in a wake-up countdown
+      const timerDisplay = document.querySelector('.timer-display');
+      if (
+        playSoundEffects &&
+        !timerDisplay.classList.contains('wake-up-countdown')
+      ) {
         wakeUpSound.currentTime = 0;
         wakeUpSound.volume = soundEffectsVolume / 100;
         wakeUpSound.play().catch((error) => {
@@ -1321,12 +1325,31 @@ function playWakeUpSound() {
       // Remove dawn state and show regular day display
       updateDayDisplay();
 
-      // Find and start the current day's timer
+      // Find and start the current day's timer directly instead of clicking the preset
       const dayPreset = document.querySelector(
         `.clocktower-btn[data-day="${currentDay}"]`
       );
       if (dayPreset) {
-        dayPreset.click();
+        // Update active state
+        document
+          .querySelectorAll('.clocktower-btn')
+          .forEach((btn) => btn.classList.remove('active'));
+        dayPreset.classList.add('active');
+
+        // Update selected time
+        selectedMinutes = parseInt(dayPreset.dataset.minutes);
+        selectedSeconds = parseInt(dayPreset.dataset.seconds);
+
+        // Set and display the new time
+        timeLeft = selectedMinutes * 60 + selectedSeconds;
+        updateDisplay();
+
+        // Start the timer
+        startCountdown();
+        startBtn.disabled = false;
+        startBtn.textContent = BUTTON_LABELS.PAUSE;
+        accelerateBtn.disabled = false;
+        resetBtn.disabled = false;
       }
     }
   }, 1000);
@@ -1599,9 +1622,14 @@ function createYoutubePlayerContainer() {
   trackTitle.className = 'track-title';
   trackTitle.textContent = 'Not Playing';
 
+  const volumeInfo = document.createElement('span');
+  volumeInfo.className = 'volume-info';
+  volumeInfo.innerHTML = `Music: ${youtubeVolume}%<br>Effects: ${soundEffectsVolume}%`;
+
   playlistNameSpan.appendChild(playlistLabel);
   playlistNameSpan.appendChild(trackTitle);
   container.appendChild(playlistNameSpan);
+  container.appendChild(volumeInfo);
 
   const playPauseBtn = document.createElement('button');
   playPauseBtn.className = 'youtube-control';
@@ -1735,6 +1763,8 @@ function onPlayerStateChange(event) {
     if (title) {
       updatePlaylistBadge(title);
     }
+    // Ensure volume is set correctly when starting playback
+    event.target.setVolume(youtubeVolume);
   } else if (
     event.data === YT.PlayerState.PAUSED ||
     event.data === YT.PlayerState.CUED
@@ -1860,8 +1890,13 @@ function updateYoutubeVolume() {
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
-  if (youtubePlayer && youtubePlayer.setVolume) {
-    youtubePlayer.setVolume(youtubeVolume);
+  if (player && player.setVolume) {
+    player.setVolume(youtubeVolume);
+  }
+  // Update volume info display
+  const volumeInfo = document.querySelector('.volume-info');
+  if (volumeInfo) {
+    volumeInfo.innerHTML = `Music: ${youtubeVolume}%<br>Effects: ${soundEffectsVolume}%`;
   }
   saveSettings();
 }
@@ -1902,8 +1937,6 @@ function updateSoundEffects() {
       }
     }
   });
-
-  saveSettings();
 }
 
 // Update sound effects volume
@@ -1914,6 +1947,11 @@ function updateSoundEffectsVolume() {
   document.querySelector(
     'label:has(#soundEffectsVolume) .volume-value'
   ).textContent = `${soundEffectsVolume}%`;
+  // Update volume info display
+  const volumeInfo = document.querySelector('.volume-info');
+  if (volumeInfo) {
+    volumeInfo.innerHTML = `Music: ${youtubeVolume}%<br>Effects: ${soundEffectsVolume}%`;
+  }
   saveSettings();
 }
 

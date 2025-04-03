@@ -1,7 +1,20 @@
 // Version tracking
-export const APP_VERSION = '1.0.12';
+export const APP_VERSION = '1.0.13';
 
 export const CHANGELOG = {
+  '1.0.13': {
+    date: '2025-04-03',
+    changes: {
+      features: [
+        'Added volume level indicators to the custom player showing current music and sound effects levels',
+      ],
+      improvements: [
+        'Fixed volume control to immediately affect playing music when adjusted',
+        'Updated default volume levels to 75% for sound effects and 15% for music',
+        'Fixed issue where wake-up sound was playing twice when using the Wake Up button',
+      ],
+    },
+  },
   '1.0.12': {
     date: '2025-03-27',
     changes: {

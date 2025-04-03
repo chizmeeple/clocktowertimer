@@ -1205,6 +1205,16 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   line-height: 1.1;
 }
 
+.volume-info {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding-right: 0.75rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  line-height: 1.2;
+  text-align: right;
+  min-width: 100px;
+}
+
 .playlist-name .playlist-label {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.75rem;
