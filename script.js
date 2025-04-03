@@ -581,7 +581,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Add event listeners for settings tabs
   document.querySelectorAll('.tab-button').forEach((button) => {
-    console.log('Adding click listener to tab button:', button.dataset.tab);
     button.addEventListener('click', () => {
       console.log('Tab button clicked:', button.dataset.tab);
       switchSettingsTab(button.dataset.tab);
@@ -908,7 +907,6 @@ function openSettings() {
 
   // Add event listeners for settings tabs
   document.querySelectorAll('.tab-button').forEach((button) => {
-    console.log('Adding click listener to tab button:', button.dataset.tab);
     button.addEventListener('click', () => {
       console.log('Tab button clicked:', button.dataset.tab);
       switchSettingsTab(button.dataset.tab);
@@ -1656,7 +1654,13 @@ function createYoutubePlayerContainer() {
   playerDiv.id = 'youtube-player';
   container.appendChild(playerDiv);
 
-  document.body.appendChild(container);
+  // Find the bottom container and the right buttons
+  const bottomContainer = document.querySelector('.bottom-container');
+  const rightButtons = bottomContainer.querySelector('.right-buttons');
+
+  // Insert the container before the right buttons
+  bottomContainer.insertBefore(container, rightButtons);
+
   return container;
 }
 
