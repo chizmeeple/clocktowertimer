@@ -1599,9 +1599,14 @@ function createYoutubePlayerContainer() {
   trackTitle.className = 'track-title';
   trackTitle.textContent = 'Not Playing';
 
+  const volumeInfo = document.createElement('span');
+  volumeInfo.className = 'volume-info';
+  volumeInfo.innerHTML = `Music: ${youtubeVolume}%<br>Effects: ${soundEffectsVolume}%`;
+
   playlistNameSpan.appendChild(playlistLabel);
   playlistNameSpan.appendChild(trackTitle);
   container.appendChild(playlistNameSpan);
+  container.appendChild(volumeInfo);
 
   const playPauseBtn = document.createElement('button');
   playPauseBtn.className = 'youtube-control';
@@ -1735,6 +1740,8 @@ function onPlayerStateChange(event) {
     if (title) {
       updatePlaylistBadge(title);
     }
+    // Ensure volume is set correctly when starting playback
+    event.target.setVolume(youtubeVolume);
   } else if (
     event.data === YT.PlayerState.PAUSED ||
     event.data === YT.PlayerState.CUED
@@ -1860,8 +1867,13 @@ function updateYoutubeVolume() {
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
-  if (youtubePlayer && youtubePlayer.setVolume) {
-    youtubePlayer.setVolume(youtubeVolume);
+  if (player && player.setVolume) {
+    player.setVolume(youtubeVolume);
+  }
+  // Update volume info display
+  const volumeInfo = document.querySelector('.volume-info');
+  if (volumeInfo) {
+    volumeInfo.innerHTML = `Music: ${youtubeVolume}%<br>Effects: ${soundEffectsVolume}%`;
   }
   saveSettings();
 }
@@ -1902,8 +1914,6 @@ function updateSoundEffects() {
       }
     }
   });
-
-  saveSettings();
 }
 
 // Update sound effects volume
@@ -1914,6 +1924,11 @@ function updateSoundEffectsVolume() {
   document.querySelector(
     'label:has(#soundEffectsVolume) .volume-value'
   ).textContent = `${soundEffectsVolume}%`;
+  // Update volume info display
+  const volumeInfo = document.querySelector('.volume-info');
+  if (volumeInfo) {
+    volumeInfo.innerHTML = `Music: ${youtubeVolume}%<br>Effects: ${soundEffectsVolume}%`;
+  }
   saveSettings();
 }
 
