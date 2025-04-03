@@ -196,8 +196,8 @@ let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
 let playMusicAtNight = false; // Default to false for new users
 let playSoundEffects = true; // Default to true for sound effects
-let youtubeVolume = 50; // Default to 50%
-let soundEffectsVolume = 100; // Default to 100%
+let youtubeVolume = 15; // Default to 15%
+let soundEffectsVolume = 75; // Default to 75%
 let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
@@ -627,10 +627,10 @@ function loadSettings() {
       settings.playSoundEffects !== undefined
         ? settings.playSoundEffects
         : true;
-    soundEffectsVolume = settings.soundEffectsVolume || 100;
+    soundEffectsVolume = settings.soundEffectsVolume || 75;
     keepDisplayOn =
       settings.keepDisplayOn !== undefined ? settings.keepDisplayOn : true;
-    youtubeVolume = settings.youtubeVolume || 50;
+    youtubeVolume = settings.youtubeVolume || 15;
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
