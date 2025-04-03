@@ -1654,7 +1654,13 @@ function createYoutubePlayerContainer() {
   playerDiv.id = 'youtube-player';
   container.appendChild(playerDiv);
 
-  document.body.appendChild(container);
+  // Find the bottom container and the right buttons
+  const bottomContainer = document.querySelector('.bottom-container');
+  const rightButtons = bottomContainer.querySelector('.right-buttons');
+
+  // Insert the container before the right buttons
+  bottomContainer.insertBefore(container, rightButtons);
+
   return container;
 }
 
