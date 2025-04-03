@@ -1,7 +1,13 @@
 // Version tracking
-export const APP_VERSION = '1.0.13';
+export const APP_VERSION = '1.0.14';
 
 export const CHANGELOG = {
+  '1.0.14': {
+    date: '2024-04-03',
+    changes: {
+      improvements: ['"TV Friendly" layout changes; use less vertical space'],
+    },
+  },
   '1.0.13': {
     date: '2025-04-03',
     changes: {
