@@ -851,8 +851,12 @@ function updateClocktowerPresets() {
       // Clear dusk state before starting countdown
       updateDayDisplay();
 
-      // Play wake-up sound if sound effects are enabled
-      if (playSoundEffects) {
+      // Play wake-up sound if sound effects are enabled and we're not in a wake-up countdown
+      const timerDisplay = document.querySelector('.timer-display');
+      if (
+        playSoundEffects &&
+        !timerDisplay.classList.contains('wake-up-countdown')
+      ) {
         wakeUpSound.currentTime = 0;
         wakeUpSound.volume = soundEffectsVolume / 100;
         wakeUpSound.play().catch((error) => {
@@ -1321,12 +1325,31 @@ function playWakeUpSound() {
       // Remove dawn state and show regular day display
       updateDayDisplay();
 
-      // Find and start the current day's timer
+      // Find and start the current day's timer directly instead of clicking the preset
       const dayPreset = document.querySelector(
         `.clocktower-btn[data-day="${currentDay}"]`
       );
       if (dayPreset) {
-        dayPreset.click();
+        // Update active state
+        document
+          .querySelectorAll('.clocktower-btn')
+          .forEach((btn) => btn.classList.remove('active'));
+        dayPreset.classList.add('active');
+
+        // Update selected time
+        selectedMinutes = parseInt(dayPreset.dataset.minutes);
+        selectedSeconds = parseInt(dayPreset.dataset.seconds);
+
+        // Set and display the new time
+        timeLeft = selectedMinutes * 60 + selectedSeconds;
+        updateDisplay();
+
+        // Start the timer
+        startCountdown();
+        startBtn.disabled = false;
+        startBtn.textContent = BUTTON_LABELS.PAUSE;
+        accelerateBtn.disabled = false;
+        resetBtn.disabled = false;
       }
     }
   }, 1000);
