@@ -329,6 +329,7 @@
           <button class="tab-button" data-tab="display">Display</button>
           <button class="tab-button" data-tab="effects">Effects</button>
           <button class="tab-button" data-tab="music">Music</button>
+          <button class="tab-button" data-tab="shortcuts">Shortcuts</button>
         </div>
 
         <div class="settings-panels">
@@ -535,6 +536,83 @@
                   </svg>
                   Open
                 </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Keyboard Shortcuts Panel -->
+          <div class="settings-panel" data-panel="shortcuts">
+            <div class="setting-group">
+              <h3>Keyboard Shortcuts</h3>
+              <div class="shortcuts-container">
+                <div class="shortcut-item">
+                  <label>
+                    <span>Open Settings</span>
+                    <input
+                      type="text"
+                      id="shortcutSettings"
+                      class="shortcut-input"
+                      placeholder="Press a key..."
+                      readonly
+                    />
+                  </label>
+                </div>
+                <div class="shortcut-item">
+                  <label>
+                    <span>Wake Up / Start Timer</span>
+                    <input
+                      type="text"
+                      id="shortcutWakeUp"
+                      class="shortcut-input"
+                      placeholder="Press a key..."
+                      readonly
+                    />
+                  </label>
+                </div>
+                <div class="shortcut-item">
+                  <label>
+                    <span>Reset Timer</span>
+                    <input
+                      type="text"
+                      id="shortcutReset"
+                      class="shortcut-input"
+                      placeholder="Press a key..."
+                      readonly
+                    />
+                  </label>
+                </div>
+                <div class="shortcut-item">
+                  <label>
+                    <span>Toggle Fullscreen</span>
+                    <input
+                      type="text"
+                      id="shortcutFullscreen"
+                      class="shortcut-input"
+                      placeholder="Press a key..."
+                      readonly
+                    />
+                  </label>
+                </div>
+                <div class="shortcut-item">
+                  <label>
+                    <span>Open Info</span>
+                    <input
+                      type="text"
+                      id="shortcutInfo"
+                      class="shortcut-input"
+                      placeholder="Press a key..."
+                      readonly
+                    />
+                  </label>
+                </div>
+              </div>
+              <div class="shortcut-actions">
+                <button id="resetShortcuts" class="secondary-btn">
+                  Reset to Defaults
+                </button>
+                <button id="clearShortcuts" class="secondary-btn">
+                  Clear All
+                </button>
               </div>
             </div>
           </div>
