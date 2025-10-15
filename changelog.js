@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.14';
+export const APP_VERSION = '1.0.15';
 
 export const CHANGELOG = {
+  '1.0.15': {
+    date: '2025-10-15',
+    changes: {
+      features: [
+        'Added keyboard shortcuts for settings, wake up, reset, fullscreen, and info',
+      ],
+    },
+  },
   '1.0.14': {
     date: '2024-04-03',
     changes: {
