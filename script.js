@@ -849,7 +849,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Add event listeners for settings tabs
   document.querySelectorAll('.tab-button').forEach((button) => {
     button.addEventListener('click', () => {
-      console.log('Tab button clicked:', button.dataset.tab);
       switchSettingsTab(button.dataset.tab);
     });
   });
@@ -1192,7 +1191,6 @@ function openSettings() {
   // Add event listeners for settings tabs
   document.querySelectorAll('.tab-button').forEach((button) => {
     button.addEventListener('click', () => {
-      console.log('Tab button clicked:', button.dataset.tab);
       switchSettingsTab(button.dataset.tab);
     });
   });
@@ -1216,19 +1214,15 @@ function closeSettings() {
 
 // Handle settings tab switching
 function switchSettingsTab(tabName) {
-  console.log('Switching to tab:', tabName);
-
   // Update tab buttons
   document.querySelectorAll('.tab-button').forEach((button) => {
     const isActive = button.dataset.tab === tabName;
-    console.log('Tab button:', button.dataset.tab, 'Active:', isActive);
     button.classList.toggle('active', isActive);
   });
 
   // Update panels
   document.querySelectorAll('.settings-panel').forEach((panel) => {
     const isActive = panel.dataset.panel === tabName;
-    console.log('Panel:', panel.dataset.panel, 'Active:', isActive);
     panel.classList.toggle('active', isActive);
   });
 }
