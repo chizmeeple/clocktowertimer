@@ -336,8 +336,8 @@ let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
 let youtubePlayer = null;
-let endOfDaySound = 'cathedral-bell.mp3'; // Default end of day sound
-let wakeUpSoundFile = 'chisel-bell-01-loud.mp3'; // Default wake up sound
+let endOfDaySound = 'cathedral-bell-v2.mp3'; // Default end of day sound
+let wakeUpSoundFile = 'chisel-bell-01-loud-v2.mp3'; // Default wake up sound
 let acceptedPortraitWarning = false; // Default to false for portrait warning
 
 // Keyboard shortcuts
@@ -897,8 +897,8 @@ function loadSettings() {
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
-    endOfDaySound = settings.endOfDaySound || 'cathedral-bell.mp3';
-    wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud.mp3';
+    endOfDaySound = settings.endOfDaySound || 'cathedral-bell-v2.mp3';
+    wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud-v2.mp3';
     acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
     keyboardShortcuts = settings.keyboardShortcuts || {
       ...DEFAULT_KEYBOARD_SHORTCUTS,
