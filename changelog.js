@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.16';
+export const APP_VERSION = '1.0.17';
 
 export const CHANGELOG = {
+  '1.0.17': {
+    date: '2025-10-17',
+    changes: {
+      improvements: [
+        'Update audio file names to force a cache refresh; revert Chisel Bell to original volume',
+      ],
+    },
+  },
   '1.0.16': {
     date: '2025-10-15',
     changes: {
