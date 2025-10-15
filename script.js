@@ -291,6 +291,9 @@ const DEFAULT_YOUTUBE_PLAYLIST =
 const ATMOSPHERIC_PLAYLIST =
   'https://www.youtube.com/watch?v=1oCIZjPxthY&list=PLhCDyBm6z1NyrifTlGYj55uPb6xrlgBih';
 
+// YouTube API Key (placeholder - replace with actual key if needed)
+const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY_HERE';
+
 // Import version tracking from changelog
 import { APP_VERSION, CHANGELOG } from './changelog.js';
 
