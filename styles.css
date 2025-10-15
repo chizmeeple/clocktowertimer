@@ -2061,3 +2061,143 @@ button:disabled {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
+/* Keyboard Shortcuts Styles */
+.shortcuts-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* Make the 5th shortcut (Open Info) span both columns */
+.shortcut-item:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
+/* Fallback to single column on very small screens */
+@media (max-width: 400px) {
+  .shortcuts-container {
+    grid-template-columns: 1fr;
+  }
+
+  .shortcut-item:nth-child(5) {
+    grid-column: 1;
+  }
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shortcut-item label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.shortcut-item span {
+  flex: 1;
+  margin-right: 0.75rem;
+}
+
+.shortcut-input {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.85rem;
+  text-align: center;
+  min-width: 100px;
+  max-width: 120px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shortcut-input:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.shortcut-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.shortcut-input.recording {
+  background-color: rgba(255, 193, 7, 0.2);
+  border-color: #ffc107;
+  animation: pulse 1s infinite;
+}
+
+.shortcut-input.shortcut-conflict {
+  background-color: rgba(220, 53, 69, 0.2);
+  border-color: #dc3545;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+.shortcut-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.shortcut-actions .secondary-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shortcut-actions .secondary-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Make the shortcuts panel more compact */
+.settings-panel[data-panel='shortcuts'] {
+  gap: 0.75rem;
+}
+
+.settings-panel[data-panel='shortcuts'] .setting-group {
+  gap: 0.75rem;
+}

@@ -135,6 +135,140 @@ const timerUtils = {
   },
 };
 
+// Keyboard shortcuts utilities
+const keyboardShortcutsUtils = {
+  isValidShortcut: (event) => {
+    // Allow single keys, but exclude some system keys
+    const excludedKeys = [
+      'F1',
+      'F2',
+      'F3',
+      'F4',
+      'F5',
+      'F6',
+      'F7',
+      'F8',
+      'F9',
+      'F10',
+      'F11',
+      'F12',
+    ];
+    const key = event.key.toUpperCase();
+    return (
+      !excludedKeys.includes(key) &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey
+    );
+  },
+
+  checkConflict: (newKey, currentAction) => {
+    for (const [action, key] of Object.entries(keyboardShortcuts)) {
+      if (action !== currentAction && key === newKey) {
+        return action;
+      }
+    }
+    return null;
+  },
+
+  updateShortcutDisplay: (inputId, key) => {
+    const input = document.getElementById(inputId);
+    if (input) {
+      if (key === ' ') {
+        input.value = 'Space';
+      } else if (key === '') {
+        input.value = '';
+      } else {
+        input.value = key;
+      }
+    }
+  },
+
+  loadShortcuts: () => {
+    keyboardShortcutsUtils.updateShortcutDisplay(
+      'shortcutSettings',
+      keyboardShortcuts.settings
+    );
+    keyboardShortcutsUtils.updateShortcutDisplay(
+      'shortcutWakeUp',
+      keyboardShortcuts.wakeUp
+    );
+    keyboardShortcutsUtils.updateShortcutDisplay(
+      'shortcutReset',
+      keyboardShortcuts.reset
+    );
+    keyboardShortcutsUtils.updateShortcutDisplay(
+      'shortcutFullscreen',
+      keyboardShortcuts.fullscreen
+    );
+    keyboardShortcutsUtils.updateShortcutDisplay(
+      'shortcutInfo',
+      keyboardShortcuts.info
+    );
+  },
+
+  resetToDefaults: () => {
+    // Explicitly reset to defaults, clearing any corrupted data
+    keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
+
+    // Update the UI immediately
+    keyboardShortcutsUtils.loadShortcuts();
+
+    // Save the clean defaults to localStorage
+    saveSettings();
+
+    console.log('Keyboard shortcuts reset to defaults:', keyboardShortcuts);
+  },
+
+  // Nuclear option: completely remove and recreate the keyboardShortcuts key
+  forceReset: () => {
+    // Get current settings
+    const savedSettings = localStorage.getItem('quickTimerSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+
+      // Remove the keyboardShortcuts key completely
+      delete settings.keyboardShortcuts;
+
+      // Save settings without keyboardShortcuts
+      localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+    }
+
+    // Reset to defaults
+    keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
+
+    // Update the UI immediately
+    keyboardShortcutsUtils.loadShortcuts();
+
+    // Save the clean defaults to localStorage
+    saveSettings();
+
+    console.log(
+      'Keyboard shortcuts force reset (key deleted and recreated):',
+      keyboardShortcuts
+    );
+  },
+
+  clearAll: () => {
+    // Clear all shortcuts (set to empty strings)
+    keyboardShortcuts = {
+      settings: '',
+      wakeUp: '',
+      reset: '',
+      fullscreen: '',
+      info: '',
+    };
+
+    // Update the UI immediately
+    keyboardShortcutsUtils.loadShortcuts();
+
+    // Save the cleared shortcuts to localStorage
+    saveSettings();
+
+    console.log('All keyboard shortcuts cleared:', keyboardShortcuts);
+  },
+};
+
 // Button Labels
 const BUTTON_LABELS = {
   WAKE_UP: '⏰ Wake Up!',
@@ -206,6 +340,17 @@ let endOfDaySound = 'cathedral-bell.mp3'; // Default end of day sound
 let wakeUpSoundFile = 'chisel-bell-01-loud.mp3'; // Default wake up sound
 let acceptedPortraitWarning = false; // Default to false for portrait warning
 
+// Keyboard shortcuts
+const DEFAULT_KEYBOARD_SHORTCUTS = {
+  settings: 'q',
+  wakeUp: ' ',
+  reset: 'r',
+  fullscreen: 'f',
+  info: 'i',
+};
+
+let keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
+
 // Character amounts mapping
 const characterAmounts = {
   5: [3, 0, 1, 1],
@@ -220,6 +365,101 @@ const characterAmounts = {
   14: [9, 1, 3, 1],
   15: [9, 2, 3, 1],
 };
+
+// Helper function to re-enable all shortcut inputs
+function reEnableShortcutInputs() {
+  document.querySelectorAll('.shortcut-input').forEach((el) => {
+    el.disabled = false;
+    el.style.opacity = '1';
+  });
+}
+
+// Start recording a new shortcut
+function startShortcutRecording(input, action) {
+  // Clear any existing recording and restore their previous values
+  document.querySelectorAll('.shortcut-input.recording').forEach((el) => {
+    el.classList.remove('recording');
+    // Restore the previous value for any inputs that were in recording mode
+    const inputId = el.id;
+    const actionMap = {
+      shortcutSettings: 'settings',
+      shortcutWakeUp: 'wakeUp',
+      shortcutReset: 'reset',
+      shortcutFullscreen: 'fullscreen',
+      shortcutInfo: 'info',
+    };
+    const actionName = actionMap[inputId];
+    if (actionName && keyboardShortcuts[actionName]) {
+      keyboardShortcutsUtils.updateShortcutDisplay(
+        inputId,
+        keyboardShortcuts[actionName]
+      );
+    }
+  });
+
+  // Start recording this input
+  input.classList.add('recording');
+  input.value = 'Press a key...';
+  input.focus();
+
+  // Disable other shortcut inputs while recording
+  document.querySelectorAll('.shortcut-input').forEach((el) => {
+    if (el !== input) {
+      el.disabled = true;
+      el.style.opacity = '0.5';
+    }
+  });
+
+  const handleKeyDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.key === 'Escape') {
+      // Cancel recording
+      input.classList.remove('recording');
+      keyboardShortcutsUtils.updateShortcutDisplay(
+        input.id,
+        keyboardShortcuts[action]
+      );
+
+      // Re-enable other shortcut inputs
+      reEnableShortcutInputs();
+
+      document.removeEventListener('keydown', handleKeyDown);
+      return;
+    }
+
+    if (keyboardShortcutsUtils.isValidShortcut(e)) {
+      const newKey = e.key;
+
+      // Check for conflicts
+      const conflict = keyboardShortcutsUtils.checkConflict(newKey, action);
+      if (conflict) {
+        // Show conflict warning
+        input.classList.add('shortcut-conflict');
+        input.value = `Conflict with ${conflict}`;
+        setTimeout(() => {
+          input.classList.remove('shortcut-conflict');
+          input.value = 'Press a key...';
+        }, 2000);
+        return;
+      }
+
+      // Update the shortcut
+      keyboardShortcuts[action] = newKey;
+      input.classList.remove('recording');
+      keyboardShortcutsUtils.updateShortcutDisplay(input.id, newKey);
+
+      // Re-enable other shortcut inputs
+      reEnableShortcutInputs();
+
+      saveSettings();
+      document.removeEventListener('keydown', handleKeyDown);
+    }
+  };
+
+  document.addEventListener('keydown', handleKeyDown);
+}
 
 // Helper function to update character amounts
 function updateCharacterAmounts(count) {
@@ -270,8 +510,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     console.error('Error requesting wake lock:', error);
   }
-
-  setupKeyboardNavigation();
 
   // Initialize audio
   endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
@@ -469,13 +707,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     .getElementById('backgroundTheme')
     .addEventListener('change', updateBackgroundTheme);
 
-  // Add keyboard shortcut for settings
-  document.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'q' && !settingsDialog.open) {
-      openSettings();
+  // Add keyboard shortcuts event listeners
+  document.querySelectorAll('.shortcut-input').forEach((input) => {
+    input.addEventListener('click', () => {
+      // Map input IDs to shortcut action names
+      const actionMap = {
+        shortcutSettings: 'settings',
+        shortcutWakeUp: 'wakeUp',
+        shortcutReset: 'reset',
+        shortcutFullscreen: 'fullscreen',
+        shortcutInfo: 'info',
+      };
+      const action = actionMap[input.id];
+      startShortcutRecording(input, action);
+    });
+  });
+
+  document.getElementById('resetShortcuts').addEventListener('click', () => {
+    if (
+      confirm(
+        'Are you sure you want to reset all keyboard shortcuts to their default values? This cannot be undone.'
+      )
+    ) {
+      keyboardShortcutsUtils.forceReset();
     }
-    if (e.key.toLowerCase() === 'i' && !infoDialog.open) {
-      openInfo();
+  });
+
+  document.getElementById('clearShortcuts').addEventListener('click', () => {
+    if (
+      confirm(
+        'Are you sure you want to clear all keyboard shortcuts? This will remove all shortcut assignments.'
+      )
+    ) {
+      keyboardShortcutsUtils.clearAll();
     }
   });
 
@@ -636,6 +900,16 @@ function loadSettings() {
     endOfDaySound = settings.endOfDaySound || 'cathedral-bell.mp3';
     wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud.mp3';
     acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
+    keyboardShortcuts = settings.keyboardShortcuts || {
+      ...DEFAULT_KEYBOARD_SHORTCUTS,
+    };
+
+    // Migration: Fix any old lowercase 'wakeup' entries
+    if (keyboardShortcuts.wakeup && !keyboardShortcuts.wakeUp) {
+      keyboardShortcuts.wakeUp = keyboardShortcuts.wakeup;
+      delete keyboardShortcuts.wakeup;
+      saveSettings(); // Save the corrected shortcuts
+    }
 
     // Check for new version
     const lastSeenVersion = settings.lastSeenVersion;
@@ -769,6 +1043,12 @@ function loadSettings() {
       }
     });
   }
+
+  // Load keyboard shortcuts into UI
+  keyboardShortcutsUtils.loadShortcuts();
+
+  // Setup keyboard navigation after shortcuts are loaded
+  setupKeyboardNavigation();
 }
 
 // Save settings to localStorage
@@ -798,6 +1078,7 @@ function saveSettings() {
     endOfDaySound,
     wakeUpSoundFile,
     acceptedPortraitWarning,
+    keyboardShortcuts,
   };
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
@@ -2178,36 +2459,66 @@ function closeChangeHistory() {
 
 // Add keyboard navigation support
 function setupKeyboardNavigation() {
-  document.addEventListener('keydown', (e) => {
-    // Existing keyboard shortcuts
-    if (e.key.toLowerCase() === 'q' && !settingsDialog.open) {
-      openSettings();
-    }
-    if (e.key.toLowerCase() === 'i' && !infoDialog.open) {
-      openInfo();
+  // Remove any existing keyboard navigation listeners
+  document.removeEventListener('keydown', handleKeyboardNavigation);
+
+  function handleKeyboardNavigation(e) {
+    // Skip if we're in a shortcut input field
+    if (e.target.classList.contains('shortcut-input')) {
+      return;
     }
 
-    // New keyboard shortcuts
-    if (e.key === ' ' || e.key === 'Enter') {
-      // Space or Enter
+    // Get the current key
+    const currentKey = e.key;
+
+    // Check each shortcut
+    if (
+      keyboardShortcuts.settings &&
+      currentKey === keyboardShortcuts.settings &&
+      !settingsDialog.open
+    ) {
+      openSettings();
+    }
+    if (
+      keyboardShortcuts.info &&
+      currentKey === keyboardShortcuts.info &&
+      !infoDialog.open
+    ) {
+      openInfo();
+    }
+    if (keyboardShortcuts.wakeUp && currentKey === keyboardShortcuts.wakeUp) {
       if (!settingsDialog.open && !infoDialog.open) {
         e.preventDefault();
         startTimer();
       }
     }
-    if (e.key === 'r' && !settingsDialog.open && !infoDialog.open) {
-      // R key
+    if (
+      keyboardShortcuts.reset &&
+      currentKey === keyboardShortcuts.reset &&
+      !settingsDialog.open &&
+      !infoDialog.open &&
+      !e.ctrlKey && // Don't trigger if Ctrl is pressed (Ctrl+R for refresh)
+      !e.metaKey && // Don't trigger if Cmd is pressed (Cmd+R for refresh on Mac)
+      !e.altKey && // Don't trigger if Alt is pressed
+      !e.shiftKey // Don't trigger if Shift is pressed
+    ) {
       resetTimer();
     }
-    if (e.key === 'f') {
-      // F key
+    if (
+      keyboardShortcuts.fullscreen &&
+      currentKey === keyboardShortcuts.fullscreen
+    ) {
       e.preventDefault();
       toggleFullscreen();
     }
+
+    // Escape key for fullscreen exit
     if (e.key === 'Escape' && document.fullscreenElement) {
       document.exitFullscreen();
     }
-  });
+  }
+
+  document.addEventListener('keydown', handleKeyboardNavigation);
 }
 
 // Enhance error handling for async operations
