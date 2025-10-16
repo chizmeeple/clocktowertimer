@@ -2,8 +2,14 @@
 export const APP_VERSION = '1.0.17';
 
 export const CHANGELOG = {
+  '1.0.18': {
+    date: '2025-10-15',
+    changes: {
+      improvements: ['Update CSP header and cleanup browser console warnings'],
+    },
+  },
   '1.0.17': {
-    date: '2025-10-17',
+    date: '2025-10-15',
     changes: {
       improvements: [
         'Update audio file names to force a cache refresh; revert Chisel Bell to original volume',
