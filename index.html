@@ -695,8 +695,10 @@
 
     <!-- YouTube player will be injected here by JavaScript -->
     <dialog id="whatsNewDialog" class="whats-new-dialog">
-      <div class="dialog-content">
+      <div class="dialog-header">
         <h2>What's New</h2>
+      </div>
+      <div class="dialog-content">
         <div class="version-info">
           <span class="version-number"></span>
           <span class="version-date"></span>
@@ -711,12 +713,12 @@
             <ul class="improvements-list"></ul>
           </div>
         </div>
-        <div class="dialog-buttons">
-          <a href="#" id="viewFullHistory" class="changelog-link"
-            >View full history</a
-          >
-          <button id="closeWhatsNew">Close</button>
-        </div>
+      </div>
+      <div class="dialog-buttons">
+        <a href="#" id="viewFullHistory" class="changelog-link"
+          >View full history</a
+        >
+        <button id="closeWhatsNew">Close</button>
       </div>
     </dialog>
 
