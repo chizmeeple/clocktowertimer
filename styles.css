@@ -1944,8 +1944,10 @@ button:disabled {
   transform: translate(-50%, -50%);
   margin: 0;
   max-height: 90vh;
-  display: flex;
+  display: none;
   flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
 }
 
 .change-history-dialog[open] {
