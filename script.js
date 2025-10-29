@@ -569,6 +569,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   closeWhatsNewBtn = document.getElementById('closeWhatsNew');
   changeHistoryDialog = document.getElementById('changeHistoryDialog');
   closeChangeHistoryBtn = document.getElementById('closeChangeHistory');
+  // Ensure change history dialog is closed on initialization
+  if (changeHistoryDialog) {
+    changeHistoryDialog.close();
+    // Also remove the 'open' attribute if present
+    changeHistoryDialog.removeAttribute('open');
+    // Double-check after a short delay in case something tries to open it
+    setTimeout(() => {
+      if (changeHistoryDialog.open) {
+        changeHistoryDialog.close();
+        changeHistoryDialog.removeAttribute('open');
+      }
+    }, 100);
+  }
 
   // Add portrait warning dialog elements
   const portraitWarningDialog = document.getElementById(
@@ -585,15 +598,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     portraitWarningDialog.close();
   });
 
+  // Add click-outside-to-close handler for portrait warning dialog
+  portraitWarningDialog.addEventListener('click', (e) => {
+    if (e.target === portraitWarningDialog) {
+      acceptedPortraitWarning = true;
+      saveSettings();
+      portraitWarningDialog.close();
+    }
+  });
+
   // Check for portrait mode and show warning if needed
+  // Only show if actually in portrait mode and user hasn't accepted warning
   if (orientationUtils.isPortrait() && !acceptedPortraitWarning) {
     portraitWarningDialog.showModal();
+  } else {
+    // Ensure dialog is closed if we're in landscape mode
+    portraitWarningDialog.close();
   }
 
   // Add orientation change listener
   orientationUtils.addOrientationListener((isPortrait) => {
     if (isPortrait && !acceptedPortraitWarning) {
       portraitWarningDialog.showModal();
+    } else if (!isPortrait) {
+      // Close dialog if user rotates back to landscape
+      portraitWarningDialog.close();
     }
   });
 
@@ -771,12 +800,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Add Change History dialog event listeners
-  closeChangeHistoryBtn.addEventListener('click', closeChangeHistory);
-  changeHistoryDialog.addEventListener('click', (e) => {
-    if (e.target === changeHistoryDialog) {
+  if (closeChangeHistoryBtn) {
+    closeChangeHistoryBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       closeChangeHistory();
-    }
-  });
+    });
+  }
+  if (changeHistoryDialog) {
+    changeHistoryDialog.addEventListener('click', (e) => {
+      if (e.target === changeHistoryDialog) {
+        closeChangeHistory();
+      }
+    });
+  }
 
   // Add event listeners for sound preview buttons
   document.querySelectorAll('.preview-sound').forEach((button) => {
@@ -857,6 +894,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (playMusic) {
     createYoutubePlayer();
   }
+
+  // Load keyboard shortcuts into UI
+  keyboardShortcutsUtils.loadShortcuts();
+
+  // Setup keyboard navigation after shortcuts are loaded
+  setupKeyboardNavigation();
 });
 
 // Helper functions for timer calculations
@@ -1036,6 +1079,12 @@ function loadSettings() {
     }, 100);
   }
 
+  // Ensure change history dialog stays closed after everything loads
+  if (changeHistoryDialog && changeHistoryDialog.open) {
+    changeHistoryDialog.close();
+    changeHistoryDialog.removeAttribute('open');
+  }
+
   // Update playlist title
   const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
   if (playlistId) {
@@ -1045,13 +1094,16 @@ function loadSettings() {
       }
     });
   }
-
-  // Load keyboard shortcuts into UI
-  keyboardShortcutsUtils.loadShortcuts();
-
-  // Setup keyboard navigation after shortcuts are loaded
-  setupKeyboardNavigation();
 }
+
+// Additional safeguard on window load to ensure change history dialog is closed
+window.addEventListener('load', () => {
+  const changeHistoryDialog = document.getElementById('changeHistoryDialog');
+  if (changeHistoryDialog && changeHistoryDialog.open) {
+    changeHistoryDialog.close();
+    changeHistoryDialog.removeAttribute('open');
+  }
+});
 
 // Save settings to localStorage
 function saveSettings() {
@@ -2394,9 +2446,22 @@ function showWhatsNew(lastVersion) {
 // Show Change History dialog (shows all versions)
 function showChangeHistory() {
   const content = document.getElementById('changeHistoryContent');
+
+  // Check if CHANGELOG is available
+  if (!CHANGELOG) {
+    console.error('CHANGELOG not available');
+    return;
+  }
+
   const versions = Object.entries(CHANGELOG).sort(
     ([a], [b]) => parseFloat(b) - parseFloat(a)
   );
+
+  // Don't open dialog if there's no changelog data
+  if (versions.length === 0) {
+    console.warn('No changelog data available');
+    return;
+  }
 
   let html = '';
   versions.forEach(([version, data], index) => {
@@ -2440,8 +2505,19 @@ function showChangeHistory() {
     `;
   });
 
+  if (!content) {
+    console.error('changeHistoryContent element not found');
+    return;
+  }
+
   content.innerHTML = html;
-  changeHistoryDialog.showModal();
+
+  // Only open dialog if content was successfully populated
+  if (html.trim().length > 0 && changeHistoryDialog) {
+    changeHistoryDialog.showModal();
+  } else {
+    console.warn('No content to display in change history dialog');
+  }
 }
 
 // Close What's New dialog
@@ -2451,7 +2527,10 @@ function closeWhatsNew() {
 
 // Close Change History dialog
 function closeChangeHistory() {
-  changeHistoryDialog.close();
+  if (changeHistoryDialog) {
+    changeHistoryDialog.close();
+    changeHistoryDialog.removeAttribute('open');
+  }
 }
 
 // Add keyboard navigation support

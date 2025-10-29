@@ -447,12 +447,16 @@ h1 {
   transform: translate(-50%, -50%);
   margin: 0;
   opacity: 0;
+  visibility: hidden;
+  display: none;
   transition: opacity 0.3s ease-out;
 }
 
 .settings-dialog[open] {
   opacity: 1;
+  visibility: visible;
   animation: none;
+  display: block;
 }
 
 .dialog-content {
@@ -1944,8 +1948,10 @@ button:disabled {
   transform: translate(-50%, -50%);
   margin: 0;
   max-height: 90vh;
-  display: flex;
+  display: none;
   flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
 }
 
 .change-history-dialog[open] {

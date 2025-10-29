@@ -1,7 +1,13 @@
 // Version tracking
-export const APP_VERSION = '1.0.17';
+export const APP_VERSION = '1.0.19';
 
 export const CHANGELOG = {
+  '1.0.19': {
+    date: '2025-10-29',
+    changes: {
+      improvements: ['Fix weird behaviour with ghost dialogs'],
+    },
+  },
   '1.0.18': {
     date: '2025-10-15',
     changes: {
