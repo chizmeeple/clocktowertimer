@@ -447,12 +447,16 @@ h1 {
   transform: translate(-50%, -50%);
   margin: 0;
   opacity: 0;
+  visibility: hidden;
+  display: none;
   transition: opacity 0.3s ease-out;
 }
 
 .settings-dialog[open] {
   opacity: 1;
+  visibility: visible;
   animation: none;
+  display: block;
 }
 
 .dialog-content {

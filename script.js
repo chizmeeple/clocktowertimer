@@ -894,6 +894,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (playMusic) {
     createYoutubePlayer();
   }
+
+  // Load keyboard shortcuts into UI
+  keyboardShortcutsUtils.loadShortcuts();
+
+  // Setup keyboard navigation after shortcuts are loaded
+  setupKeyboardNavigation();
 });
 
 // Helper functions for timer calculations
@@ -1088,13 +1094,7 @@ function loadSettings() {
       }
     });
   }
-
-  // Load keyboard shortcuts into UI
-  keyboardShortcutsUtils.loadShortcuts();
-
-  // Setup keyboard navigation after shortcuts are loaded
-  setupKeyboardNavigation();
-});
+}
 
 // Additional safeguard on window load to ensure change history dialog is closed
 window.addEventListener('load', () => {
@@ -2446,13 +2446,13 @@ function showWhatsNew(lastVersion) {
 // Show Change History dialog (shows all versions)
 function showChangeHistory() {
   const content = document.getElementById('changeHistoryContent');
-  
+
   // Check if CHANGELOG is available
   if (!CHANGELOG) {
     console.error('CHANGELOG not available');
     return;
   }
-  
+
   const versions = Object.entries(CHANGELOG).sort(
     ([a], [b]) => parseFloat(b) - parseFloat(a)
   );
@@ -2509,9 +2509,9 @@ function showChangeHistory() {
     console.error('changeHistoryContent element not found');
     return;
   }
-  
+
   content.innerHTML = html;
-  
+
   // Only open dialog if content was successfully populated
   if (html.trim().length > 0 && changeHistoryDialog) {
     changeHistoryDialog.showModal();
