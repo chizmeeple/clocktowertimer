@@ -15,19 +15,17 @@ describe('Timer Behavior', () => {
     cy.get('#closeSettings').click();
     cy.get('#settingsDialog').should('not.be.visible');
 
-    // Verify initial state
-    cy.get('#startBtn')
-      .should('have.text', '⏰ Wake Up!')
-      .and('not.be.disabled');
+    // Verify initial state (button label is in .button-text)
+    cy.get('#startBtn .button-text').should('have.text', '⏰ Wake Up!');
+    cy.get('#startBtn').should('not.be.disabled');
     cy.get('#resetBtn').should('have.text', '🔄 Reset Day').and('be.disabled');
 
     // Click Day 1 preset
     cy.get('#clocktowerPresets .clocktower-btn').first().click();
 
     // Verify state after starting timer
-    cy.get('#startBtn')
-      .should('have.text', '⏸️ Pause Day')
-      .and('not.be.disabled');
+    cy.get('#startBtn .button-text').should('have.text', '⏸️ Pause Day');
+    cy.get('#startBtn').should('not.be.disabled');
     cy.get('#resetBtn')
       .should('have.text', '🔄 Reset Day')
       .and('not.be.disabled');
@@ -39,9 +37,8 @@ describe('Timer Behavior', () => {
     cy.get('#resetBtn').click();
 
     // Verify state after reset
-    cy.get('#startBtn')
-      .should('have.text', '⏰ Wake Up!')
-      .and('not.be.disabled');
+    cy.get('#startBtn .button-text').should('have.text', '⏰ Wake Up!');
+    cy.get('#startBtn').should('not.be.disabled');
     cy.get('#resetBtn').should('have.text', '🔄 Reset Day').and('be.disabled');
 
     // Verify timer shows full day countdown

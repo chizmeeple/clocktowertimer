@@ -1,7 +1,17 @@
 // Version tracking
-export const APP_VERSION = '1.0.21';
+export const APP_VERSION = '1.0.22';
 
 export const CHANGELOG = {
+  '1.0.22': {
+    date: '2026-02-02',
+    changes: {
+      improvements: [
+        'Separated day display and Wake Up/Pause button for improved layout and usability',
+        'Wake Up/Pause button now displays keyboard shortcut hint for quick reference',
+        'Made Wake Up/Pause button taller and more prominent for easier interaction',
+      ],
+    },
+  },
   '1.0.21': {
     date: '2026-02-02',
     changes: {
