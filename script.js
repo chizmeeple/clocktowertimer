@@ -1051,6 +1051,7 @@ function loadSettings() {
   document.getElementById('travellerAmount').textContent = travellerCount;
   updateYoutubeLink();
   document.body.setAttribute('data-theme', backgroundTheme);
+  document.body.setAttribute('data-pace', currentPace);
 
   // Initialize YouTube player if music is enabled
   if (playMusic) {
@@ -1847,6 +1848,7 @@ function closeInfo() {
 // Update game pace
 function updateGamePace(newPace) {
   currentPace = newPace;
+  document.body.setAttribute('data-pace', newPace);
   updateClocktowerPresets();
   updateDayDisplay();
   saveSettings();
