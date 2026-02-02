@@ -1874,10 +1874,15 @@ function generateDayPresets(playerCount) {
   for (let day = 1; day <= numberOfDays; day++) {
     // Linear interpolation between start and end values
     const progress = (day - 1) / (numberOfDays - 1);
-    const minutes = roundToNearestQuarter(
+    let minutes = roundToNearestQuarter(
       (dayStartValue - progress * (dayStartValue - dayEndValue)) *
         paceMultiplier
     );
+
+    // Blitz mode: enforce minimum of 2 minutes for days 1 and 2
+    if (currentPace === 'blitz' && (day === 1 || day === 2) && minutes < 2) {
+      minutes = 2;
+    }
 
     // Convert to MM:SS format
     const wholeMinutes = Math.floor(minutes);
