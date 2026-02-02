@@ -322,6 +322,7 @@ const PACE_MULTIPLIERS = {
   relaxed: 1,
   normal: 0.8, // 20% faster than relaxed
   speedy: 0.5, // 50% faster than relaxed
+  blitz: 0.33, // 67% faster than relaxed
 };
 
 // Settings state
@@ -1783,6 +1784,7 @@ function updateDayDisplay(state = '') {
     relaxed: '🐌',
     normal: '🏃',
     speedy: '⚡',
+    blitz: '🚀',
   };
   const paceEmoji = paceEmojis[currentPace];
   const paceText = currentPace.charAt(0).toUpperCase() + currentPace.slice(1);
