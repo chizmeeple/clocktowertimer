@@ -474,6 +474,26 @@ function updateCharacterAmounts(count) {
   document.getElementById('demonAmount').textContent = amounts[3];
 }
 
+// Helper function to update estimated game length
+function updateEstimatedGameLength() {
+  const presets = generateDayPresets(playerCount);
+  let totalSeconds = 0;
+
+  presets.forEach((preset) => {
+    totalSeconds += preset.minutes * 60 + preset.seconds;
+  });
+
+  // Round up to the nearest minute
+  const totalMinutes = Math.ceil(totalSeconds / 60);
+
+  const estimatedGameLengthElement = document.getElementById(
+    'estimatedGameLength'
+  );
+  if (estimatedGameLengthElement) {
+    estimatedGameLengthElement.textContent = `${totalMinutes} minutes`;
+  }
+}
+
 // Request wake lock
 async function requestWakeLock() {
   if (!keepDisplayOn) return;
@@ -1069,6 +1089,7 @@ function loadSettings() {
   // Update character amounts and presets
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
+  updateEstimatedGameLength();
 
   // Update sound effects dependent elements
   updateSoundEffects();
@@ -1222,6 +1243,7 @@ function updatePlayerCount() {
   playerCountInput.value = playerCount;
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
+  updateEstimatedGameLength();
   saveSettings();
 }
 
@@ -1851,6 +1873,7 @@ function updateGamePace(newPace) {
   document.body.setAttribute('data-pace', newPace);
   updateClocktowerPresets();
   updateDayDisplay();
+  updateEstimatedGameLength();
   saveSettings();
 
   // If timer is running, adjust current time
