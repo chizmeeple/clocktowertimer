@@ -980,6 +980,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       autoOpenNominations = e.target.checked;
       document.getElementById('autoOpenNominationsDelay').disabled =
         !autoOpenNominations;
+      const nominationsOpenSelect = document.getElementById(
+        'nominationsOpenSound'
+      );
+      const nominationsOpenLabelEl = document.querySelector(
+        'label:has(#nominationsOpenSound)'
+      );
+      if (nominationsOpenSelect) {
+        nominationsOpenSelect.disabled = !autoOpenNominations;
+      }
+      if (nominationsOpenLabelEl) {
+        nominationsOpenLabelEl.classList.toggle(
+          'inactive',
+          !playSoundEffects || !autoOpenNominations
+        );
+      }
       saveSettings();
     });
 
@@ -1126,6 +1141,22 @@ function loadSettings() {
     autoOpenNominationsDelay;
   document.getElementById('autoOpenNominationsDelay').disabled =
     !autoOpenNominations;
+
+  const nominationsOpenSoundSelect = document.getElementById(
+    'nominationsOpenSound'
+  );
+  const nominationsOpenLabel = document.querySelector(
+    'label:has(#nominationsOpenSound)'
+  );
+  if (nominationsOpenSoundSelect) {
+    nominationsOpenSoundSelect.disabled = !autoOpenNominations;
+  }
+  if (nominationsOpenLabel) {
+    nominationsOpenLabel.classList.toggle(
+      'inactive',
+      !playSoundEffects || !autoOpenNominations
+    );
+  }
 
   nominationsOpenSound = new Audio(
     `sounds/nominations-open/${nominationsOpenSoundFile}`
@@ -2479,17 +2510,31 @@ function updateSoundEffects() {
   ];
 
   // Apply inactive state to all dependent elements
+  const nominationsOpenLabel = document.querySelector(
+    'label:has(#nominationsOpenSound)'
+  );
+  const nominationsOpenSelect = document.getElementById('nominationsOpenSound');
+
   soundDependentElements.forEach(({ element, type }) => {
     if (element) {
-      element.classList.toggle('inactive', !playSoundEffects);
+      const isNominationsOpen = element === nominationsOpenLabel;
+      const inactive = isNominationsOpen
+        ? !playSoundEffects || !autoOpenNominations
+        : !playSoundEffects;
+      element.classList.toggle('inactive', inactive);
       element.setAttribute(
         'data-inactive-message',
-        'Enable "Play Sound Effects" first'
+        isNominationsOpen && !autoOpenNominations
+          ? 'Enable "Automatically open nominations" in Game settings first'
+          : 'Enable "Play Sound Effects" first'
       );
       if (type === 'label') {
         const input = element.querySelector('select, input');
         if (input) {
-          input.setAttribute('aria-hidden', !playSoundEffects);
+          input.setAttribute('aria-hidden', inactive);
+          if (input === nominationsOpenSelect) {
+            input.disabled = !autoOpenNominations;
+          }
         }
       }
     }
