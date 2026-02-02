@@ -215,6 +215,10 @@ body[data-pace='blitz'] .disclaimer a {
   color: #f44336;
 }
 
+body[data-pace='blitz'] .main-site-link a {
+  color: #f44336;
+}
+
 body[data-pace='blitz'] .portrait-warning-dialog h2 {
   color: #f44336;
 }
@@ -306,6 +310,21 @@ h1 {
   animation: none;
   line-height: 1;
   margin-bottom: -0.5em;
+}
+
+.nominations-countdown {
+  font-size: min(4vw, 1.5rem);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(76, 175, 80, 0.25);
+  border-radius: 6px;
+  line-height: 1.2;
+}
+
+.nominations-countdown[hidden] {
+  display: none;
 }
 
 @keyframes pulse-text {
@@ -788,6 +807,12 @@ h1 {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   font-weight: normal;
+}
+
+.setting-group label.auto-nominations-row .auto-nominations-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 body[data-pace='blitz'] .info-value {
@@ -1386,6 +1411,20 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 .kofi-container {
   margin: 1rem 0;
   text-align: center;
+}
+
+.main-site-link {
+  margin: 0;
+  text-align: center;
+}
+
+.main-site-link a {
+  color: #4caf50;
+  text-decoration: none;
+}
+
+.main-site-link a:hover {
+  text-decoration: underline;
 }
 
 .kofi-container img {

@@ -133,6 +133,16 @@
             >00</span
           >
         </div>
+        <div
+          id="nominationsCountdown"
+          class="nominations-countdown"
+          role="status"
+          aria-live="polite"
+          aria-label="Time until nominations open"
+          hidden
+        >
+          Nominations open in <span id="nominationsCountdownSeconds">0</span>s
+        </div>
         <button id="startBtn" aria-label="Start or pause timer">
           <span class="button-content">
             <span class="button-text">⏰ Wake Up!</span>
@@ -394,6 +404,20 @@
                   <span class="info-value-note">(plus nominations)</span>
                 </span>
               </div>
+              <label class="auto-nominations-row">
+                <span class="auto-nominations-label">
+                  <input type="checkbox" id="autoOpenNominations" />
+                  Automatically open nominations after
+                </span>
+                <select
+                  id="autoOpenNominationsDelay"
+                  class="auto-nominations-delay-select"
+                >
+                  <option value="30">30s</option>
+                  <option value="60" selected>60s</option>
+                  <option value="90">90s</option>
+                </select>
+              </label>
             </div>
           </div>
 
@@ -477,6 +501,25 @@
                     <option value="quick-bell-v2.mp3">Quick Bell</option>
                   </select>
                   <button class="preview-sound" data-type="wake-up">
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path fill="currentColor" d="M8 5v14l11-7z" />
+                    </svg>
+                  </button>
+                </div>
+              </label>
+              <label>
+                <span>Nominations Open</span>
+                <div class="sound-selection">
+                  <select id="nominationsOpenSound">
+                    <option value="nominations-open-laura.mp3">Laura</option>
+                    <option value="nominations-open-russell.mp3">
+                      Russell
+                    </option>
+                    <option value="nominations-open-serafina.mp3">
+                      Serafina
+                    </option>
+                  </select>
+                  <button class="preview-sound" data-type="nominations-open">
                     <svg viewBox="0 0 24 24" width="16" height="16">
                       <path fill="currentColor" d="M8 5v14l11-7z" />
                     </svg>
@@ -672,6 +715,15 @@
                 />
               </a>
             </div>
+            <p class="main-site-link">
+              <a
+                href="https://arcane-scripts.net/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Discover more on the main Arcane Scripts site
+              </a>
+            </p>
             <p class="disclaimer">
               This timer is an open source project and is not affiliated with
               <a

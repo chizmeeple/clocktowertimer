@@ -1,7 +1,16 @@
 // Version tracking
-export const APP_VERSION = '1.0.23';
+export const APP_VERSION = '1.0.24';
 
 export const CHANGELOG = {
+  '1.0.24': {
+    date: '2026-02-02',
+    changes: {
+      features: [
+        'Add Discover More link to info dialog',
+        'Add auto-open-nominations',
+      ],
+    },
+  },
   '1.0.23': {
     date: '2026-02-02',
     changes: {
