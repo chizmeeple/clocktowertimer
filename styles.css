@@ -404,20 +404,50 @@ h1 {
   gap: 0.5rem;
 }
 
+#startBtn .button-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#startBtn .button-text {
+  display: block;
+}
+
+.shortcut-hint {
+  display: inline-block;
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  font-family: monospace;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  min-width: 24px;
+  text-align: center;
+}
+
+.shortcut-hint:empty {
+  display: none;
+}
+
 #startBtn:hover {
   background-color: #45a049;
-  transform: translateY(1px);
+  transform: translateY(calc(-50% + 1px));
 }
 
 #startBtn:active {
   background-color: #3d8b40;
-  transform: translateY(2px);
+  transform: translateY(calc(-50% + 2px));
 }
 
 #startBtn:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
-  transform: none;
+  transform: translateY(-50%);
 }
 
 #resetBtn {

@@ -214,6 +214,9 @@ const keyboardShortcutsUtils = {
     // Update the UI immediately
     keyboardShortcutsUtils.loadShortcuts();
 
+    // Update wake up shortcut hint
+    updateWakeUpShortcutHint();
+
     // Save the clean defaults to localStorage
     saveSettings();
 
@@ -261,6 +264,9 @@ const keyboardShortcutsUtils = {
 
     // Update the UI immediately
     keyboardShortcutsUtils.loadShortcuts();
+
+    // Update wake up shortcut hint
+    updateWakeUpShortcutHint();
 
     // Save the cleared shortcuts to localStorage
     saveSettings();
@@ -457,6 +463,11 @@ function startShortcutRecording(input, action) {
       // Re-enable other shortcut inputs
       reEnableShortcutInputs();
 
+      // Update wake up shortcut hint if wakeUp was changed
+      if (action === 'wakeUp') {
+        updateWakeUpShortcutHint();
+      }
+
       saveSettings();
       document.removeEventListener('keydown', handleKeyDown);
     }
@@ -472,6 +483,40 @@ function updateCharacterAmounts(count) {
   document.getElementById('outsiderAmount').textContent = amounts[1];
   document.getElementById('minionAmount').textContent = amounts[2];
   document.getElementById('demonAmount').textContent = amounts[3];
+}
+
+// Helper function to update wake up shortcut hint
+function updateWakeUpShortcutHint() {
+  const hintElement = document.getElementById('wakeUpShortcutHint');
+  if (!hintElement) return;
+
+  const shortcutKey = keyboardShortcuts.wakeUp;
+
+  if (!shortcutKey) {
+    hintElement.textContent = '';
+    return;
+  }
+
+  // Special handling for MediaPlayPause
+  if (shortcutKey === 'MediaPlayPause') {
+    hintElement.innerHTML =
+      '<svg viewBox="0 0 24 24" width="16" height="12" style="vertical-align: middle;"><path fill="currentColor" d="M3 5v14l8-7z"/><path fill="currentColor" d="M14 5h2v14h-2zm4 0h2v14h-2z"/></svg>';
+  } else if (shortcutKey === ' ') {
+    hintElement.textContent = 'Space';
+  } else {
+    hintElement.textContent = shortcutKey.toUpperCase();
+  }
+}
+
+// Helper function to update start button text (preserving the shortcut hint)
+function updateStartButtonText(text) {
+  const buttonTextElement = startBtn.querySelector('.button-text');
+  if (buttonTextElement) {
+    buttonTextElement.textContent = text;
+  } else {
+    // Fallback if structure doesn't exist
+    startBtn.textContent = text;
+  }
 }
 
 // Helper function to update estimated game length
@@ -567,7 +612,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   minutesDisplay = document.getElementById('minutes');
   secondsDisplay = document.getElementById('seconds');
   startBtn = document.getElementById('startBtn');
-  startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+  updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   startBtn.disabled = false; // Ensure Wake Up button is enabled on load
   resetBtn = document.getElementById('resetBtn');
   resetBtn.textContent = BUTTON_LABELS.RESET;
@@ -919,6 +964,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load keyboard shortcuts into UI
   keyboardShortcutsUtils.loadShortcuts();
 
+  // Update wake up shortcut hint
+  updateWakeUpShortcutHint();
+
   // Setup keyboard navigation after shortcuts are loaded
   setupKeyboardNavigation();
 });
@@ -1225,7 +1273,7 @@ function updateClocktowerPresets() {
       // Start the timer
       startCountdown();
       startBtn.disabled = false;
-      startBtn.textContent = BUTTON_LABELS.PAUSE;
+      updateStartButtonText(BUTTON_LABELS.PAUSE);
       accelerateBtn.disabled = false;
       resetBtn.disabled = false; // Enable reset button when starting timer
     });
@@ -1409,22 +1457,22 @@ function updateDisplay() {
 
   // Handle the combined button states
   if (isWakeUpCountdown) {
-    startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+    updateStartButtonText(BUTTON_LABELS.WAKE_UP);
     startBtn.disabled = true;
     accelerateBtn.disabled = true;
     resetBtn.disabled = true; // Disable reset during wake-up countdown
   } else if (isRunning) {
-    startBtn.textContent = BUTTON_LABELS.PAUSE;
+    updateStartButtonText(BUTTON_LABELS.PAUSE);
     startBtn.disabled = false;
     accelerateBtn.disabled = false;
     resetBtn.disabled = false; // Enable reset while running
   } else if (timeLeft > 0 && !hasReset) {
-    startBtn.textContent = BUTTON_LABELS.RESUME;
+    updateStartButtonText(BUTTON_LABELS.RESUME);
     startBtn.disabled = false;
     accelerateBtn.disabled = true;
     resetBtn.disabled = false; // Enable reset when paused with time remaining
   } else {
-    startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+    updateStartButtonText(BUTTON_LABELS.WAKE_UP);
     startBtn.disabled = isEndSoundPlaying; // Disable during end sound
     accelerateBtn.disabled = true;
     resetBtn.disabled = true; // Disable reset when timer is at 0 or after reset
@@ -1462,7 +1510,7 @@ function accelerateTime() {
       playEndSound();
       isRunning = false;
       startBtn.disabled = true;
-      startBtn.textContent = BUTTON_LABELS.RESUME;
+      updateStartButtonText(BUTTON_LABELS.RESUME);
       currentInterval = normalInterval;
       // Stop YouTube player when accelerated time ends
       if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
@@ -1534,7 +1582,7 @@ function resetTimer() {
 
   // Reset button states
   startBtn.disabled = false;
-  startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+  updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   accelerateBtn.disabled = true;
   resetBtn.disabled = true;
 
@@ -1658,7 +1706,7 @@ function playWakeUpSound() {
 
   // Keep Wake Up label but disable the button during countdown
   startBtn.disabled = true;
-  startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+  updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   accelerateBtn.disabled = true;
 
   let countdownSeconds = 10;
@@ -1699,7 +1747,7 @@ function playWakeUpSound() {
         // Start the timer
         startCountdown();
         startBtn.disabled = false;
-        startBtn.textContent = BUTTON_LABELS.PAUSE;
+        updateStartButtonText(BUTTON_LABELS.PAUSE);
         accelerateBtn.disabled = false;
         resetBtn.disabled = false;
       }
@@ -1768,7 +1816,7 @@ function startNewGame() {
 
   // Set button to Wake Up state
   startBtn.disabled = false;
-  startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+  updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   accelerateBtn.disabled = true; // Accelerate button should start disabled
 
   saveSettings();
@@ -1820,7 +1868,7 @@ function updateDayDisplay(state = '') {
     dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
     // Ensure button states are correct for dusk
     startBtn.disabled = false;
-    startBtn.textContent = BUTTON_LABELS.WAKE_UP;
+    updateStartButtonText(BUTTON_LABELS.WAKE_UP);
     accelerateBtn.disabled = true;
     resetBtn.disabled = true;
   } else {
