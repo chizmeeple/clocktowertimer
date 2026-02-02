@@ -1573,9 +1573,13 @@ function resetTimer() {
     wakeUpTimeout = null;
   }
 
-  // Reset to the full day countdown time
-  const timerValues = calcTimerStartEndValues(playerCount);
-  timeLeft = timerValues.dayStartValue * 60; // Convert minutes to seconds
+  // Reset to the full day countdown time (use current day's preset, which includes pace)
+  const day = currentDay ?? 1;
+  const presets = generateDayPresets(playerCount);
+  const preset = presets.find((p) => p.day === day) ?? presets[0];
+  timeLeft = preset.minutes * 60 + preset.seconds;
+  selectedMinutes = preset.minutes;
+  selectedSeconds = preset.seconds;
   currentInterval = normalInterval;
   isRunning = false; // Ensure timer is marked as not running
   hasReset = true; // Set the reset state

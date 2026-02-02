@@ -44,4 +44,32 @@ describe('Timer Behavior', () => {
     // Verify timer shows full day countdown
     cy.get('.timer-display').should('not.have.text', '00:00');
   });
+
+  it('shows the correct timer value when Reset Day is used', () => {
+    cy.visit('/');
+
+    cy.get('#settingsDialog').should('be.visible');
+    cy.get('#closeSettings').click();
+    cy.get('#settingsDialog').should('not.be.visible');
+
+    // Click Day 1 preset to start the timer and capture its full duration
+    cy.get('#clocktowerPresets .clocktower-btn')
+      .first()
+      .then(($btn) => {
+        const expectedMinutes = String(
+          parseInt($btn.attr('data-minutes'), 10)
+        ).padStart(2, '0');
+        const expectedSeconds = String(
+          parseInt($btn.attr('data-seconds'), 10)
+        ).padStart(2, '0');
+
+        cy.get('#clocktowerPresets .clocktower-btn').first().click();
+        cy.wait(1000); // Let timer count down briefly
+        cy.get('#resetBtn').click();
+
+        // Timer should show the full day value (same as Day 1 preset)
+        cy.get('#minutes').should('have.text', expectedMinutes);
+        cy.get('#seconds').should('have.text', expectedSeconds);
+      });
+  });
 });

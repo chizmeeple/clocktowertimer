@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.22';
+export const APP_VERSION = '1.0.23';
 
 export const CHANGELOG = {
+  '1.0.23': {
+    date: '2026-02-02',
+    changes: {
+      improvements: [
+        'Resolve issue with Reset Day showing incorrect timer value',
+      ],
+    },
+  },
   '1.0.22': {
     date: '2026-02-02',
     changes: {
