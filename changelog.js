@@ -1,7 +1,18 @@
 // Version tracking
-export const APP_VERSION = '1.0.20';
+export const APP_VERSION = '1.0.21';
 
 export const CHANGELOG = {
+  '1.0.21': {
+    date: '2026-02-02',
+    changes: {
+      features: [
+        'Show estimated game length in Settings > Game (excl. nominations)',
+      ],
+      improvements: [
+        'Blitz mode: enforce minimum 2-minute day length for days 1 and 2',
+      ],
+    },
+  },
   '1.0.20': {
     date: '2026-02-02',
     changes: {
