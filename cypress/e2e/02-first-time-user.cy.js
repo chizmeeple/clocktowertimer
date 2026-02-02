@@ -35,10 +35,9 @@ describe('First Time User Flow', () => {
     cy.get('.day-display span').should('have.text', '1');
     cy.get('.day-display .pace-indicator').should('contain', '🏃 Normal');
 
-    // Verify button states
-    cy.get('#startBtn')
-      .should('have.text', '⏰ Wake Up!')
-      .and('not.be.disabled');
+    // Verify button states (button label is in .button-text; shortcut hint may appear below)
+    cy.get('#startBtn .button-text').should('have.text', '⏰ Wake Up!');
+    cy.get('#startBtn').should('not.be.disabled');
     cy.get('#resetBtn').should('have.text', '🔄 Reset Day').and('be.disabled');
     cy.get('#accelerateBtn')
       .should('have.text', '⏩ Accelerate Time')
