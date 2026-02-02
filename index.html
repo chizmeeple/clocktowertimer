@@ -122,14 +122,9 @@
 
     <div class="container">
       <div class="timer-display" role="timer" aria-live="polite">
-        <div class="day-counter-container">
-          <div class="day-display" role="status" aria-label="Current game day">
-            <span id="currentDay">-</span>
-            <div class="pace-indicator">Normal</div>
-          </div>
-          <button id="startBtn" aria-label="Start or pause timer">
-            ⏰ Wake Up!
-          </button>
+        <div class="day-display" role="status" aria-label="Current game day">
+          <span id="currentDay">-</span>
+          <div class="pace-indicator">Normal</div>
         </div>
         <div class="time" aria-label="Timer display">
           <span id="minutes" aria-label="minutes">00</span>:<span
@@ -138,6 +133,9 @@
             >00</span
           >
         </div>
+        <button id="startBtn" aria-label="Start or pause timer">
+          ⏰ Wake Up!
+        </button>
       </div>
       <div class="controls" role="group" aria-label="Timer controls">
         <div class="time-inputs">
