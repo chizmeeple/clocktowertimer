@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.19';
+export const APP_VERSION = '1.0.20';
 
 export const CHANGELOG = {
+  '1.0.20': {
+    date: '2026-02-02',
+    changes: {
+      features: [
+        'Added "Blitz" game pace mode for ultra-fast games (67% shorter than relaxed pace)',
+      ],
+    },
+  },
   '1.0.19': {
     date: '2025-10-29',
     changes: {

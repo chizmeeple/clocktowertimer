@@ -322,6 +322,7 @@ const PACE_MULTIPLIERS = {
   relaxed: 1,
   normal: 0.8, // 20% faster than relaxed
   speedy: 0.5, // 50% faster than relaxed
+  blitz: 0.33, // 67% faster than relaxed
 };
 
 // Settings state
@@ -1050,6 +1051,7 @@ function loadSettings() {
   document.getElementById('travellerAmount').textContent = travellerCount;
   updateYoutubeLink();
   document.body.setAttribute('data-theme', backgroundTheme);
+  document.body.setAttribute('data-pace', currentPace);
 
   // Initialize YouTube player if music is enabled
   if (playMusic) {
@@ -1783,6 +1785,7 @@ function updateDayDisplay(state = '') {
     relaxed: '🐌',
     normal: '🏃',
     speedy: '⚡',
+    blitz: '🚀',
   };
   const paceEmoji = paceEmojis[currentPace];
   const paceText = currentPace.charAt(0).toUpperCase() + currentPace.slice(1);
@@ -1845,6 +1848,7 @@ function closeInfo() {
 // Update game pace
 function updateGamePace(newPace) {
   currentPace = newPace;
+  document.body.setAttribute('data-pace', newPace);
   updateClocktowerPresets();
   updateDayDisplay();
   saveSettings();

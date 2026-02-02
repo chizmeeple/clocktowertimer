@@ -55,6 +55,178 @@ body[data-theme='large-clock-face']::before {
   background-image: url('images/backgrounds/large-clock-face.png');
 }
 
+/* Blitz mode red theme overrides */
+body[data-pace='blitz'] .preset-btn {
+  background-color: #3e2c2c;
+}
+
+body[data-pace='blitz'] .preset-btn:hover {
+  background-color: #513c3c;
+}
+
+body[data-pace='blitz'] .preset-btn.active {
+  background-color: #f44336;
+}
+
+body[data-pace='blitz'] .minute-btn {
+  background-color: #3e2c2c;
+}
+
+body[data-pace='blitz'] .minute-btn:hover {
+  background-color: #513c3c;
+}
+
+body[data-pace='blitz'] .minute-btn.active {
+  background-color: #f44336;
+}
+
+body[data-pace='blitz'] #startBtn {
+  background-color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.2);
+}
+
+body[data-pace='blitz'] #startBtn:hover {
+  background-color: #e53935;
+}
+
+body[data-pace='blitz'] #startBtn:active {
+  background-color: #d32f2f;
+}
+
+body[data-pace='blitz'] #accelerateBtn {
+  background-color: #3e2c2c;
+}
+
+body[data-pace='blitz'] #accelerateBtn::before {
+  background-color: rgba(244, 67, 54, 0.3);
+}
+
+body[data-pace='blitz'] #accelerateBtn:hover {
+  background-color: #513c3c;
+}
+
+body[data-pace='blitz'] #fullscreenBtn,
+body[data-pace='blitz'] #settingsBtn,
+body[data-pace='blitz'] #infoBtn {
+  background-color: #3e2c2c;
+}
+
+body[data-pace='blitz'] #fullscreenBtn:hover,
+body[data-pace='blitz'] #settingsBtn:hover,
+body[data-pace='blitz'] #infoBtn:hover {
+  background-color: #513c3c;
+}
+
+body[data-pace='blitz'] .clocktower-presets button {
+  background-color: #3e2c2c;
+}
+
+body[data-pace='blitz'] .clocktower-presets button:hover {
+  background-color: #513c3c;
+}
+
+body[data-pace='blitz'] .clocktower-presets button.active {
+  background-color: #f44336;
+}
+
+body[data-pace='blitz'] .pace-indicator {
+  background: rgba(244, 67, 54, 0.3);
+}
+
+body[data-pace='blitz'] .day-display .pace-indicator {
+  background: rgba(139, 44, 44, 0.15);
+  color: #8b2c2c;
+}
+
+body[data-pace='blitz'] .dialog-content h3 {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .setting-group h3 {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .dialog-buttons button.primary-btn {
+  background: #f44336;
+}
+
+body[data-pace='blitz'] .dialog-buttons button.primary-btn:hover {
+  background: #e53935;
+}
+
+body[data-pace='blitz'] .tab-button.active {
+  background: #f44336;
+}
+
+body[data-pace='blitz'] .version-number {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .changes-section h3 {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .changes-section li::before {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .playlist-link {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .playlist-link:hover {
+  color: #ff6659;
+}
+
+body[data-pace='blitz'] .changelog-link {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .number-input-group button {
+  background-color: #3e2c2c;
+}
+
+body[data-pace='blitz'] .number-input-group button:hover {
+  background-color: #513c3c;
+}
+
+body[data-pace='blitz'] .setting-group input[type='checkbox'] {
+  accent-color: #f44336;
+}
+
+body[data-pace='blitz'] .volume-slider::-webkit-slider-thumb {
+  background: #f44336;
+}
+
+body[data-pace='blitz'] .preview-sound {
+  background: #3e2c2c;
+}
+
+body[data-pace='blitz'] .preview-sound:hover {
+  background: #513c3c;
+}
+
+body[data-pace='blitz'] .preview-sound.playing {
+  background: #f44336;
+  box-shadow: 0 0 12px rgba(244, 67, 54, 0.4);
+}
+
+body[data-pace='blitz'] .disclaimer a {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .portrait-warning-dialog h2 {
+  color: #f44336;
+}
+
+body[data-pace='blitz'] .portrait-warning-dialog button {
+  background-color: #f44336;
+}
+
+body[data-pace='blitz'] .portrait-warning-dialog button:hover {
+  background-color: #e53935;
+}
+
 /* Background theme selector styles */
 .background-theme-select {
   width: 100%;
