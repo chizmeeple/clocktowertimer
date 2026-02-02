@@ -312,6 +312,21 @@ h1 {
   margin-bottom: -0.5em;
 }
 
+.nominations-countdown {
+  font-size: min(4vw, 1.5rem);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(76, 175, 80, 0.25);
+  border-radius: 6px;
+  line-height: 1.2;
+}
+
+.nominations-countdown[hidden] {
+  display: none;
+}
+
 @keyframes pulse-text {
   0% {
     opacity: 1;

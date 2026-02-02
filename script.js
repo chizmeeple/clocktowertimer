@@ -353,7 +353,8 @@ let nominationsOpenSoundFile = 'nominations-open-laura.mp3'; // Default nominati
 let acceptedPortraitWarning = false; // Default to false for portrait warning
 let autoOpenNominations = false;
 let autoOpenNominationsDelay = 60; // seconds
-let autoOpenNominationsTimeout = null;
+let autoOpenNominationsInterval = null;
+let nominationsCountdownRemaining = 0;
 
 // Keyboard shortcuts
 const DEFAULT_KEYBOARD_SHORTCUTS = {
@@ -1500,6 +1501,50 @@ function playNominationsOpenSound() {
   });
 }
 
+// Clear the nominations countdown (interval and UI)
+function clearNominationsCountdown() {
+  if (autoOpenNominationsInterval) {
+    clearInterval(autoOpenNominationsInterval);
+    autoOpenNominationsInterval = null;
+  }
+  const el = document.getElementById('nominationsCountdown');
+  if (el) {
+    el.hidden = true;
+  }
+}
+
+// Start the nominations countdown display and schedule the sound
+function startNominationsCountdown() {
+  clearNominationsCountdown();
+  if (!autoOpenNominations || autoOpenNominationsDelay <= 0) return;
+
+  const countdownEl = document.getElementById('nominationsCountdown');
+  const secondsEl = document.getElementById('nominationsCountdownSeconds');
+  if (!countdownEl || !secondsEl) return;
+
+  nominationsCountdownRemaining = autoOpenNominationsDelay;
+  secondsEl.textContent = nominationsCountdownRemaining;
+  countdownEl.hidden = false;
+  countdownEl.setAttribute(
+    'aria-label',
+    `Nominations open in ${nominationsCountdownRemaining} seconds`
+  );
+
+  autoOpenNominationsInterval = setInterval(() => {
+    nominationsCountdownRemaining--;
+    secondsEl.textContent = nominationsCountdownRemaining;
+    countdownEl.setAttribute(
+      'aria-label',
+      `Nominations open in ${nominationsCountdownRemaining} seconds`
+    );
+
+    if (nominationsCountdownRemaining <= 0) {
+      clearNominationsCountdown();
+      playNominationsOpenSound();
+    }
+  }, 1000);
+}
+
 // Create beep sound (fallback if mp3 fails to load)
 function createBeep() {
   if (!playSoundEffects) return;
@@ -1601,13 +1646,7 @@ function accelerateTime() {
       updateDisplay(); // Make sure to update display one final time
 
       if (autoOpenNominations && autoOpenNominationsDelay > 0) {
-        if (autoOpenNominationsTimeout) {
-          clearTimeout(autoOpenNominationsTimeout);
-        }
-        autoOpenNominationsTimeout = setTimeout(() => {
-          autoOpenNominationsTimeout = null;
-          playNominationsOpenSound();
-        }, autoOpenNominationsDelay * 1000);
+        startNominationsCountdown();
       }
     }
   }, currentInterval);
@@ -1661,10 +1700,7 @@ function resetTimer() {
     clearTimeout(wakeUpTimeout);
     wakeUpTimeout = null;
   }
-  if (autoOpenNominationsTimeout) {
-    clearTimeout(autoOpenNominationsTimeout);
-    autoOpenNominationsTimeout = null;
-  }
+  clearNominationsCountdown();
 
   // Reset to the full day countdown time (use current day's preset, which includes pace)
   const day = currentDay ?? 1;
@@ -1772,10 +1808,7 @@ function playWakeUpSound() {
   if (wakeUpTimeout) {
     clearTimeout(wakeUpTimeout);
   }
-  if (autoOpenNominationsTimeout) {
-    clearTimeout(autoOpenNominationsTimeout);
-    autoOpenNominationsTimeout = null;
-  }
+  clearNominationsCountdown();
 
   if (playSoundEffects) {
     // Stop music if playing and not set to play at night
@@ -1902,13 +1935,7 @@ function startCountdown() {
       updateDisplay();
 
       if (autoOpenNominations && autoOpenNominationsDelay > 0) {
-        if (autoOpenNominationsTimeout) {
-          clearTimeout(autoOpenNominationsTimeout);
-        }
-        autoOpenNominationsTimeout = setTimeout(() => {
-          autoOpenNominationsTimeout = null;
-          playNominationsOpenSound();
-        }, autoOpenNominationsDelay * 1000);
+        startNominationsCountdown();
       }
     }
   }, normalInterval);
@@ -1917,10 +1944,7 @@ function startCountdown() {
 function startNewGame() {
   // Reset timer state
   clearInterval(timerId);
-  if (autoOpenNominationsTimeout) {
-    clearTimeout(autoOpenNominationsTimeout);
-    autoOpenNominationsTimeout = null;
-  }
+  clearNominationsCountdown();
   timeLeft = 0;
   isRunning = false;
   currentInterval = normalInterval;
