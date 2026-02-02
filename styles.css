@@ -716,6 +716,46 @@ h1 {
   color: #fff;
 }
 
+.info-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-display span:first-child {
+  font-size: 1rem;
+  color: #fff;
+}
+
+.info-value-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
+
+.info-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #4caf50;
+  font-variant-numeric: tabular-nums;
+}
+
+.info-value-note {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: normal;
+}
+
+body[data-pace='blitz'] .info-value {
+  color: #f44336;
+}
+
 .setting-group select {
   background: #2a2a2a;
   border: 1px solid #444;
