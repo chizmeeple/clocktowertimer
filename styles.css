@@ -215,6 +215,10 @@ body[data-pace='blitz'] .disclaimer a {
   color: #f44336;
 }
 
+body[data-pace='blitz'] .main-site-link a {
+  color: #f44336;
+}
+
 body[data-pace='blitz'] .portrait-warning-dialog h2 {
   color: #f44336;
 }
@@ -1386,6 +1390,20 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
 .kofi-container {
   margin: 1rem 0;
   text-align: center;
+}
+
+.main-site-link {
+  margin: 0;
+  text-align: center;
+}
+
+.main-site-link a {
+  color: #4caf50;
+  text-decoration: none;
+}
+
+.main-site-link a:hover {
+  text-decoration: underline;
 }
 
 .kofi-container img {
