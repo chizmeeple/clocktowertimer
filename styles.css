@@ -794,6 +794,12 @@ h1 {
   font-weight: normal;
 }
 
+.setting-group label.auto-nominations-row .auto-nominations-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 body[data-pace='blitz'] .info-value {
   color: #f44336;
 }

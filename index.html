@@ -394,6 +394,20 @@
                   <span class="info-value-note">(plus nominations)</span>
                 </span>
               </div>
+              <label class="auto-nominations-row">
+                <span class="auto-nominations-label">
+                  <input type="checkbox" id="autoOpenNominations" />
+                  Automatically open nominations after
+                </span>
+                <select
+                  id="autoOpenNominationsDelay"
+                  class="auto-nominations-delay-select"
+                >
+                  <option value="30">30s</option>
+                  <option value="60" selected>60s</option>
+                  <option value="90">90s</option>
+                </select>
+              </label>
             </div>
           </div>
 
@@ -477,6 +491,22 @@
                     <option value="quick-bell-v2.mp3">Quick Bell</option>
                   </select>
                   <button class="preview-sound" data-type="wake-up">
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path fill="currentColor" d="M8 5v14l11-7z" />
+                    </svg>
+                  </button>
+                </div>
+              </label>
+              <label>
+                <span>Nominations Open</span>
+                <div class="sound-selection">
+                  <select id="nominationsOpenSound">
+                    <option value="nominations-open-laura.mp3">Laura</option>
+                    <option value="nominations-open-serafina.mp3">
+                      Serafina
+                    </option>
+                  </select>
+                  <button class="preview-sound" data-type="nominations-open">
                     <svg viewBox="0 0 24 24" width="16" height="16">
                       <path fill="currentColor" d="M8 5v14l11-7z" />
                     </svg>

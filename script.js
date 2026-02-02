@@ -306,6 +306,7 @@ import { APP_VERSION, CHANGELOG } from './changelog.js';
 // Audio Elements
 let endSound = null;
 let wakeUpSound = null;
+let nominationsOpenSound = null;
 let previewSound = null; // New audio element for previews
 
 // Wake Lock state
@@ -348,7 +349,11 @@ let keepDisplayOn = true; // Default to true for wake lock
 let youtubePlayer = null;
 let endOfDaySound = 'cathedral-bell-v2.mp3'; // Default end of day sound
 let wakeUpSoundFile = 'chisel-bell-01-loud-v2.mp3'; // Default wake up sound
+let nominationsOpenSoundFile = 'nominations-open-laura.mp3'; // Default nominations open sound
 let acceptedPortraitWarning = false; // Default to false for portrait warning
+let autoOpenNominations = false;
+let autoOpenNominationsDelay = 60; // seconds
+let autoOpenNominationsTimeout = null;
 
 // Keyboard shortcuts
 const DEFAULT_KEYBOARD_SHORTCUTS = {
@@ -583,6 +588,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize audio
   endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
   wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
+  nominationsOpenSound = new Audio(
+    `sounds/nominations-open/${nominationsOpenSoundFile}`
+  );
 
   // Add connectivity listeners
   connectivityUtils.addStatusListener(
@@ -897,8 +905,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           .forEach((btn) => btn.classList.remove('playing'));
       }
 
-      // Create and play the new preview
-      previewSound = new Audio(`sounds/${type}/${soundFile}`);
+      // Create and play the new preview (nominations-open uses its own folder)
+      const previewPath =
+        type === 'nominations-open'
+          ? `sounds/nominations-open/${soundFile}`
+          : `sounds/${type}/${soundFile}`;
+      previewSound = new Audio(previewPath);
       button.classList.add('playing');
 
       previewSound.addEventListener(
@@ -943,6 +955,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
     saveSettings();
   });
+
+  document
+    .getElementById('nominationsOpenSound')
+    .addEventListener('change', (e) => {
+      if (previewSound) {
+        previewSound.pause();
+        previewSound.currentTime = 0;
+        document
+          .querySelectorAll('.preview-sound')
+          .forEach((btn) => btn.classList.remove('playing'));
+      }
+      nominationsOpenSoundFile = e.target.value;
+      nominationsOpenSound = new Audio(
+        `sounds/nominations-open/${nominationsOpenSoundFile}`
+      );
+      saveSettings();
+    });
+
+  document
+    .getElementById('autoOpenNominations')
+    .addEventListener('change', (e) => {
+      autoOpenNominations = e.target.checked;
+      document.getElementById('autoOpenNominationsDelay').disabled =
+        !autoOpenNominations;
+      saveSettings();
+    });
+
+  document
+    .getElementById('autoOpenNominationsDelay')
+    .addEventListener('change', (e) => {
+      autoOpenNominationsDelay = parseInt(e.target.value, 10);
+      saveSettings();
+    });
 
   // Initialize settings and update display
   loadSettings();
@@ -1013,6 +1058,13 @@ function loadSettings() {
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
     endOfDaySound = settings.endOfDaySound || 'cathedral-bell-v2.mp3';
     wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud-v2.mp3';
+    nominationsOpenSoundFile =
+      settings.nominationsOpenSoundFile || 'nominations-open-laura.mp3';
+    autoOpenNominations = settings.autoOpenNominations || false;
+    autoOpenNominationsDelay =
+      settings.autoOpenNominationsDelay !== undefined
+        ? settings.autoOpenNominationsDelay
+        : 60;
     acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
     keyboardShortcuts = settings.keyboardShortcuts || {
       ...DEFAULT_KEYBOARD_SHORTCUTS,
@@ -1041,6 +1093,9 @@ function loadSettings() {
     currentDay = 1;
     endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
     wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
+    nominationsOpenSound = new Audio(
+      `sounds/nominations-open/${nominationsOpenSoundFile}`
+    );
   }
 
   // Always update UI to reflect settings
@@ -1063,6 +1118,17 @@ function loadSettings() {
   ).textContent = `${soundEffectsVolume}%`;
   document.getElementById('endOfDaySound').value = endOfDaySound;
   document.getElementById('wakeUpSound').value = wakeUpSoundFile;
+  document.getElementById('nominationsOpenSound').value =
+    nominationsOpenSoundFile;
+  document.getElementById('autoOpenNominations').checked = autoOpenNominations;
+  document.getElementById('autoOpenNominationsDelay').value =
+    autoOpenNominationsDelay;
+  document.getElementById('autoOpenNominationsDelay').disabled =
+    !autoOpenNominations;
+
+  nominationsOpenSound = new Audio(
+    `sounds/nominations-open/${nominationsOpenSoundFile}`
+  );
 
   // Enable/disable volume controls based on their respective settings
   const musicVolumeInput = document.getElementById('musicVolume');
@@ -1202,6 +1268,9 @@ function saveSettings() {
     lastSeenVersion: APP_VERSION,
     endOfDaySound,
     wakeUpSoundFile,
+    nominationsOpenSoundFile,
+    autoOpenNominations,
+    autoOpenNominationsDelay,
     acceptedPortraitWarning,
     keyboardShortcuts,
   };
@@ -1421,6 +1490,16 @@ function playEndSound() {
   );
 }
 
+// Play nominations open sound
+function playNominationsOpenSound() {
+  if (!playSoundEffects || !nominationsOpenSound) return;
+  nominationsOpenSound.currentTime = 0;
+  nominationsOpenSound.volume = soundEffectsVolume / 100;
+  nominationsOpenSound.play().catch((error) => {
+    console.log('Error playing nominations open sound:', error);
+  });
+}
+
 // Create beep sound (fallback if mp3 fails to load)
 function createBeep() {
   if (!playSoundEffects) return;
@@ -1520,6 +1599,16 @@ function accelerateTime() {
         updateDayDisplay('dusk');
       }
       updateDisplay(); // Make sure to update display one final time
+
+      if (autoOpenNominations && autoOpenNominationsDelay > 0) {
+        if (autoOpenNominationsTimeout) {
+          clearTimeout(autoOpenNominationsTimeout);
+        }
+        autoOpenNominationsTimeout = setTimeout(() => {
+          autoOpenNominationsTimeout = null;
+          playNominationsOpenSound();
+        }, autoOpenNominationsDelay * 1000);
+      }
     }
   }, currentInterval);
 
@@ -1571,6 +1660,10 @@ function resetTimer() {
   if (wakeUpTimeout) {
     clearTimeout(wakeUpTimeout);
     wakeUpTimeout = null;
+  }
+  if (autoOpenNominationsTimeout) {
+    clearTimeout(autoOpenNominationsTimeout);
+    autoOpenNominationsTimeout = null;
   }
 
   // Reset to the full day countdown time (use current day's preset, which includes pace)
@@ -1678,6 +1771,10 @@ function playWakeUpSound() {
   // Clear any existing wake-up timeout
   if (wakeUpTimeout) {
     clearTimeout(wakeUpTimeout);
+  }
+  if (autoOpenNominationsTimeout) {
+    clearTimeout(autoOpenNominationsTimeout);
+    autoOpenNominationsTimeout = null;
   }
 
   if (playSoundEffects) {
@@ -1803,6 +1900,16 @@ function startCountdown() {
         updateDayDisplay('dusk');
       }
       updateDisplay();
+
+      if (autoOpenNominations && autoOpenNominationsDelay > 0) {
+        if (autoOpenNominationsTimeout) {
+          clearTimeout(autoOpenNominationsTimeout);
+        }
+        autoOpenNominationsTimeout = setTimeout(() => {
+          autoOpenNominationsTimeout = null;
+          playNominationsOpenSound();
+        }, autoOpenNominationsDelay * 1000);
+      }
     }
   }, normalInterval);
 }
@@ -1810,6 +1917,10 @@ function startCountdown() {
 function startNewGame() {
   // Reset timer state
   clearInterval(timerId);
+  if (autoOpenNominationsTimeout) {
+    clearTimeout(autoOpenNominationsTimeout);
+    autoOpenNominationsTimeout = null;
+  }
   timeLeft = 0;
   isRunning = false;
   currentInterval = normalInterval;
@@ -2331,6 +2442,10 @@ function updateSoundEffects() {
     },
     {
       element: document.querySelector('label:has(#wakeUpSound)'),
+      type: 'label',
+    },
+    {
+      element: document.querySelector('label:has(#nominationsOpenSound)'),
       type: 'label',
     },
     {
