@@ -360,6 +360,8 @@ let currentDay = null;
 let usedPresetByDay = {};
 /** Preset day indices permanently hidden when their day ended (countdown reached zero). Never shown again until new game. */
 let hiddenPresetDays = [];
+/** True only when the timer has run out this day (dusk); used so we show compact preset list only then, not when e.g. clicking a preset. */
+let isDuskPresetView = false;
 let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
 let playMusicAtNight = false; // Default to false for new users
@@ -1410,7 +1412,7 @@ function updateClocktowerPresets() {
   const presets = generateDayPresets(playerCount);
   const numberOfDays = presets.length;
 
-  // Count skipped presets and append a suitable-timed extra preset for each (so we don't run out)
+  // Count skipped presets and append that many extras at the end (so we don't run out).
   let skippedCount = 0;
   for (const preset of presets) {
     if (getPresetDayLabel(preset.day, numberOfDays).effectiveDay === null)
@@ -1426,29 +1428,22 @@ function updateClocktowerPresets() {
     });
   }
 
-  // When the day has ended (dusk), add currently skipped presets to hidden set (they stay hidden for the rest of the game)
-  const dayInfo = document.querySelector('.day-display');
-  const isDusk = dayInfo?.classList.contains('dusk');
-  if (isDusk) {
-    let added = false;
-    for (const p of presets) {
-      if (
-        getPresetDayLabel(p.day, numberOfDays).effectiveDay === null &&
-        !hiddenPresetDays.includes(p.day)
-      ) {
-        hiddenPresetDays.push(p.day);
-        added = true;
-      }
-    }
-    if (added) saveSettings();
-  }
-
-  // Always exclude permanently hidden presets; in dusk also exclude any remaining skipped (effective-only)
-  let presetsToShow = presets.filter((p) => !hiddenPresetDays.includes(p.day));
-  if (isDusk) {
+  // Preset visibility: ONLY about hiding skipped (💀) presets. Never hide "Day N" presets.
+  // Dusk: hide all skips (compact next-day picker). Day 2+: hide only 💀 before Day N-1's preset.
+  let presetsToShow = presets;
+  if (isDuskPresetView) {
     presetsToShow = presetsToShow.filter(
       (p) => getPresetDayLabel(p.day, numberOfDays).effectiveDay !== null
     );
+  } else if (currentDay >= 2) {
+    const skipCutoff = usedPresetByDay[currentDay - 1];
+    if (skipCutoff !== undefined) {
+      presetsToShow = presets.filter((p) => {
+        const { effectiveDay } = getPresetDayLabel(p.day, numberOfDays);
+        if (effectiveDay !== null) return true; // always show every Day preset
+        return p.day >= skipCutoff; // hide only 💀 before Day N-1's preset
+      });
+    }
   }
 
   presetsToShow.forEach((preset) => {
@@ -1476,22 +1471,20 @@ function updateClocktowerPresets() {
     button.dataset.day = preset.day;
 
     button.addEventListener('click', (e) => {
-      const dayInfo = document.querySelector('.day-display');
-      const isDusk = dayInfo?.classList.contains('dusk');
       const { effectiveDay: eff } = getPresetDayLabel(preset.day, numberOfDays);
       const isAhead = eff !== null && eff > currentDay;
 
-      if (isAhead && !isDusk) {
-        // Not in dusk: use this preset for current day
+      if (isAhead && !isDuskPresetView) {
+        // Not in dusk: use this preset for current day (keeps full preset row including skipped)
         usedPresetByDay[currentDay] = preset.day;
         saveSettings();
         updateClocktowerPresets();
-      } else if (isDusk && currentDay !== null) {
+      } else if (isDuskPresetView && currentDay !== null) {
         // In dusk: use this preset for the next day
         usedPresetByDay[currentDay + 1] = preset.day;
         currentDay++;
         saveSettings();
-        // Clear dusk before rebuilding presets so skips stay visible for the new day until its countdown ends
+        // Clear dusk so new day shows full preset row until its countdown ends
         updateDayDisplay();
         updateClocktowerPresets();
       }
@@ -2211,6 +2204,9 @@ function updateDayDisplay(state = '') {
 
   // Remove existing state classes
   dayInfo.classList.remove('dawn', 'dusk');
+
+  // Single source of truth: compact preset list only when timer has run out (dusk), not when e.g. clicking a preset
+  isDuskPresetView = state === 'dusk';
 
   // Ensure currentDay is at least 1
   if (currentDay === null || currentDay === undefined) {
