@@ -358,6 +358,8 @@ let isFirstLoad = false;
 let currentDay = null;
 /** Day number → preset index used for that day. Only presets we skipped get 💀; used presets keep "Day N"; rest renumbered from current. */
 let usedPresetByDay = {};
+/** Preset day indices permanently hidden when their day ended (countdown reached zero). Never shown again until new game. */
+let hiddenPresetDays = [];
 let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
 let playMusicAtNight = false; // Default to false for new users
@@ -1098,6 +1100,9 @@ function applyParsedSettings(settings) {
   } else {
     usedPresetByDay = {};
   }
+  hiddenPresetDays = Array.isArray(settings.hiddenPresetDays)
+    ? settings.hiddenPresetDays
+    : [];
   currentPace = settings.currentPace || 'normal';
   playMusic = settings.playMusic === undefined ? false : settings.playMusic;
   playMusicAtNight =
@@ -1339,6 +1344,7 @@ function saveSettings() {
     travellerCount,
     currentDay,
     usedPresetByDay,
+    hiddenPresetDays,
     currentPace,
     playMusic,
     playMusicAtNight,
@@ -1420,7 +1426,32 @@ function updateClocktowerPresets() {
     });
   }
 
-  presets.forEach((preset) => {
+  // When the day has ended (dusk), add currently skipped presets to hidden set (they stay hidden for the rest of the game)
+  const dayInfo = document.querySelector('.day-display');
+  const isDusk = dayInfo?.classList.contains('dusk');
+  if (isDusk) {
+    let added = false;
+    for (const p of presets) {
+      if (
+        getPresetDayLabel(p.day, numberOfDays).effectiveDay === null &&
+        !hiddenPresetDays.includes(p.day)
+      ) {
+        hiddenPresetDays.push(p.day);
+        added = true;
+      }
+    }
+    if (added) saveSettings();
+  }
+
+  // Always exclude permanently hidden presets; in dusk also exclude any remaining skipped (effective-only)
+  let presetsToShow = presets.filter((p) => !hiddenPresetDays.includes(p.day));
+  if (isDusk) {
+    presetsToShow = presetsToShow.filter(
+      (p) => getPresetDayLabel(p.day, numberOfDays).effectiveDay !== null
+    );
+  }
+
+  presetsToShow.forEach((preset) => {
     const { label: dayLabel, effectiveDay: eff } = getPresetDayLabel(
       preset.day,
       numberOfDays
@@ -1460,6 +1491,8 @@ function updateClocktowerPresets() {
         usedPresetByDay[currentDay + 1] = preset.day;
         currentDay++;
         saveSettings();
+        // Clear dusk before rebuilding presets so skips stay visible for the new day until its countdown ends
+        updateDayDisplay();
         updateClocktowerPresets();
       }
 
@@ -1821,6 +1854,7 @@ function accelerateTime() {
       }
       if (currentDay !== null) {
         updateDayDisplay('dusk');
+        updateClocktowerPresets();
       }
       updateDisplay(); // Make sure to update display one final time
 
@@ -2120,6 +2154,7 @@ function startCountdown() {
       }
       if (currentDay !== null) {
         updateDayDisplay('dusk');
+        updateClocktowerPresets();
       }
       updateDisplay();
 
@@ -2141,6 +2176,7 @@ function startNewGame() {
   // Set to Day 1
   currentDay = 1;
   usedPresetByDay = {};
+  hiddenPresetDays = [];
   updateDayDisplay();
 
   // Set button to Wake Up state
