@@ -1195,12 +1195,15 @@ body[data-pace='blitz'] .info-value {
 .clocktower-presets button.skipped-day {
   padding-left: 0.4rem;
   padding-right: 0.4rem;
-  opacity: 0.5;
+  background-color: rgba(26, 26, 26, 0.85);
+  border: 1px solid var(--colour-border);
+  opacity: 0.55;
   filter: saturate(0.5);
 }
 
 .clocktower-presets button.skipped-day:hover {
   opacity: 0.65;
+  background-color: rgba(32, 32, 32, 0.9);
 }
 
 .clocktower-presets button.past-day {
