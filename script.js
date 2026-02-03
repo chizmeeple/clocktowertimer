@@ -1256,6 +1256,13 @@ function loadSettings() {
   const savedSettings = localStorage.getItem('quickTimerSettings');
   if (savedSettings) {
     applyParsedSettings(JSON.parse(savedSettings));
+    // Recreate Audio objects so they use the loaded sound files (they were
+    // initially created with defaults in DOMContentLoaded).
+    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
+    nominationsOpenSound = new Audio(
+      `sounds/nominations-open/${nominationsOpenSoundFile}`
+    );
   } else {
     initSoundsFirstLoad();
   }
