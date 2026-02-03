@@ -1047,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Create YouTube container immediately if music is enabled
   if (playMusic) {
-    createYoutubePlayer();
+    initYoutubePlayer();
   }
 
   // Load keyboard shortcuts into UI
