@@ -334,6 +334,13 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 0.1em;
+  /* Hidden until Azeret Mono loads to avoid font flicker */
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+html.fonts-ready .timer-display .time {
+  opacity: 1;
 }
 
 .timer-display.wake-up-countdown .time {

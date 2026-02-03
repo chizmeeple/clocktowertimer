@@ -1,3 +1,19 @@
+// Show timer digits only after Azeret Mono has loaded to prevent font flicker
+(function () {
+  function showTimer() {
+    document.documentElement.classList.add('fonts-ready');
+  }
+  if (document.fonts?.load) {
+    document.fonts
+      .load('600 1em "Azeret Mono"')
+      .then(showTimer)
+      .catch(showTimer);
+    setTimeout(showTimer, 3000); // Show anyway if font fails or is slow
+  } else {
+    showTimer();
+  }
+})();
+
 // DOM Elements
 let minutesDisplay,
   secondsDisplay,
