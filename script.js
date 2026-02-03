@@ -1405,6 +1405,9 @@ function updateClocktowerPresets() {
     );
     const button = document.createElement('button');
     button.className = 'preset-btn clocktower-btn';
+    if (eff === null) {
+      button.classList.add('skipped-day');
+    }
     if (eff !== null && eff === currentDay) {
       button.classList.add('current-day');
     }
