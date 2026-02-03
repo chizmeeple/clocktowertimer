@@ -2568,15 +2568,26 @@ function updateBackgroundTheme() {
 
 // Extract video and playlist IDs from YouTube URL
 function extractVideoAndPlaylistIds(url) {
-  const videoRegex =
-    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
-  const playlistRegex = /[?&]list=([^#&?]+)/;
+  const videoIdPattern = String.raw`[^"&?/\s]{11}`;
+  const youtuBeRegex = new RegExp(
+    String.raw`youtu\.be/(${videoIdPattern})`,
+    'i'
+  );
+  const youtubePathRegex = new RegExp(
+    String.raw`(?:v|e(?:mbed)?)/(${videoIdPattern})`,
+    'i'
+  );
+  const youtubeQueryRegex = new RegExp(String.raw`[?&]v=(${videoIdPattern})`);
 
-  const videoMatch = url.match(videoRegex);
-  const playlistMatch = url.match(playlistRegex);
+  const videoId =
+    url.match(youtuBeRegex)?.[1] ??
+    url.match(youtubePathRegex)?.[1] ??
+    url.match(youtubeQueryRegex)?.[1];
+
+  const playlistMatch = url.match(/[?&]list=([^#&?]+)/);
 
   return {
-    videoId: videoMatch ? videoMatch[1] : null,
+    videoId: videoId ?? null,
     playlistId: playlistMatch ? playlistMatch[1] : null,
   };
 }
