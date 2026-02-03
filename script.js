@@ -1047,87 +1047,76 @@ function roundToNearestQuarter(n) {
   return Math.round(n * 4) / 4;
 }
 
-// Load settings from localStorage
-function loadSettings() {
-  const savedSettings = localStorage.getItem('quickTimerSettings');
-  if (savedSettings) {
-    const settings = JSON.parse(savedSettings);
-    playerCount = settings.playerCount || 10;
-    travellerCount = settings.travellerCount || 0;
-    currentDay = settings.currentDay || 1;
-    currentPace = settings.currentPace || 'normal';
-    playMusic = settings.playMusic === undefined ? false : settings.playMusic;
-    playMusicAtNight =
-      settings.playMusicAtNight === undefined
-        ? false
-        : settings.playMusicAtNight;
-    playSoundEffects =
-      settings.playSoundEffects === undefined
-        ? true
-        : settings.playSoundEffects;
-    soundEffectsVolume = settings.soundEffectsVolume || 75;
-    keepDisplayOn =
-      settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
-    youtubeVolume = settings.youtubeVolume || 15;
-    backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
-    youtubePlaylistUrl =
-      settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
-    // Normalise legacy sound filenames (without -v2) so dropdowns show the correct option
-    const normaliseSoundFile = (value, defaultVal) => {
-      const v = value || defaultVal;
-      return v.endsWith('-v2.mp3') ? v : v.slice(0, -4) + '-v2.mp3';
-    };
-    endOfDaySound = normaliseSoundFile(
-      settings.endOfDaySound,
-      'cathedral-bell-v2.mp3'
-    );
-    wakeUpSoundFile = normaliseSoundFile(
-      settings.wakeUpSoundFile,
-      'chisel-bell-01-loud-v2.mp3'
-    );
-    nominationsOpenSoundFile =
-      settings.nominationsOpenSoundFile || 'nominations-open-laura.mp3';
-    settings.endOfDaySound = endOfDaySound;
-    settings.wakeUpSoundFile = wakeUpSoundFile;
-    autoOpenNominations = settings.autoOpenNominations || false;
-    autoOpenNominationsDelay =
-      settings.autoOpenNominationsDelay === undefined
-        ? 60
-        : settings.autoOpenNominationsDelay;
-    acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
-    keyboardShortcuts = settings.keyboardShortcuts || {
-      ...DEFAULT_KEYBOARD_SHORTCUTS,
-    };
+// Apply parsed settings object to globals and persist; runs migration and version check
+function applyParsedSettings(settings) {
+  const normaliseSoundFile = (value, defaultVal) => {
+    const v = value || defaultVal;
+    return v.endsWith('-v2.mp3') ? v : v.slice(0, -4) + '-v2.mp3';
+  };
 
-    // Migration: Fix any old lowercase 'wakeup' entries
-    if (keyboardShortcuts.wakeup && !keyboardShortcuts.wakeUp) {
-      keyboardShortcuts.wakeUp = keyboardShortcuts.wakeup;
-      delete keyboardShortcuts.wakeup;
-      saveSettings(); // Save the corrected shortcuts
-    }
+  playerCount = settings.playerCount || 10;
+  travellerCount = settings.travellerCount || 0;
+  currentDay = settings.currentDay || 1;
+  currentPace = settings.currentPace || 'normal';
+  playMusic = settings.playMusic === undefined ? false : settings.playMusic;
+  playMusicAtNight =
+    settings.playMusicAtNight === undefined ? false : settings.playMusicAtNight;
+  playSoundEffects =
+    settings.playSoundEffects === undefined ? true : settings.playSoundEffects;
+  soundEffectsVolume = settings.soundEffectsVolume || 75;
+  keepDisplayOn =
+    settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
+  youtubeVolume = settings.youtubeVolume || 15;
+  backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
+  youtubePlaylistUrl = settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
+  endOfDaySound = normaliseSoundFile(
+    settings.endOfDaySound,
+    'cathedral-bell-v2.mp3'
+  );
+  wakeUpSoundFile = normaliseSoundFile(
+    settings.wakeUpSoundFile,
+    'chisel-bell-01-loud-v2.mp3'
+  );
+  nominationsOpenSoundFile =
+    settings.nominationsOpenSoundFile || 'nominations-open-laura.mp3';
+  settings.endOfDaySound = endOfDaySound;
+  settings.wakeUpSoundFile = wakeUpSoundFile;
+  autoOpenNominations = settings.autoOpenNominations || false;
+  autoOpenNominationsDelay =
+    settings.autoOpenNominationsDelay === undefined
+      ? 60
+      : settings.autoOpenNominationsDelay;
+  acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
+  keyboardShortcuts = settings.keyboardShortcuts || {
+    ...DEFAULT_KEYBOARD_SHORTCUTS,
+  };
 
-    // Check for new version
-    const lastSeenVersion = settings.lastSeenVersion;
-    if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
-      showWhatsNew(lastSeenVersion);
-    }
-    settings.lastSeenVersion = APP_VERSION;
-    localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
-
-    // Restore day state if it exists
-    const dayState = settings.dayState || '';
-    updateDayDisplay(dayState);
-  } else {
-    isFirstLoad = true;
-    currentDay = 1;
-    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
-    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
-    nominationsOpenSound = new Audio(
-      `sounds/nominations-open/${nominationsOpenSoundFile}`
-    );
+  if (keyboardShortcuts.wakeup && !keyboardShortcuts.wakeUp) {
+    keyboardShortcuts.wakeUp = keyboardShortcuts.wakeup;
+    delete keyboardShortcuts.wakeup;
+    saveSettings();
   }
 
-  // Always update UI to reflect settings
+  const lastSeenVersion = settings.lastSeenVersion;
+  if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
+    showWhatsNew(lastSeenVersion);
+  }
+  settings.lastSeenVersion = APP_VERSION;
+  localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+  updateDayDisplay(settings.dayState || '');
+}
+
+function initSoundsFirstLoad() {
+  isFirstLoad = true;
+  currentDay = 1;
+  endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+  wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
+  nominationsOpenSound = new Audio(
+    `sounds/nominations-open/${nominationsOpenSoundFile}`
+  );
+}
+
+function applySettingsToForm() {
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
   document.getElementById('gamePace').value = currentPace;
@@ -1175,7 +1164,6 @@ function loadSettings() {
     `sounds/nominations-open/${nominationsOpenSoundFile}`
   );
 
-  // Enable/disable volume controls based on their respective settings
   const musicVolumeInput = document.getElementById('musicVolume');
   musicVolumeInput.disabled = !playMusic;
   musicVolumeInput.closest('label').classList.toggle('inactive', !playMusic);
@@ -1186,7 +1174,6 @@ function loadSettings() {
     .closest('label')
     .classList.toggle('inactive', !playSoundEffects);
 
-  // Update states for music-related elements
   const musicDependentElements = [
     {
       element: document.getElementById('playMusicAtNight').closest('label'),
@@ -1210,7 +1197,6 @@ function loadSettings() {
     },
   ];
 
-  // Apply inactive state to all dependent elements
   musicDependentElements.forEach(({ element, type }) => {
     if (element) {
       element.classList.toggle('inactive', !playMusic);
@@ -1222,8 +1208,19 @@ function loadSettings() {
       }
     }
   });
+}
 
-  // Update display elements
+// Load settings from localStorage
+function loadSettings() {
+  const savedSettings = localStorage.getItem('quickTimerSettings');
+  if (savedSettings) {
+    applyParsedSettings(JSON.parse(savedSettings));
+  } else {
+    initSoundsFirstLoad();
+  }
+
+  applySettingsToForm();
+
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
@@ -1232,7 +1229,6 @@ function loadSettings() {
   document.body.dataset.theme = backgroundTheme;
   document.body.dataset.pace = currentPace;
 
-  // Initialize YouTube player if music is enabled
   if (playMusic) {
     initYoutubePlayer();
   } else {
@@ -1245,29 +1241,22 @@ function loadSettings() {
     youtubePlayer = null;
   }
 
-  // Update character amounts and presets
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
   updateEstimatedGameLength();
-
-  // Update sound effects dependent elements
   updateSoundEffects();
 
-  // Show settings dialog on first load
   if (isFirstLoad) {
-    // Add a small delay to ensure other dialogs have had a chance to initialize
     setTimeout(() => {
       settingsDialog.showModal();
     }, 100);
   }
 
-  // Ensure change history dialog stays closed after everything loads
   if (changeHistoryDialog?.open) {
     changeHistoryDialog.close();
     changeHistoryDialog.removeAttribute('open');
   }
 
-  // Update playlist title
   const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
   if (playlistId) {
     fetchPlaylistTitle(playlistId).then((title) => {
@@ -2811,21 +2800,28 @@ function closeChangeHistory() {
   }
 }
 
+function tryHandleResetShortcut(e, currentKey) {
+  if (
+    !keyboardShortcuts.reset ||
+    currentKey !== keyboardShortcuts.reset ||
+    settingsDialog.open ||
+    infoDialog.open
+  ) {
+    return;
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+  resetTimer();
+}
+
 // Add keyboard navigation support
 function setupKeyboardNavigation() {
-  // Remove any existing keyboard navigation listeners
   document.removeEventListener('keydown', handleKeyboardNavigation);
 
   function handleKeyboardNavigation(e) {
-    // Skip if we're in a shortcut input field
-    if (e.target.classList.contains('shortcut-input')) {
-      return;
-    }
+    if (e.target.classList.contains('shortcut-input')) return;
 
-    // Get the current key
     const currentKey = e.key;
 
-    // Check each shortcut
     if (
       keyboardShortcuts.settings &&
       currentKey === keyboardShortcuts.settings &&
@@ -2846,18 +2842,7 @@ function setupKeyboardNavigation() {
         startTimer();
       }
     }
-    if (
-      keyboardShortcuts.reset &&
-      currentKey === keyboardShortcuts.reset &&
-      !settingsDialog.open &&
-      !infoDialog.open &&
-      !e.ctrlKey && // Don't trigger if Ctrl is pressed (Ctrl+R for refresh)
-      !e.metaKey && // Don't trigger if Cmd is pressed (Cmd+R for refresh on Mac)
-      !e.altKey && // Don't trigger if Alt is pressed
-      !e.shiftKey // Don't trigger if Shift is pressed
-    ) {
-      resetTimer();
-    }
+    tryHandleResetShortcut(e, currentKey);
     if (
       keyboardShortcuts.fullscreen &&
       currentKey === keyboardShortcuts.fullscreen
@@ -2865,8 +2850,6 @@ function setupKeyboardNavigation() {
       e.preventDefault();
       toggleFullscreen();
     }
-
-    // Escape key for fullscreen exit
     if (e.key === 'Escape' && document.fullscreenElement) {
       document.exitFullscreen();
     }
