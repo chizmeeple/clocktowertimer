@@ -1072,10 +1072,23 @@ function loadSettings() {
     backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
     youtubePlaylistUrl =
       settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
-    endOfDaySound = settings.endOfDaySound || 'cathedral-bell-v2.mp3';
-    wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud-v2.mp3';
+    // Normalise legacy sound filenames (without -v2) so dropdowns show the correct option
+    const normaliseSoundFile = (value, defaultVal) => {
+      const v = value || defaultVal;
+      return v.endsWith('-v2.mp3') ? v : v.slice(0, -4) + '-v2.mp3';
+    };
+    endOfDaySound = normaliseSoundFile(
+      settings.endOfDaySound,
+      'cathedral-bell-v2.mp3'
+    );
+    wakeUpSoundFile = normaliseSoundFile(
+      settings.wakeUpSoundFile,
+      'chisel-bell-01-loud-v2.mp3'
+    );
     nominationsOpenSoundFile =
       settings.nominationsOpenSoundFile || 'nominations-open-laura.mp3';
+    settings.endOfDaySound = endOfDaySound;
+    settings.wakeUpSoundFile = wakeUpSoundFile;
     autoOpenNominations = settings.autoOpenNominations || false;
     autoOpenNominationsDelay =
       settings.autoOpenNominationsDelay === undefined
