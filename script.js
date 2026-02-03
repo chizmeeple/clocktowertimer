@@ -24,26 +24,26 @@ let minutesDisplay,
 const connectivityUtils = {
   isOnline: () => navigator.onLine,
   addStatusListener: (onlineCallback, offlineCallback) => {
-    window.addEventListener('online', onlineCallback);
-    window.addEventListener('offline', offlineCallback);
+    globalThis.addEventListener('online', onlineCallback);
+    globalThis.addEventListener('offline', offlineCallback);
   },
   removeStatusListener: (onlineCallback, offlineCallback) => {
-    window.removeEventListener('online', onlineCallback);
-    window.removeEventListener('offline', offlineCallback);
+    globalThis.removeEventListener('online', onlineCallback);
+    globalThis.removeEventListener('offline', offlineCallback);
   },
 };
 
 const orientationUtils = {
-  isPortrait: () => window.matchMedia('(orientation: portrait)').matches,
+  isPortrait: () => globalThis.matchMedia('(orientation: portrait)').matches,
   addOrientationListener: (callback) => {
-    window
+    globalThis
       .matchMedia('(orientation: portrait)')
       .addEventListener('change', (e) => {
         callback(e.matches);
       });
   },
   removeOrientationListener: (callback) => {
-    window
+    globalThis
       .matchMedia('(orientation: portrait)')
       .removeEventListener('change', callback);
   },
@@ -51,17 +51,17 @@ const orientationUtils = {
 
 const youtubeUtils = {
   play: () => {
-    if (playMusic && youtubePlayer && youtubePlayer.playVideo) {
+    if (playMusic && youtubePlayer?.playVideo) {
       youtubePlayer.playVideo();
     }
   },
   pause: () => {
-    if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
+    if (playMusic && youtubePlayer?.pauseVideo) {
       youtubePlayer.pauseVideo();
     }
   },
   stop: () => {
-    if (playMusic && youtubePlayer && youtubePlayer.stopVideo) {
+    if (playMusic && youtubePlayer?.stopVideo) {
       youtubePlayer.stopVideo();
     }
   },
@@ -1001,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('autoOpenNominationsDelay')
     .addEventListener('change', (e) => {
-      autoOpenNominationsDelay = parseInt(e.target.value, 10);
+      autoOpenNominationsDelay = Number.Number.parseInt(e.target.value, 10);
       saveSettings();
     });
 
@@ -1047,74 +1047,76 @@ function roundToNearestQuarter(n) {
   return Math.round(n * 4) / 4;
 }
 
-// Load settings from localStorage
-function loadSettings() {
-  const savedSettings = localStorage.getItem('quickTimerSettings');
-  if (savedSettings) {
-    const settings = JSON.parse(savedSettings);
-    playerCount = settings.playerCount || 10;
-    travellerCount = settings.travellerCount || 0;
-    currentDay = settings.currentDay || 1;
-    currentPace = settings.currentPace || 'normal';
-    playMusic = settings.playMusic !== undefined ? settings.playMusic : false;
-    playMusicAtNight =
-      settings.playMusicAtNight !== undefined
-        ? settings.playMusicAtNight
-        : false;
-    playSoundEffects =
-      settings.playSoundEffects !== undefined
-        ? settings.playSoundEffects
-        : true;
-    soundEffectsVolume = settings.soundEffectsVolume || 75;
-    keepDisplayOn =
-      settings.keepDisplayOn !== undefined ? settings.keepDisplayOn : true;
-    youtubeVolume = settings.youtubeVolume || 15;
-    backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
-    youtubePlaylistUrl =
-      settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
-    endOfDaySound = settings.endOfDaySound || 'cathedral-bell-v2.mp3';
-    wakeUpSoundFile = settings.wakeUpSoundFile || 'chisel-bell-01-loud-v2.mp3';
-    nominationsOpenSoundFile =
-      settings.nominationsOpenSoundFile || 'nominations-open-laura.mp3';
-    autoOpenNominations = settings.autoOpenNominations || false;
-    autoOpenNominationsDelay =
-      settings.autoOpenNominationsDelay !== undefined
-        ? settings.autoOpenNominationsDelay
-        : 60;
-    acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
-    keyboardShortcuts = settings.keyboardShortcuts || {
-      ...DEFAULT_KEYBOARD_SHORTCUTS,
-    };
+// Apply parsed settings object to globals and persist; runs migration and version check
+function applyParsedSettings(settings) {
+  const normaliseSoundFile = (value, defaultVal) => {
+    const v = value || defaultVal;
+    return v.endsWith('-v2.mp3') ? v : v.slice(0, -4) + '-v2.mp3';
+  };
 
-    // Migration: Fix any old lowercase 'wakeup' entries
-    if (keyboardShortcuts.wakeup && !keyboardShortcuts.wakeUp) {
-      keyboardShortcuts.wakeUp = keyboardShortcuts.wakeup;
-      delete keyboardShortcuts.wakeup;
-      saveSettings(); // Save the corrected shortcuts
-    }
+  playerCount = settings.playerCount || 10;
+  travellerCount = settings.travellerCount || 0;
+  currentDay = settings.currentDay || 1;
+  currentPace = settings.currentPace || 'normal';
+  playMusic = settings.playMusic === undefined ? false : settings.playMusic;
+  playMusicAtNight =
+    settings.playMusicAtNight === undefined ? false : settings.playMusicAtNight;
+  playSoundEffects =
+    settings.playSoundEffects === undefined ? true : settings.playSoundEffects;
+  soundEffectsVolume = settings.soundEffectsVolume || 75;
+  keepDisplayOn =
+    settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
+  youtubeVolume = settings.youtubeVolume || 15;
+  backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
+  youtubePlaylistUrl = settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
+  endOfDaySound = normaliseSoundFile(
+    settings.endOfDaySound,
+    'cathedral-bell-v2.mp3'
+  );
+  wakeUpSoundFile = normaliseSoundFile(
+    settings.wakeUpSoundFile,
+    'chisel-bell-01-loud-v2.mp3'
+  );
+  nominationsOpenSoundFile =
+    settings.nominationsOpenSoundFile || 'nominations-open-laura.mp3';
+  settings.endOfDaySound = endOfDaySound;
+  settings.wakeUpSoundFile = wakeUpSoundFile;
+  autoOpenNominations = settings.autoOpenNominations || false;
+  autoOpenNominationsDelay =
+    settings.autoOpenNominationsDelay === undefined
+      ? 60
+      : settings.autoOpenNominationsDelay;
+  acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
+  keyboardShortcuts = settings.keyboardShortcuts || {
+    ...DEFAULT_KEYBOARD_SHORTCUTS,
+  };
 
-    // Check for new version
-    const lastSeenVersion = settings.lastSeenVersion;
-    if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
-      showWhatsNew(lastSeenVersion);
-    }
-    settings.lastSeenVersion = APP_VERSION;
-    localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
-
-    // Restore day state if it exists
-    const dayState = settings.dayState || '';
-    updateDayDisplay(dayState);
-  } else {
-    isFirstLoad = true;
-    currentDay = 1;
-    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
-    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
-    nominationsOpenSound = new Audio(
-      `sounds/nominations-open/${nominationsOpenSoundFile}`
-    );
+  if (keyboardShortcuts.wakeup && !keyboardShortcuts.wakeUp) {
+    keyboardShortcuts.wakeUp = keyboardShortcuts.wakeup;
+    delete keyboardShortcuts.wakeup;
+    saveSettings();
   }
 
-  // Always update UI to reflect settings
+  const lastSeenVersion = settings.lastSeenVersion;
+  if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
+    showWhatsNew(lastSeenVersion);
+  }
+  settings.lastSeenVersion = APP_VERSION;
+  localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+  updateDayDisplay(settings.dayState || '');
+}
+
+function initSoundsFirstLoad() {
+  isFirstLoad = true;
+  currentDay = 1;
+  endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+  wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
+  nominationsOpenSound = new Audio(
+    `sounds/nominations-open/${nominationsOpenSoundFile}`
+  );
+}
+
+function applySettingsToForm() {
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
   document.getElementById('gamePace').value = currentPace;
@@ -1162,7 +1164,6 @@ function loadSettings() {
     `sounds/nominations-open/${nominationsOpenSoundFile}`
   );
 
-  // Enable/disable volume controls based on their respective settings
   const musicVolumeInput = document.getElementById('musicVolume');
   musicVolumeInput.disabled = !playMusic;
   musicVolumeInput.closest('label').classList.toggle('inactive', !playMusic);
@@ -1173,7 +1174,6 @@ function loadSettings() {
     .closest('label')
     .classList.toggle('inactive', !playSoundEffects);
 
-  // Update states for music-related elements
   const musicDependentElements = [
     {
       element: document.getElementById('playMusicAtNight').closest('label'),
@@ -1197,7 +1197,6 @@ function loadSettings() {
     },
   ];
 
-  // Apply inactive state to all dependent elements
   musicDependentElements.forEach(({ element, type }) => {
     if (element) {
       element.classList.toggle('inactive', !playMusic);
@@ -1209,17 +1208,27 @@ function loadSettings() {
       }
     }
   });
+}
 
-  // Update display elements
+// Load settings from localStorage
+function loadSettings() {
+  const savedSettings = localStorage.getItem('quickTimerSettings');
+  if (savedSettings) {
+    applyParsedSettings(JSON.parse(savedSettings));
+  } else {
+    initSoundsFirstLoad();
+  }
+
+  applySettingsToForm();
+
   document
     .getElementById('travellerDisplay')
     .classList.toggle('visible', travellerCount > 0);
   document.getElementById('travellerAmount').textContent = travellerCount;
   updateYoutubeLink();
-  document.body.setAttribute('data-theme', backgroundTheme);
-  document.body.setAttribute('data-pace', currentPace);
+  document.body.dataset.theme = backgroundTheme;
+  document.body.dataset.pace = currentPace;
 
-  // Initialize YouTube player if music is enabled
   if (playMusic) {
     initYoutubePlayer();
   } else {
@@ -1232,29 +1241,22 @@ function loadSettings() {
     youtubePlayer = null;
   }
 
-  // Update character amounts and presets
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
   updateEstimatedGameLength();
-
-  // Update sound effects dependent elements
   updateSoundEffects();
 
-  // Show settings dialog on first load
   if (isFirstLoad) {
-    // Add a small delay to ensure other dialogs have had a chance to initialize
     setTimeout(() => {
       settingsDialog.showModal();
     }, 100);
   }
 
-  // Ensure change history dialog stays closed after everything loads
-  if (changeHistoryDialog && changeHistoryDialog.open) {
+  if (changeHistoryDialog?.open) {
     changeHistoryDialog.close();
     changeHistoryDialog.removeAttribute('open');
   }
 
-  // Update playlist title
   const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
   if (playlistId) {
     fetchPlaylistTitle(playlistId).then((title) => {
@@ -1265,10 +1267,10 @@ function loadSettings() {
   }
 }
 
-// Additional safeguard on window load to ensure change history dialog is closed
-window.addEventListener('load', () => {
+// Additional safeguard on globalThis load to ensure change history dialog is closed
+globalThis.addEventListener('load', () => {
   const changeHistoryDialog = document.getElementById('changeHistoryDialog');
-  if (changeHistoryDialog && changeHistoryDialog.open) {
+  if (changeHistoryDialog?.open) {
     changeHistoryDialog.close();
     changeHistoryDialog.removeAttribute('open');
   }
@@ -1277,11 +1279,12 @@ window.addEventListener('load', () => {
 // Save settings to localStorage
 function saveSettings() {
   const dayInfo = document.querySelector('.day-display');
-  const dayState = dayInfo.classList.contains('dusk')
-    ? 'dusk'
-    : dayInfo.classList.contains('dawn')
-    ? 'dawn'
-    : '';
+  let dayState = '';
+  if (dayInfo?.classList?.contains('dusk')) {
+    dayState = 'dusk';
+  } else if (dayInfo?.classList?.contains('dawn')) {
+    dayState = 'dawn';
+  }
 
   const settings = {
     playerCount,
@@ -1386,7 +1389,7 @@ function updateClocktowerPresets() {
 // Update player count
 function updatePlayerCount() {
   playerCount = Math.min(
-    Math.max(parseInt(playerCountInput.value) || 5, 5),
+    Math.max(Number.parseInt(playerCountInput.value) || 5, 5),
     15
   );
   playerCountInput.value = playerCount;
@@ -1399,7 +1402,7 @@ function updatePlayerCount() {
 // Update traveller count
 function updateTravellerCount() {
   travellerCount = Math.min(
-    Math.max(parseInt(travellerCountInput.value) || 0, 0),
+    Math.max(Number.parseInt(travellerCountInput.value) || 0, 0),
     5
   );
   travellerCountInput.value = travellerCount;
@@ -1454,14 +1457,14 @@ function switchSettingsTab(tabName) {
 
 // Fullscreen functionality
 function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch((err) => {
-      console.log('Error attempting to enable fullscreen:', err);
-    });
-  } else {
+  if (document.fullscreenElement) {
     if (document.exitFullscreen) {
       document.exitFullscreen();
     }
+  } else {
+    document.documentElement.requestFullscreen().catch((err) => {
+      console.log('Error attempting to enable fullscreen:', err);
+    });
   }
 }
 
@@ -1580,7 +1583,8 @@ function startNominationsCountdown() {
 function createBeep() {
   if (!playSoundEffects) return;
 
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const audioContext = new (globalThis.AudioContext ||
+    globalThis.webkitAudioContext)();
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
 
@@ -1668,7 +1672,7 @@ function accelerateTime() {
       updateStartButtonText(BUTTON_LABELS.RESUME);
       currentInterval = normalInterval;
       // Stop YouTube player when accelerated time ends
-      if (playMusic && youtubePlayer && youtubePlayer.pauseVideo) {
+      if (playMusic && youtubePlayer?.pauseVideo) {
         youtubePlayer.pauseVideo();
       }
       if (currentDay !== null) {
@@ -1778,7 +1782,7 @@ function resetTimer() {
 
 // Handle minutes preset selection
 function handleMinuteClick(e) {
-  const minutes = parseInt(e.target.dataset.minutes);
+  const minutes = Number.parseInt(e.target.dataset.minutes);
   selectedMinutes = minutes;
 
   // Update active state
@@ -1794,7 +1798,7 @@ function handleMinuteClick(e) {
 
 // Handle seconds preset selection
 function handleSecondClick(e) {
-  const seconds = parseInt(e.target.dataset.seconds);
+  const seconds = Number.parseInt(e.target.dataset.seconds);
   selectedSeconds = seconds;
 
   // Update active state
@@ -1815,9 +1819,9 @@ document.addEventListener('fullscreenchange', updateFullscreenButton);
 document.querySelectorAll('.number-input-group button').forEach((button) => {
   button.addEventListener('click', (e) => {
     const input = document.getElementById(e.target.dataset.input);
-    const min = parseInt(input.min);
-    const max = parseInt(input.max);
-    const currentValue = parseInt(input.value) || min;
+    const min = Number.parseInt(input.min);
+    const max = Number.parseInt(input.max);
+    const currentValue = Number.parseInt(input.value) || min;
 
     if (button.classList.contains('increment')) {
       input.value = Math.min(currentValue + 1, max);
@@ -1902,8 +1906,8 @@ function playWakeUpSound() {
         dayPreset.classList.add('active');
 
         // Update selected time
-        selectedMinutes = parseInt(dayPreset.dataset.minutes);
-        selectedSeconds = parseInt(dayPreset.dataset.seconds);
+        selectedMinutes = Number.parseInt(dayPreset.dataset.minutes);
+        selectedSeconds = Number.parseInt(dayPreset.dataset.seconds);
 
         // Set and display the new time
         timeLeft = selectedMinutes * 60 + selectedSeconds;
@@ -1928,7 +1932,7 @@ function startCountdown() {
 
   // Start music if enabled and not in dusk state
   const dayInfo = document.querySelector('.day-display');
-  const isDusk = dayInfo && dayInfo.classList.contains('dusk');
+  const isDusk = dayInfo?.classList?.contains('dusk');
   if (playMusic && !isDusk) {
     if (player && player.getPlayerState() !== YT.PlayerState.PLAYING) {
       player.playVideo();
@@ -1950,7 +1954,7 @@ function startCountdown() {
       clearInterval(timerId);
       playEndSound();
       isRunning = false;
-      if (playMusic && player && player.pauseVideo) {
+      if (playMusic && player?.pauseVideo) {
         player.pauseVideo();
         // Update play/pause button state
         const playPauseBtn = document.querySelector('.youtube-control');
@@ -2049,7 +2053,7 @@ function updateDayDisplay(state = '') {
   document.querySelectorAll('.clocktower-btn').forEach((btn) => {
     btn.classList.toggle(
       'current-day',
-      parseInt(btn.dataset.day) === currentDay
+      Number.parseInt(btn.dataset.day) === currentDay
     );
   });
 
@@ -2088,7 +2092,7 @@ function closeInfo() {
 // Update game pace
 function updateGamePace(newPace) {
   currentPace = newPace;
-  document.body.setAttribute('data-pace', newPace);
+  document.body.dataset.pace = newPace;
   updateClocktowerPresets();
   updateDayDisplay();
   updateEstimatedGameLength();
@@ -2153,7 +2157,7 @@ let player = null;
 // Load YouTube IFrame API
 function loadYoutubeApi() {
   if (
-    !window.YT &&
+    !globalThis.YT &&
     !document.querySelector('script[src*="youtube.com/iframe_api"]')
   ) {
     const tag = document.createElement('script');
@@ -2164,7 +2168,7 @@ function loadYoutubeApi() {
 }
 
 function initYoutubePlayer() {
-  if (!window.YT || !youtubeApiReady) {
+  if (!globalThis.YT || !youtubeApiReady) {
     loadYoutubeApi();
   } else {
     createYoutubePlayer();
@@ -2172,7 +2176,7 @@ function initYoutubePlayer() {
 }
 
 // Called by YouTube API when ready
-window.onYouTubeIframeAPIReady = function () {
+globalThis.onYouTubeIframeAPIReady = function () {
   youtubeApiReady = true;
   if (playMusic) {
     createYoutubePlayer();
@@ -2239,7 +2243,7 @@ function createYoutubePlayerContainer() {
   const rightButtons = bottomContainer.querySelector('.right-buttons');
 
   // Insert the container before the right buttons
-  bottomContainer.insertBefore(container, rightButtons);
+  rightButtons.before(container);
 
   return container;
 }
@@ -2326,7 +2330,7 @@ function onPlayerReady(event) {
   // If timer is already running, start playing
   if (isRunning && timeLeft > 0) {
     const dayInfo = document.querySelector('.day-display');
-    const isDusk = dayInfo && dayInfo.classList.contains('dusk');
+    const isDusk = dayInfo?.classList?.contains('dusk');
     if (!isDusk) {
       event.target.playVideo();
     }
@@ -2470,11 +2474,11 @@ function updateMusicPlayback() {
 
 // Update YouTube volume
 function updateYoutubeVolume() {
-  youtubeVolume = parseInt(document.getElementById('musicVolume').value);
+  youtubeVolume = Number.parseInt(document.getElementById('musicVolume').value);
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
-  if (player && player.setVolume) {
+  if (player?.setVolume) {
     player.setVolume(youtubeVolume);
   }
   // Update volume info display
@@ -2522,12 +2526,10 @@ function updateSoundEffects() {
         ? !playSoundEffects || !autoOpenNominations
         : !playSoundEffects;
       element.classList.toggle('inactive', inactive);
-      element.setAttribute(
-        'data-inactive-message',
+      element.dataset.inactiveMessage =
         isNominationsOpen && !autoOpenNominations
           ? 'Enable "Automatically open nominations" in Game settings first'
-          : 'Enable "Play Sound Effects" first'
-      );
+          : 'Enable "Play Sound Effects" first';
       if (type === 'label') {
         const input = element.querySelector('select, input');
         if (input) {
@@ -2543,7 +2545,7 @@ function updateSoundEffects() {
 
 // Update sound effects volume
 function updateSoundEffectsVolume() {
-  soundEffectsVolume = parseInt(
+  soundEffectsVolume = Number.parseInt(
     document.getElementById('soundEffectsVolume').value
   );
   document.querySelector(
@@ -2560,21 +2562,32 @@ function updateSoundEffectsVolume() {
 // Update background theme
 function updateBackgroundTheme() {
   backgroundTheme = document.getElementById('backgroundTheme').value;
-  document.body.setAttribute('data-theme', backgroundTheme);
+  document.body.dataset.theme = backgroundTheme;
   saveSettings();
 }
 
 // Extract video and playlist IDs from YouTube URL
 function extractVideoAndPlaylistIds(url) {
-  const videoRegex =
-    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-  const playlistRegex = /[?&]list=([^#\&\?]+)/;
+  const videoIdPattern = String.raw`[^"&?/\s]{11}`;
+  const youtuBeRegex = new RegExp(
+    String.raw`youtu\.be/(${videoIdPattern})`,
+    'i'
+  );
+  const youtubePathRegex = new RegExp(
+    String.raw`(?:v|e(?:mbed)?)/(${videoIdPattern})`,
+    'i'
+  );
+  const youtubeQueryRegex = new RegExp(String.raw`[?&]v=(${videoIdPattern})`);
 
-  const videoMatch = url.match(videoRegex);
-  const playlistMatch = url.match(playlistRegex);
+  const videoId =
+    url.match(youtuBeRegex)?.[1] ??
+    url.match(youtubePathRegex)?.[1] ??
+    url.match(youtubeQueryRegex)?.[1];
+
+  const playlistMatch = url.match(/[?&]list=([^#&?]+)/);
 
   return {
-    videoId: videoMatch ? videoMatch[1] : null,
+    videoId: videoId ?? null,
     playlistId: playlistMatch ? playlistMatch[1] : null,
   };
 }
@@ -2594,8 +2607,15 @@ function updatePlaylistBadge(title) {
   const playlistLabel = playlistName.querySelector('.playlist-label');
   const trackTitle = playlistName.querySelector('.track-title');
 
-  // Update playlist label if needed
-  if (!title) {
+  // Update playlist label if needed, or update track title
+  if (title) {
+    if (title.length > 40) {
+      trackTitle.textContent = title.substring(0, 37) + '...';
+    } else {
+      trackTitle.textContent = title;
+    }
+    trackTitle.title = title; // Add full title as tooltip
+  } else {
     if (youtubePlaylistUrl === DEFAULT_YOUTUBE_PLAYLIST) {
       playlistLabel.textContent = 'Bardcore';
     } else if (youtubePlaylistUrl === ATMOSPHERIC_PLAYLIST) {
@@ -2604,14 +2624,6 @@ function updatePlaylistBadge(title) {
       playlistLabel.textContent = 'Custom';
     }
     trackTitle.textContent = 'Not Playing';
-  } else {
-    // Update track title
-    if (title.length > 40) {
-      trackTitle.textContent = title.substring(0, 37) + '...';
-    } else {
-      trackTitle.textContent = title;
-    }
-    trackTitle.title = title; // Add full title as tooltip
   }
 }
 
@@ -2663,14 +2675,14 @@ function showWhatsNew(lastVersion) {
 
       return `
         ${
-          version !== latestVersion
-            ? `
+          version === latestVersion
+            ? ''
+            : `
           <div class="version-info">
             <span class="version-number">Version ${version}</span>
             <span class="version-date">${data.date}</span>
           </div>
         `
-            : ''
         }
         ${
           features.length > 0
@@ -2699,9 +2711,7 @@ function showWhatsNew(lastVersion) {
             : ''
         }
         ${
-          version !== versions[versions.length - 1][0]
-            ? '<hr class="version-separator">'
-            : ''
+          version === versions.at(-1)[0] ? '' : '<hr class="version-separator">'
         }
       `;
     })
@@ -2722,7 +2732,7 @@ function showChangeHistory() {
   }
 
   const versions = Object.entries(CHANGELOG).sort(
-    ([a], [b]) => parseFloat(b) - parseFloat(a)
+    ([a], [b]) => Number.parseFloat(b) - Number.parseFloat(a)
   );
 
   // Don't open dialog if there's no changelog data
@@ -2801,21 +2811,28 @@ function closeChangeHistory() {
   }
 }
 
+function tryHandleResetShortcut(e, currentKey) {
+  if (
+    !keyboardShortcuts.reset ||
+    currentKey !== keyboardShortcuts.reset ||
+    settingsDialog.open ||
+    infoDialog.open
+  ) {
+    return;
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+  resetTimer();
+}
+
 // Add keyboard navigation support
 function setupKeyboardNavigation() {
-  // Remove any existing keyboard navigation listeners
   document.removeEventListener('keydown', handleKeyboardNavigation);
 
   function handleKeyboardNavigation(e) {
-    // Skip if we're in a shortcut input field
-    if (e.target.classList.contains('shortcut-input')) {
-      return;
-    }
+    if (e.target.classList.contains('shortcut-input')) return;
 
-    // Get the current key
     const currentKey = e.key;
 
-    // Check each shortcut
     if (
       keyboardShortcuts.settings &&
       currentKey === keyboardShortcuts.settings &&
@@ -2836,18 +2853,7 @@ function setupKeyboardNavigation() {
         startTimer();
       }
     }
-    if (
-      keyboardShortcuts.reset &&
-      currentKey === keyboardShortcuts.reset &&
-      !settingsDialog.open &&
-      !infoDialog.open &&
-      !e.ctrlKey && // Don't trigger if Ctrl is pressed (Ctrl+R for refresh)
-      !e.metaKey && // Don't trigger if Cmd is pressed (Cmd+R for refresh on Mac)
-      !e.altKey && // Don't trigger if Alt is pressed
-      !e.shiftKey // Don't trigger if Shift is pressed
-    ) {
-      resetTimer();
-    }
+    tryHandleResetShortcut(e, currentKey);
     if (
       keyboardShortcuts.fullscreen &&
       currentKey === keyboardShortcuts.fullscreen
@@ -2855,8 +2861,6 @@ function setupKeyboardNavigation() {
       e.preventDefault();
       toggleFullscreen();
     }
-
-    // Escape key for fullscreen exit
     if (e.key === 'Escape' && document.fullscreenElement) {
       document.exitFullscreen();
     }
