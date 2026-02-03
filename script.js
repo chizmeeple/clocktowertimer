@@ -1334,6 +1334,9 @@ function updateClocktowerPresets() {
     if (preset.day === currentDay) {
       button.classList.add('current-day');
     }
+    if (preset.day < currentDay) {
+      button.classList.add('past-day');
+    }
     button.innerHTML = `
       <span class="time">${preset.display}</span>
       <span class="day">Day ${preset.day}</span>
@@ -2083,10 +2086,9 @@ function updateDayDisplay(state = '') {
 
   // Update preset button highlighting
   document.querySelectorAll('.clocktower-btn').forEach((btn) => {
-    btn.classList.toggle(
-      'current-day',
-      Number.parseInt(btn.dataset.day) === currentDay
-    );
+    const btnDay = Number.parseInt(btn.dataset.day);
+    btn.classList.toggle('current-day', btnDay === currentDay);
+    btn.classList.toggle('past-day', btnDay < currentDay);
   });
 
   // Save the current state

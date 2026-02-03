@@ -1185,6 +1185,15 @@ body[data-pace='blitz'] .info-value {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+.clocktower-presets button.past-day {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.clocktower-presets button.past-day:hover {
+  opacity: 0.7;
+}
+
 .clocktower-presets button.current-day {
   box-shadow: 0 0 0 2px var(--colour-gold);
   animation: pulse 2s infinite;
