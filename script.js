@@ -1910,7 +1910,7 @@ function playWakeUpSound() {
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   accelerateBtn.disabled = true;
 
-  let countdownSeconds = 10;
+  let countdownSeconds = 6;
   timeLeft = countdownSeconds;
   updateDisplay();
 
