@@ -133,10 +133,10 @@
 
     <div class="container">
       <div class="timer-display" role="timer" aria-live="polite">
-        <div class="day-display" role="status" aria-label="Current game day">
+        <output class="day-display" aria-label="Current game day">
           <span id="currentDay">-</span>
           <div class="pace-indicator">Normal</div>
-        </div>
+        </output>
         <div class="time" aria-label="Timer display">
           <span id="minutes" aria-label="minutes">00</span>:<span
             id="seconds"
@@ -144,16 +144,15 @@
             >00</span
           >
         </div>
-        <div
+        <output
           id="nominationsCountdown"
           class="nominations-countdown"
-          role="status"
           aria-live="polite"
           aria-label="Time until nominations open"
           hidden
         >
           Nominations open in <span id="nominationsCountdownSeconds">0</span>s
-        </div>
+        </output>
         <button id="startBtn" aria-label="Start or pause timer">
           <span class="button-content">
             <span class="button-text">⏰ Wake Up!</span>
@@ -161,7 +160,8 @@
           </span>
         </button>
       </div>
-      <div class="controls" role="group" aria-label="Timer controls">
+      <fieldset class="controls">
+        <legend>Timer controls</legend>
         <div class="time-inputs">
           <div id="regularTimerControls">
             <div
@@ -293,7 +293,7 @@
             <!-- Day presets will be inserted here dynamically -->
           </div>
         </div>
-      </div>
+      </fieldset>
     </div>
 
     <!-- Bottom Controls Container -->
@@ -318,10 +318,10 @@
       </div>
 
       <div class="timer-buttons">
-        <button id="resetBtn" aria-label="Reset Day">↺ Reset Day</button>
+        <button id="resetBtn" aria-label="↺ Reset Day">↺ Reset Day</button>
         <button
           id="accelerateBtn"
-          aria-label="Accelerate time (click then confirm)"
+          aria-label="⏩ Accelerate Time (click then confirm)"
         >
           ⏩ Accelerate Time
         </button>

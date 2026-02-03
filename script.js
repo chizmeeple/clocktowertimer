@@ -1079,6 +1079,23 @@ function roundToNearestQuarter(n) {
   return Math.round(n * 4) / 4;
 }
 
+function resolveUsedPresetByDay(settings, currentDay) {
+  if (
+    settings.usedPresetByDay &&
+    typeof settings.usedPresetByDay === 'object'
+  ) {
+    return settings.usedPresetByDay;
+  }
+  if (settings.dayOnePresetIndex == null) {
+    return {};
+  }
+  // Migrate: assume sequential use from dayOnePresetIndex
+  const result = {};
+  for (let d = 1; d <= currentDay; d++)
+    result[d] = settings.dayOnePresetIndex + d - 1;
+  return result;
+}
+
 // Apply parsed settings object to globals and persist; runs migration and version check
 function applyParsedSettings(settings) {
   const normaliseSoundFile = (value, defaultVal) => {
@@ -1089,19 +1106,7 @@ function applyParsedSettings(settings) {
   playerCount = settings.playerCount || 10;
   travellerCount = settings.travellerCount || 0;
   currentDay = settings.currentDay || 1;
-  if (
-    settings.usedPresetByDay &&
-    typeof settings.usedPresetByDay === 'object'
-  ) {
-    usedPresetByDay = settings.usedPresetByDay;
-  } else if (settings.dayOnePresetIndex != null) {
-    // Migrate: assume sequential use from dayOnePresetIndex
-    usedPresetByDay = {};
-    for (let d = 1; d <= currentDay; d++)
-      usedPresetByDay[d] = settings.dayOnePresetIndex + d - 1;
-  } else {
-    usedPresetByDay = {};
-  }
+  usedPresetByDay = resolveUsedPresetByDay(settings, currentDay);
   hiddenPresetDays = Array.isArray(settings.hiddenPresetDays)
     ? settings.hiddenPresetDays
     : [];
@@ -1392,11 +1397,11 @@ function getPresetDayLabel(presetDay, numberOfDays) {
   }
   // From current day's preset onward (or from first future if in dusk)
   const anchor =
-    usedPresetByDay[currentDay] !== undefined
-      ? usedPresetByDay[currentDay]
-      : maxUsed + 1;
+    usedPresetByDay[currentDay] === undefined
+      ? maxUsed + 1
+      : usedPresetByDay[currentDay];
   const baseDay =
-    usedPresetByDay[currentDay] !== undefined ? currentDay : currentDay + 1;
+    usedPresetByDay[currentDay] === undefined ? currentDay + 1 : currentDay;
   if (presetDay >= anchor) {
     const eff = baseDay + (presetDay - anchor);
     return { label: `Day ${eff}`, effectiveDay: eff };

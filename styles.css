@@ -391,6 +391,20 @@ html.fonts-ready .timer-display .time {
   flex-direction: column;
   gap: 0.5rem;
   margin-top: 0;
+  border: none;
+  padding: 0;
+  min-inline-size: 0;
+}
+
+.controls legend {
+  padding: 0;
+  float: inline-start;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
 }
 
 .time-inputs {
