@@ -356,6 +356,8 @@ let playerCount = 10; // Default to 10 players
 let travellerCount = 0; // Default to 0 travellers
 let isFirstLoad = false;
 let currentDay = null;
+/** Day number → preset index used for that day. Only presets we skipped get 💀; used presets keep "Day N"; rest renumbered from current. */
+let usedPresetByDay = {};
 let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
 let playMusicAtNight = false; // Default to false for new users
@@ -1083,6 +1085,19 @@ function applyParsedSettings(settings) {
   playerCount = settings.playerCount || 10;
   travellerCount = settings.travellerCount || 0;
   currentDay = settings.currentDay || 1;
+  if (
+    settings.usedPresetByDay &&
+    typeof settings.usedPresetByDay === 'object'
+  ) {
+    usedPresetByDay = settings.usedPresetByDay;
+  } else if (settings.dayOnePresetIndex != null) {
+    // Migrate: assume sequential use from dayOnePresetIndex
+    usedPresetByDay = {};
+    for (let d = 1; d <= currentDay; d++)
+      usedPresetByDay[d] = settings.dayOnePresetIndex + d - 1;
+  } else {
+    usedPresetByDay = {};
+  }
   currentPace = settings.currentPace || 'normal';
   playMusic = settings.playMusic === undefined ? false : settings.playMusic;
   playMusicAtNight =
@@ -1316,6 +1331,7 @@ function saveSettings() {
     playerCount,
     travellerCount,
     currentDay,
+    usedPresetByDay,
     currentPace,
     playMusic,
     playMusicAtNight,
@@ -1338,35 +1354,97 @@ function saveSettings() {
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
 
+// Returns { label, effectiveDay } for a preset. effectiveDay is null for skipped (💀).
+function getPresetDayLabel(presetDay, numberOfDays) {
+  const used = Object.values(usedPresetByDay).filter(
+    (p) => p >= 1 && p <= numberOfDays
+  );
+  if (used.length === 0) {
+    return { label: `Day ${presetDay}`, effectiveDay: presetDay };
+  }
+  const usedSorted = [...used].sort((a, b) => a - b);
+  const minUsed = usedSorted[0];
+  const maxUsed = usedSorted.at(-1);
+  // Used for a specific day → show that day
+  for (const [d, p] of Object.entries(usedPresetByDay)) {
+    if (Number(p) === presetDay) {
+      return { label: `Day ${d}`, effectiveDay: Number(d) };
+    }
+  }
+  if (presetDay < minUsed) return { label: '💀', effectiveDay: null };
+  // Between two used presets → skipped
+  for (let i = 0; i < usedSorted.length - 1; i++) {
+    if (presetDay > usedSorted[i] && presetDay < usedSorted[i + 1])
+      return { label: '💀', effectiveDay: null };
+  }
+  // From current day's preset onward (or from first future if in dusk)
+  const anchor =
+    usedPresetByDay[currentDay] !== undefined
+      ? usedPresetByDay[currentDay]
+      : maxUsed + 1;
+  const baseDay =
+    usedPresetByDay[currentDay] !== undefined ? currentDay : currentDay + 1;
+  if (presetDay >= anchor) {
+    const eff = baseDay + (presetDay - anchor);
+    return { label: `Day ${eff}`, effectiveDay: eff };
+  }
+  return { label: '💀', effectiveDay: null };
+}
+
 // Settings functionality
 function updateClocktowerPresets() {
   const clocktowerPresetsDiv = document.getElementById('clocktowerPresets');
   clocktowerPresetsDiv.innerHTML = ''; // Clear existing presets
 
   const presets = generateDayPresets(playerCount);
+  const numberOfDays = presets.length;
   presets.forEach((preset) => {
+    const { label: dayLabel, effectiveDay: eff } = getPresetDayLabel(
+      preset.day,
+      numberOfDays
+    );
     const button = document.createElement('button');
     button.className = 'preset-btn clocktower-btn';
-    if (preset.day === currentDay) {
+    if (eff !== null && eff === currentDay) {
       button.classList.add('current-day');
     }
-    if (preset.day < currentDay) {
+    if (eff !== null && eff < currentDay) {
       button.classList.add('past-day');
     }
     button.innerHTML = `
       <span class="time">${preset.display}</span>
-      <span class="day">Day ${preset.day}</span>
+      <span class="day">${dayLabel}</span>
     `;
     button.dataset.minutes = preset.minutes;
     button.dataset.seconds = preset.seconds;
     button.dataset.day = preset.day;
 
     button.addEventListener('click', (e) => {
-      // Update active state
+      const dayInfo = document.querySelector('.day-display');
+      const isDusk = dayInfo?.classList.contains('dusk');
+      const { effectiveDay: eff } = getPresetDayLabel(preset.day, numberOfDays);
+      const isAhead = eff !== null && eff > currentDay;
+
+      if (isAhead && !isDusk) {
+        // Not in dusk: use this preset for current day
+        usedPresetByDay[currentDay] = preset.day;
+        saveSettings();
+        updateClocktowerPresets();
+      } else if (isDusk && currentDay !== null) {
+        // In dusk: use this preset for the next day
+        usedPresetByDay[currentDay + 1] = preset.day;
+        currentDay++;
+        saveSettings();
+        updateClocktowerPresets();
+      }
+
+      // Update active state (use selector in case presets were just rebuilt)
       document
         .querySelectorAll('.clocktower-btn')
         .forEach((btn) => btn.classList.remove('active'));
-      button.classList.add('active');
+      document
+        .querySelector(`.clocktower-btn[data-day="${preset.day}"]`)
+        ?.classList.add('active');
 
       // Update selected time
       selectedMinutes = preset.minutes;
@@ -1375,13 +1453,6 @@ function updateClocktowerPresets() {
       // Reset any existing timer and cancel nominations countdown when starting a new day
       clearInterval(timerId);
       clearNominationsCountdown();
-
-      // Check if we're in dusk state and increment day if needed
-      const dayInfo = document.querySelector('.day-display');
-      if (currentDay !== null && dayInfo.classList.contains('dusk')) {
-        currentDay++;
-        saveSettings();
-      }
 
       // Set and display the new time
       timeLeft = selectedMinutes * 60 + selectedSeconds;
@@ -1944,8 +2015,12 @@ function playWakeUpSound() {
       updateDayDisplay();
 
       // Find and start the current day's timer directly instead of clicking the preset
+      const currentPresetDay =
+        usedPresetByDay[currentDay] !== undefined
+          ? usedPresetByDay[currentDay]
+          : currentDay;
       const dayPreset = document.querySelector(
-        `.clocktower-btn[data-day="${currentDay}"]`
+        `.clocktower-btn[data-day="${currentPresetDay}"]`
       );
       if (dayPreset) {
         // Update active state
@@ -2036,6 +2111,7 @@ function startNewGame() {
 
   // Set to Day 1
   currentDay = 1;
+  usedPresetByDay = {};
   updateDayDisplay();
 
   // Set button to Wake Up state
@@ -2102,10 +2178,16 @@ function updateDayDisplay(state = '') {
   }
 
   // Update preset button highlighting
+  const numberOfDays = document.querySelectorAll('.clocktower-btn').length;
+  const currentPresetDay =
+    usedPresetByDay[currentDay] !== undefined
+      ? usedPresetByDay[currentDay]
+      : currentDay;
   document.querySelectorAll('.clocktower-btn').forEach((btn) => {
     const btnDay = Number.parseInt(btn.dataset.day);
-    btn.classList.toggle('current-day', btnDay === currentDay);
-    btn.classList.toggle('past-day', btnDay < currentDay);
+    const { effectiveDay: eff } = getPresetDayLabel(btnDay, numberOfDays);
+    btn.classList.toggle('current-day', btnDay === currentPresetDay);
+    btn.classList.toggle('past-day', eff !== null && eff < currentDay);
   });
 
   // Save the current state
