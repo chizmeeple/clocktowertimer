@@ -2017,11 +2017,15 @@ function playWakeUpSound() {
       // Remove dawn state and show regular day display
       updateDayDisplay();
 
-      // Find and start the current day's timer directly instead of clicking the preset
-      const currentPresetDay =
-        usedPresetByDay[currentDay] !== undefined
-          ? usedPresetByDay[currentDay]
-          : currentDay;
+      // Find and start the current day's timer (honour skip-ahead numbering)
+      let currentPresetDay = usedPresetByDay[currentDay];
+      if (currentPresetDay === undefined) {
+        const used = Object.values(usedPresetByDay);
+        currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
+        usedPresetByDay[currentDay] = currentPresetDay;
+        saveSettings();
+        updateClocktowerPresets();
+      }
       const dayPreset = document.querySelector(
         `.clocktower-btn[data-day="${currentPresetDay}"]`
       );
@@ -2180,12 +2184,13 @@ function updateDayDisplay(state = '') {
     dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   }
 
-  // Update preset button highlighting
+  // Update preset button highlighting (honour skip-ahead: use next preset if current day not yet chosen)
   const numberOfDays = document.querySelectorAll('.clocktower-btn').length;
-  const currentPresetDay =
-    usedPresetByDay[currentDay] !== undefined
-      ? usedPresetByDay[currentDay]
-      : currentDay;
+  let currentPresetDay = usedPresetByDay[currentDay];
+  if (currentPresetDay === undefined) {
+    const used = Object.values(usedPresetByDay);
+    currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
+  }
   document.querySelectorAll('.clocktower-btn').forEach((btn) => {
     const btnDay = Number.parseInt(btn.dataset.day);
     const { effectiveDay: eff } = getPresetDayLabel(btnDay, numberOfDays);
