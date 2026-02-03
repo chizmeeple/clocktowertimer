@@ -2254,7 +2254,7 @@ function createYoutubePlayerContainer() {
   const rightButtons = bottomContainer.querySelector('.right-buttons');
 
   // Insert the container before the right buttons
-  bottomContainer.insertBefore(container, rightButtons);
+  rightButtons.before(container);
 
   return container;
 }
@@ -2580,7 +2580,7 @@ function updateBackgroundTheme() {
 // Extract video and playlist IDs from YouTube URL
 function extractVideoAndPlaylistIds(url) {
   const videoRegex =
-    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
   const playlistRegex = /[?&]list=([^#&?]+)/;
 
   const videoMatch = url.match(videoRegex);
@@ -2711,9 +2711,7 @@ function showWhatsNew(lastVersion) {
             : ''
         }
         ${
-          version === versions[versions.length - 1][0]
-            ? ''
-            : '<hr class="version-separator">'
+          version === versions.at(-1)[0] ? '' : '<hr class="version-separator">'
         }
       `;
     })
