@@ -1372,8 +1372,9 @@ function updateClocktowerPresets() {
       selectedMinutes = preset.minutes;
       selectedSeconds = preset.seconds;
 
-      // Reset any existing timer
+      // Reset any existing timer and cancel nominations countdown when starting a new day
       clearInterval(timerId);
+      clearNominationsCountdown();
 
       // Check if we're in dusk state and increment day if needed
       const dayInfo = document.querySelector('.day-display');
