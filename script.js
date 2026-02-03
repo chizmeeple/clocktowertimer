@@ -1363,9 +1363,7 @@ function saveSettings() {
 
 // Returns { label, effectiveDay } for a preset. effectiveDay is null for skipped (💀).
 function getPresetDayLabel(presetDay, numberOfDays) {
-  const used = Object.values(usedPresetByDay).filter(
-    (p) => p >= 1 && p <= numberOfDays
-  );
+  const used = Object.values(usedPresetByDay).filter((p) => p >= 1);
   if (used.length === 0) {
     return { label: `Day ${presetDay}`, effectiveDay: presetDay };
   }
@@ -1405,6 +1403,23 @@ function updateClocktowerPresets() {
 
   const presets = generateDayPresets(playerCount);
   const numberOfDays = presets.length;
+
+  // Count skipped presets and append a suitable-timed extra preset for each (so we don't run out)
+  let skippedCount = 0;
+  for (const preset of presets) {
+    if (getPresetDayLabel(preset.day, numberOfDays).effectiveDay === null)
+      skippedCount++;
+  }
+  const lastBasePreset = presets[numberOfDays - 1];
+  for (let i = 1; i <= skippedCount; i++) {
+    presets.push({
+      minutes: lastBasePreset.minutes,
+      seconds: lastBasePreset.seconds,
+      display: lastBasePreset.display,
+      day: numberOfDays + i,
+    });
+  }
+
   presets.forEach((preset) => {
     const { label: dayLabel, effectiveDay: eff } = getPresetDayLabel(
       preset.day,
