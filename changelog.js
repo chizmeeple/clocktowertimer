@@ -1,7 +1,19 @@
 // Version tracking
-export const APP_VERSION = '1.0.24';
+export const APP_VERSION = '1.0.25';
 
 export const CHANGELOG = {
+  '1.0.25': {
+    date: '2026-02-03',
+    changes: {
+      improvements: [
+        'Visual design refresh: DM Sans typography, refined colour palette, and polished UI',
+        'Improved focus states for keyboard and TV remote navigation',
+        'Refined timer display with subtle glow; softer shadows and transitions throughout',
+        'Bottom bar and character counts styling; consistent border-radius and spacing',
+        'Resolve code linting warnings',
+      ],
+    },
+  },
   '1.0.24': {
     date: '2026-02-02',
     changes: {
