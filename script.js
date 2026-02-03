@@ -282,6 +282,8 @@ const BUTTON_LABELS = {
   RESUME: '▶️ Resume Day',
   RESET: '🔄 Reset Day',
   ACCELERATE: '⏩ Accelerate Time',
+  ACCELERATE_CONFIRM: 'Confirm…',
+  ACCELERATE_TIME_FLIES: '{time flies}',
   START_DAY: (day) => `▶ Start Day ${day}`,
   FULLSCREEN: {
     ENTER:
@@ -323,6 +325,7 @@ let currentInterval = normalInterval;
 let wakeUpTimeout = null;
 let isEndSoundPlaying = false; // New state variable
 let hasReset = false; // New state variable to track reset state
+let accelerateConfirmTimeout = null;
 
 // Game pace multipliers
 const PACE_MULTIPLIERS = {
@@ -633,7 +636,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   playerCountInput = document.getElementById('playerCount');
   travellerCountInput = document.getElementById('travellerCount');
   accelerateBtn = document.getElementById('accelerateBtn');
-  accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE;
+  resetAccelerateButton();
   accelerateBtn.disabled = true; // Accelerate button should be disabled initially
   minuteButtons = document.querySelectorAll('.minute-btn');
   secondButtons = document.querySelectorAll('.second-btn');
@@ -745,24 +748,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-  // Add hold-to-activate for accelerate button
-  timerUtils.holdToActivate(
-    accelerateBtn,
-    2000, // 2 seconds hold duration
-    (progress) => {
-      // Progress is now handled by CSS custom property
-    },
-    () => {
-      // Reset button appearance and trigger acceleration
-      accelerateBtn.style.setProperty('--progress-width', '0%');
-      if (!accelerateBtn.disabled) {
-        accelerateTime();
+  // Accelerate button: click -> "Confirm…", second click within 5s triggers acceleration
+  accelerateBtn.addEventListener('click', () => {
+    if (accelerateBtn.disabled) return;
+    if (accelerateBtn.textContent === BUTTON_LABELS.ACCELERATE) {
+      accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE_CONFIRM;
+      accelerateBtn.setAttribute(
+        'aria-label',
+        'Click again to accelerate time'
+      );
+      if (accelerateConfirmTimeout) clearTimeout(accelerateConfirmTimeout);
+      accelerateConfirmTimeout = setTimeout(() => {
+        accelerateConfirmTimeout = null;
+        resetAccelerateButton();
+      }, ACCELERATE_CONFIRM_SECONDS * 1000);
+    } else {
+      // Confirm: clear timeout, show "time flies", disable, then accelerate
+      if (accelerateConfirmTimeout) {
+        clearTimeout(accelerateConfirmTimeout);
+        accelerateConfirmTimeout = null;
       }
+      accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE_TIME_FLIES;
+      accelerateBtn.disabled = true;
+      accelerateTime();
     }
-  );
-
-  // Remove the click event listener for accelerate button since we're using hold now
-  accelerateBtn.removeEventListener('click', accelerateTime);
+  });
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
@@ -1378,6 +1388,7 @@ function updateClocktowerPresets() {
       startCountdown();
       startBtn.disabled = false;
       updateStartButtonText(BUTTON_LABELS.PAUSE);
+      resetAccelerateButton();
       accelerateBtn.disabled = false;
       resetBtn.disabled = false; // Enable reset button when starting timer
     });
@@ -1623,7 +1634,9 @@ function updateDisplay() {
   } else if (isRunning) {
     updateStartButtonText(BUTTON_LABELS.PAUSE);
     startBtn.disabled = false;
-    accelerateBtn.disabled = false;
+    // Keep accelerate disabled during accelerated countdown ("time flies")
+    accelerateBtn.disabled =
+      accelerateBtn.textContent === BUTTON_LABELS.ACCELERATE_TIME_FLIES;
     resetBtn.disabled = false; // Enable reset while running
   } else if (timeLeft > 0 && !hasReset) {
     updateStartButtonText(BUTTON_LABELS.RESUME);
@@ -1642,6 +1655,21 @@ function updateDisplay() {
     'aria-label',
     `Timer: ${minutes} minutes and ${seconds} seconds remaining`
   );
+}
+
+const ACCELERATE_CONFIRM_SECONDS = 5;
+
+function resetAccelerateButton() {
+  if (accelerateConfirmTimeout) {
+    clearTimeout(accelerateConfirmTimeout);
+    accelerateConfirmTimeout = null;
+  }
+  accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE;
+  accelerateBtn.setAttribute(
+    'aria-label',
+    'Accelerate time (click then confirm)'
+  );
+  accelerateBtn.style.setProperty('--progress-width', '0%');
 }
 
 // Acceleration functionality
@@ -1686,7 +1714,7 @@ function accelerateTime() {
     }
   }, currentInterval);
 
-  // Disable accelerate button after use
+  // Disable accelerate button after use (do not reset label during accelerated countdown)
   accelerateBtn.disabled = true;
 }
 
@@ -1751,6 +1779,7 @@ function resetTimer() {
   // Reset button states
   startBtn.disabled = false;
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
+  resetAccelerateButton();
   accelerateBtn.disabled = true;
   resetBtn.disabled = true;
 
@@ -1917,6 +1946,7 @@ function playWakeUpSound() {
         startCountdown();
         startBtn.disabled = false;
         updateStartButtonText(BUTTON_LABELS.PAUSE);
+        resetAccelerateButton();
         accelerateBtn.disabled = false;
         resetBtn.disabled = false;
       }
@@ -1991,6 +2021,7 @@ function startNewGame() {
   // Set button to Wake Up state
   startBtn.disabled = false;
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
+  resetAccelerateButton();
   accelerateBtn.disabled = true; // Accelerate button should start disabled
 
   saveSettings();
@@ -2043,6 +2074,7 @@ function updateDayDisplay(state = '') {
     // Ensure button states are correct for dusk
     startBtn.disabled = false;
     updateStartButtonText(BUTTON_LABELS.WAKE_UP);
+    resetAccelerateButton();
     accelerateBtn.disabled = true;
     resetBtn.disabled = true;
   } else {
