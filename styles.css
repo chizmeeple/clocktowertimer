@@ -323,9 +323,8 @@ h1 {
 
 .timer-display .time {
   font-size: min(15vw, 11rem);
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont,
-    'Segoe UI Condensed', 'Segoe UI', Roboto, sans-serif;
-  font-weight: 700;
+  font-family: 'Azeret Mono', ui-monospace, 'Cascadia Mono', monospace;
+  font-weight: 600;
   color: var(--colour-gold);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 24px rgba(212, 175, 55, 0.15);
