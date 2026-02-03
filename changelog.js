@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.25';
+export const APP_VERSION = '1.0.26';
 
 export const CHANGELOG = {
+  '1.0.26': {
+    date: '2026-02-03',
+    changes: {
+      improvements: [
+        'Timer display now uses monospaced font (Azeret Mono) so the time does not shift horizontally as digits change',
+      ],
+    },
+  },
   '1.0.25': {
     date: '2026-02-03',
     changes: {
