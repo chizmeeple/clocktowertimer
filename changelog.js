@@ -1,7 +1,21 @@
 // Version tracking
-export const APP_VERSION = '1.0.26';
+export const APP_VERSION = '1.0.27';
 
 export const CHANGELOG = {
+  '1.0.27': {
+    date: '2026-02-03',
+    changes: {
+      features: [
+        'Revised accelerate-time (skip-ahead) flow: skipped preset days are styled as past, hidden when not current, and correctly numbered when starting a new day with Wake Up',
+        'Add keyboard shortcut for Accelerate Time',
+      ],
+      improvements: [
+        'Sound choices in settings are now applied correctly; sound loading is more reliable',
+        'Nominations countdown resets when starting a new day; wake-up countdown shortened to 6 seconds',
+        'Timer display no longer flickers when reloading',
+      ],
+    },
+  },
   '1.0.26': {
     date: '2026-02-03',
     changes: {
