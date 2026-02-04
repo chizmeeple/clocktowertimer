@@ -234,8 +234,9 @@ const keyboardShortcutsUtils = {
     // Update the UI immediately
     keyboardShortcutsUtils.loadShortcuts();
 
-    // Update wake up shortcut hint
+    // Update shortcut hints on buttons
     updateWakeUpShortcutHint();
+    updateAccelerateShortcutHint();
 
     // Save the clean defaults to localStorage
     saveSettings();
@@ -262,6 +263,8 @@ const keyboardShortcutsUtils = {
 
     // Update the UI immediately
     keyboardShortcutsUtils.loadShortcuts();
+    updateWakeUpShortcutHint();
+    updateAccelerateShortcutHint();
 
     // Save the clean defaults to localStorage
     saveSettings();
@@ -286,8 +289,9 @@ const keyboardShortcutsUtils = {
     // Update the UI immediately
     keyboardShortcutsUtils.loadShortcuts();
 
-    // Update wake up shortcut hint
+    // Update shortcut hints on buttons
     updateWakeUpShortcutHint();
+    updateAccelerateShortcutHint();
 
     // Save the cleared shortcuts to localStorage
     saveSettings();
@@ -501,9 +505,12 @@ function startShortcutRecording(input, action) {
       // Re-enable other shortcut inputs
       reEnableShortcutInputs();
 
-      // Update wake up shortcut hint if wakeUp was changed
+      // Update shortcut hints if changed
       if (action === 'wakeUp') {
         updateWakeUpShortcutHint();
+      }
+      if (action === 'accelerate') {
+        updateAccelerateShortcutHint();
       }
 
       saveSettings();
@@ -544,6 +551,31 @@ function updateWakeUpShortcutHint() {
   } else {
     hintElement.textContent = shortcutKey.toUpperCase();
   }
+}
+
+// Helper function to update accelerate shortcut hint
+function updateAccelerateShortcutHint() {
+  const hintElement = document.getElementById('accelerateShortcutHint');
+  if (!hintElement) return;
+
+  const shortcutKey = keyboardShortcuts.accelerate;
+
+  if (!shortcutKey) {
+    hintElement.textContent = '';
+    return;
+  }
+
+  hintElement.textContent = shortcutKey.toUpperCase();
+}
+
+// Helper to set only the accelerate button label (preserves shortcut hint)
+function setAccelerateButtonLabel(text) {
+  const textEl = accelerateBtn?.querySelector('.button-text');
+  if (textEl) textEl.textContent = text;
+}
+
+function getAccelerateButtonLabel() {
+  return accelerateBtn?.querySelector('.button-text')?.textContent ?? '';
 }
 
 // Helper function to update start button text (preserving the shortcut hint)
@@ -780,8 +812,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Accelerate button: click -> "Confirm…", second click within 5s triggers acceleration
   accelerateBtn.addEventListener('click', () => {
     if (accelerateBtn.disabled) return;
-    if (accelerateBtn.textContent === BUTTON_LABELS.ACCELERATE) {
-      accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE_CONFIRM;
+    if (getAccelerateButtonLabel() === BUTTON_LABELS.ACCELERATE) {
+      setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_CONFIRM);
       accelerateBtn.setAttribute(
         'aria-label',
         'Click again to accelerate time'
@@ -797,7 +829,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearTimeout(accelerateConfirmTimeout);
         accelerateConfirmTimeout = null;
       }
-      accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE_TIME_FLIES;
+      setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_TIME_FLIES);
       accelerateBtn.disabled = true;
       accelerateTime();
     }
@@ -1065,8 +1097,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load keyboard shortcuts into UI
   keyboardShortcutsUtils.loadShortcuts();
 
-  // Update wake up shortcut hint
+  // Update shortcut hints on buttons
   updateWakeUpShortcutHint();
+  updateAccelerateShortcutHint();
 
   // Setup keyboard navigation after shortcuts are loaded
   setupKeyboardNavigation();
@@ -1803,7 +1836,7 @@ function updateDisplay() {
     startBtn.disabled = false;
     // Keep accelerate disabled during accelerated countdown ("time flies")
     accelerateBtn.disabled =
-      accelerateBtn.textContent === BUTTON_LABELS.ACCELERATE_TIME_FLIES;
+      getAccelerateButtonLabel() === BUTTON_LABELS.ACCELERATE_TIME_FLIES;
     resetBtn.disabled = false; // Enable reset while running
   } else if (timeLeft > 0 && !hasReset) {
     updateStartButtonText(BUTTON_LABELS.RESUME);
@@ -1831,7 +1864,7 @@ function resetAccelerateButton() {
     clearTimeout(accelerateConfirmTimeout);
     accelerateConfirmTimeout = null;
   }
-  accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE;
+  setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE);
   accelerateBtn.setAttribute(
     'aria-label',
     'Accelerate time (click then confirm)'

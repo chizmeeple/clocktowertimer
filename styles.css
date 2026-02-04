@@ -572,6 +572,13 @@ html.fonts-ready .timer-display .time {
   --progress-width: 0%;
 }
 
+#accelerateBtn .button-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 #accelerateBtn:focus-visible {
   outline: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(76, 175, 80, 0.4);
