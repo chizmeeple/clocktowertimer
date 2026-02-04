@@ -214,6 +214,10 @@ const keyboardShortcutsUtils = {
       keyboardShortcuts.reset
     );
     keyboardShortcutsUtils.updateShortcutDisplay(
+      'shortcutAccelerate',
+      keyboardShortcuts.accelerate
+    );
+    keyboardShortcutsUtils.updateShortcutDisplay(
       'shortcutFullscreen',
       keyboardShortcuts.fullscreen
     );
@@ -274,6 +278,7 @@ const keyboardShortcutsUtils = {
       settings: '',
       wakeUp: '',
       reset: '',
+      accelerate: '',
       fullscreen: '',
       info: '',
     };
@@ -386,6 +391,7 @@ const DEFAULT_KEYBOARD_SHORTCUTS = {
   settings: 'q',
   wakeUp: ' ',
   reset: 'r',
+  accelerate: 'a',
   fullscreen: 'f',
   info: 'i',
 };
@@ -426,6 +432,7 @@ function startShortcutRecording(input, action) {
       shortcutSettings: 'settings',
       shortcutWakeUp: 'wakeUp',
       shortcutReset: 'reset',
+      shortcutAccelerate: 'accelerate',
       shortcutFullscreen: 'fullscreen',
       shortcutInfo: 'info',
     };
@@ -854,6 +861,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         shortcutSettings: 'settings',
         shortcutWakeUp: 'wakeUp',
         shortcutReset: 'reset',
+        shortcutAccelerate: 'accelerate',
         shortcutFullscreen: 'fullscreen',
         shortcutInfo: 'info',
       };
@@ -1147,6 +1155,10 @@ function applyParsedSettings(settings) {
   if (keyboardShortcuts.wakeup && !keyboardShortcuts.wakeUp) {
     keyboardShortcuts.wakeUp = keyboardShortcuts.wakeup;
     delete keyboardShortcuts.wakeup;
+    saveSettings();
+  }
+  if (keyboardShortcuts.accelerate === undefined) {
+    keyboardShortcuts.accelerate = DEFAULT_KEYBOARD_SHORTCUTS.accelerate;
     saveSettings();
   }
 
@@ -3062,6 +3074,17 @@ function setupKeyboardNavigation() {
       }
     }
     tryHandleResetShortcut(e, currentKey);
+    if (
+      keyboardShortcuts.accelerate &&
+      currentKey === keyboardShortcuts.accelerate &&
+      !settingsDialog.open &&
+      !infoDialog.open
+    ) {
+      e.preventDefault();
+      if (!accelerateBtn.disabled) {
+        accelerateBtn.click();
+      }
+    }
     if (
       keyboardShortcuts.fullscreen &&
       currentKey === keyboardShortcuts.fullscreen

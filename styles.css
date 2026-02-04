@@ -2765,8 +2765,8 @@ button:disabled {
   margin-bottom: 1rem;
 }
 
-/* Make the 5th shortcut (Open Info) span both columns */
-.shortcut-item:nth-child(5) {
+/* Make the 6th shortcut (Open Info) span both columns */
+.shortcut-item:nth-child(6) {
   grid-column: 1 / -1;
 }
 
@@ -2776,7 +2776,7 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .shortcut-item:nth-child(5) {
+  .shortcut-item:nth-child(6) {
     grid-column: 1;
   }
 }
