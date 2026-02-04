@@ -380,6 +380,7 @@ let soundEffectsVolume = 75; // Default to 75%
 let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
+let showPlayerCountQr = false; // Optional QR linking to count.arcane-scripts.net
 let youtubePlayer = null;
 let endOfDaySound = 'cathedral-bell-v2.mp3'; // Default end of day sound
 let wakeUpSoundFile = 'chisel-bell-01-loud-v2.mp3'; // Default wake up sound
@@ -884,6 +885,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('backgroundTheme')
     .addEventListener('change', updateBackgroundTheme);
+  document.getElementById('showPlayerCountQr').addEventListener('change', (e) => {
+    showPlayerCountQr = e.target.checked;
+    document
+      .getElementById('playerCountQrWrapper')
+      .classList.toggle('visible', showPlayerCountQr);
+    saveSettings();
+  });
 
   // Add keyboard shortcuts event listeners
   document.querySelectorAll('.shortcut-input').forEach((input) => {
@@ -1160,6 +1168,7 @@ function applyParsedSettings(settings) {
   soundEffectsVolume = settings.soundEffectsVolume || 75;
   keepDisplayOn =
     settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
+  showPlayerCountQr = settings.showPlayerCountQr === true;
   youtubeVolume = settings.youtubeVolume || 15;
   backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
   youtubePlaylistUrl = settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
@@ -1220,6 +1229,11 @@ function applySettingsToForm() {
   document.getElementById('gamePace').value = currentPace;
   document.getElementById('playSoundEffects').checked = playSoundEffects;
   document.getElementById('keepDisplayOn').checked = keepDisplayOn;
+  document.getElementById('showPlayerCountQr').checked = showPlayerCountQr;
+  document
+    .getElementById('playerCountQrWrapper')
+    .classList.toggle('visible', showPlayerCountQr);
+  updatePlayerCountQr();
   document.getElementById('playMusic').checked = playMusic;
   document.getElementById('playMusicAtNight').checked = playMusicAtNight;
   document.getElementById('youtubePlaylist').value = youtubePlaylistUrl;
@@ -1403,6 +1417,7 @@ function saveSettings() {
     playSoundEffects,
     soundEffectsVolume,
     keepDisplayOn,
+    showPlayerCountQr,
     youtubeVolume,
     youtubePlaylistUrl,
     backgroundTheme,
@@ -1597,6 +1612,19 @@ function updateClocktowerPresets() {
   });
 }
 
+// Update QR code and link for player count (count.arcane-scripts.net)
+function updatePlayerCountQr() {
+  const url = `https://count.arcane-scripts.net/?p=${playerCount}`;
+  const link = document.getElementById('playerCountQrLink');
+  const img = document.getElementById('playerCountQrImg');
+  if (link) link.href = url;
+  if (img) {
+    img.src =
+      'https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=' +
+      encodeURIComponent(url);
+  }
+}
+
 // Update player count
 function updatePlayerCount() {
   playerCount = Math.min(
@@ -1607,6 +1635,7 @@ function updatePlayerCount() {
   updateCharacterAmounts(playerCount);
   updateClocktowerPresets();
   updateEstimatedGameLength();
+  updatePlayerCountQr();
   saveSettings();
 }
 

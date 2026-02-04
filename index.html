@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -123,6 +123,11 @@
         <div class="character-type">
           <span class="label">Demon</span>
           <span id="demonAmount" class="amount">1</span>
+        </div>
+        <div id="playerCountQrWrapper" class="character-type player-count-qr">
+          <a id="playerCountQrLink" href="https://count.arcane-scripts.net/?p=10" target="_blank" rel="noopener noreferrer" aria-label="Open player count link">
+            <img id="playerCountQrImg" src="" alt="QR code linking to player count" />
+          </a>
         </div>
         <div id="travellerDisplay" class="character-type traveller">
           <span class="label">Travellers</span>
@@ -445,6 +450,10 @@
               <label>
                 <span>Keep Display On</span>
                 <input type="checkbox" id="keepDisplayOn" checked />
+              </label>
+              <label>
+                <span>Show player count QR code</span>
+                <input type="checkbox" id="showPlayerCountQr" />
               </label>
               <label>
                 <span>Background Theme</span>
