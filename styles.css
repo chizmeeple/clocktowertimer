@@ -44,8 +44,17 @@ input:focus-visible {
 }
 
 body {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+  font-family:
+    'DM Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Open Sans',
+    sans-serif;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -327,7 +336,9 @@ h1 {
   font-weight: 600;
   color: var(--colour-gold);
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 24px rgba(212, 175, 55, 0.15);
+  text-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 24px rgba(212, 175, 55, 0.15);
   line-height: 0.9;
   display: flex;
   flex-direction: row;
@@ -436,8 +447,10 @@ html.fonts-ready .timer-display .time {
   padding: 0.5rem 1rem;
   font-size: 1.2rem;
   min-width: 3rem;
-  transition: background-color var(--transition-fast),
-    transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .preset-btn:hover {
@@ -479,8 +492,10 @@ html.fonts-ready .timer-display .time {
   cursor: pointer;
   font-size: 1.2rem;
   font-weight: 600;
-  transition: transform var(--transition-fast),
-    box-shadow var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
   min-width: 140px;
   min-height: 80px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -493,7 +508,9 @@ html.fonts-ready .timer-display .time {
 
 #startBtn:focus-visible {
   outline: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 0 0 3px rgba(76, 175, 80, 0.5);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 0 0 3px rgba(76, 175, 80, 0.5);
 }
 
 #startBtn .button-content {
@@ -516,7 +533,9 @@ html.fonts-ready .timer-display .time {
   font-size: 0.7rem;
   font-weight: 500;
   font-family: monospace;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(0, 0, 0, 0.3);
   min-width: 24px;
   text-align: center;
@@ -567,8 +586,10 @@ html.fonts-ready .timer-display .time {
   gap: 0.5rem;
   position: relative;
   overflow: hidden;
-  transition: transform var(--transition-fast),
-    box-shadow var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
   --progress-width: 0%;
 }
 
@@ -581,7 +602,9 @@ html.fonts-ready .timer-display .time {
 
 #accelerateBtn:focus-visible {
   outline: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(76, 175, 80, 0.4);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(76, 175, 80, 0.4);
 }
 
 #accelerateBtn::before {
@@ -684,8 +707,10 @@ html.fonts-ready .timer-display .time {
   cursor: pointer;
   color: #ffffff;
   border-radius: var(--radius-md);
-  transition: transform var(--transition-fast),
-    box-shadow var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1033,8 +1058,10 @@ body[data-pace='blitz'] .info-value {
 }
 
 .dialog-buttons button {
-  transition: transform var(--transition-fast),
-    box-shadow var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
 .dialog-buttons button:hover {
@@ -1087,6 +1114,11 @@ body[data-pace='blitz'] .info-value {
   align-items: stretch;
   padding: 0.5rem;
   width: 100%;
+  /* Fixed height so row is content-sized; QR block can stretch to fill */
+  height: 4.75rem;
+  min-height: 4.75rem;
+  box-sizing: border-box;
+  margin-bottom: 0.5rem;
 }
 
 .pace-indicator {
@@ -1298,9 +1330,8 @@ body[data-pace='blitz'] .info-value {
 .character-type.player-count-qr {
   display: none;
   flex: 0 0 auto;
-  align-self: center;
+  align-self: stretch;
   width: 4.75rem;
-  height: 4.75rem;
   min-width: auto;
   padding: 0.25rem;
   box-sizing: border-box;
@@ -1372,8 +1403,10 @@ body[data-pace='blitz'] .info-value {
   border-radius: var(--radius-sm);
   color: white;
   cursor: pointer;
-  transition: background-color var(--transition-fast),
-    transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
   width: 100%;
 }
 
@@ -1765,7 +1798,9 @@ button:disabled {
   font-size: 0.8rem;
   color: #4caf50;
   text-decoration: none;
-  transition: color 0.2s ease, opacity 0.2s ease;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
   text-align: right;
   padding-right: 0.5rem;
 }
@@ -1795,7 +1830,9 @@ button:disabled {
   font-size: 0.8rem;
   color: #4caf50;
   text-decoration: none;
-  transition: color 0.2s ease, opacity 0.2s ease;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1850,7 +1887,8 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color var(--transition-fast),
+  transition:
+    background-color var(--transition-fast),
     transform var(--transition-fast);
 }
 
@@ -1935,7 +1973,9 @@ button:disabled {
   font-size: 0.8rem;
   color: var(--colour-accent);
   text-decoration: none;
-  transition: color var(--transition-fast), opacity var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    opacity var(--transition-fast);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -2301,8 +2341,10 @@ button:disabled {
   background: var(--colour-button-secondary);
   color: #fff;
   cursor: pointer;
-  transition: transform var(--transition-fast),
-    box-shadow var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -2633,7 +2675,8 @@ button:disabled {
   padding: 0.5rem 1rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color var(--transition-fast),
+  transition:
+    background-color var(--transition-fast),
     color var(--transition-fast);
   font-size: 0.95rem;
 }
@@ -2762,8 +2805,10 @@ button:disabled {
   border-radius: var(--radius-sm);
   color: white;
   cursor: pointer;
-  transition: transform var(--transition-fast),
-    box-shadow var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
   min-height: 48px;
   height: 48px;
   display: flex;
