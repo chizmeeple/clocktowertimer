@@ -1412,14 +1412,22 @@ function updateClocktowerPresets() {
   const presets = generateDayPresets(playerCount);
   const numberOfDays = presets.length;
 
-  // Count skipped presets and append that many extras at the end (so we don't run out).
+  // Count skipped presets and ensure we have enough extras so we never run out of preset slots.
+  // We need at least one preset per day; if user skips ahead (e.g. Day 8 for Day 1, then Day 8 for Day 2),
+  // the max preset index used can exceed the base count, so add extras to cover that.
   let skippedCount = 0;
   for (const preset of presets) {
     if (getPresetDayLabel(preset.day, numberOfDays).effectiveDay === null)
       skippedCount++;
   }
+  const maxUsed =
+    currentDay !== null && Object.keys(usedPresetByDay).length > 0
+      ? Math.max(...Object.values(usedPresetByDay))
+      : 0;
+  const curDay = currentDay ?? 1;
+  const extrasNeeded = Math.max(skippedCount, Math.max(0, maxUsed - curDay));
   const lastBasePreset = presets[numberOfDays - 1];
-  for (let i = 1; i <= skippedCount; i++) {
+  for (let i = 1; i <= extrasNeeded; i++) {
     presets.push({
       minutes: lastBasePreset.minutes,
       seconds: lastBasePreset.seconds,
