@@ -33,6 +33,11 @@
     <link rel="preload" href="styles.css" as="style" />
     <link
       rel="preload"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Azeret+Mono:wght@600&display=swap"
+      as="style"
+    />
+    <link
+      rel="preload"
       href="sounds/end-of-day/cathedral-bell-v2.mp3"
       as="fetch"
       crossorigin
@@ -128,10 +133,10 @@
 
     <div class="container">
       <div class="timer-display" role="timer" aria-live="polite">
-        <div class="day-display" role="status" aria-label="Current game day">
+        <output class="day-display" aria-label="Current game day">
           <span id="currentDay">-</span>
           <div class="pace-indicator">Normal</div>
-        </div>
+        </output>
         <div class="time" aria-label="Timer display">
           <span id="minutes" aria-label="minutes">00</span>:<span
             id="seconds"
@@ -139,16 +144,15 @@
             >00</span
           >
         </div>
-        <div
+        <output
           id="nominationsCountdown"
           class="nominations-countdown"
-          role="status"
           aria-live="polite"
           aria-label="Time until nominations open"
           hidden
         >
           Nominations open in <span id="nominationsCountdownSeconds">0</span>s
-        </div>
+        </output>
         <button id="startBtn" aria-label="Start or pause timer">
           <span class="button-content">
             <span class="button-text">⏰ Wake Up!</span>
@@ -156,7 +160,8 @@
           </span>
         </button>
       </div>
-      <div class="controls" role="group" aria-label="Timer controls">
+      <fieldset class="controls">
+        <legend>Timer controls</legend>
         <div class="time-inputs">
           <div id="regularTimerControls">
             <div
@@ -288,7 +293,7 @@
             <!-- Day presets will be inserted here dynamically -->
           </div>
         </div>
-      </div>
+      </fieldset>
     </div>
 
     <!-- Bottom Controls Container -->
@@ -313,9 +318,15 @@
       </div>
 
       <div class="timer-buttons">
-        <button id="resetBtn" aria-label="Reset Day">↺ Reset Day</button>
-        <button id="accelerateBtn" aria-label="Hold to accelerate time">
-          ⏩ Accelerate Time
+        <button id="resetBtn" aria-label="↺ Reset Day">↺ Reset Day</button>
+        <button
+          id="accelerateBtn"
+          aria-label="⏩ Accelerate Time (click then confirm)"
+        >
+          <span class="button-content">
+            <span class="button-text">⏩ Accelerate Time</span>
+            <span id="accelerateShortcutHint" class="shortcut-hint"></span>
+          </span>
         </button>
       </div>
 
@@ -639,6 +650,18 @@
                     <input
                       type="text"
                       id="shortcutReset"
+                      class="shortcut-input"
+                      placeholder="Press a key..."
+                      readonly
+                    />
+                  </label>
+                </div>
+                <div class="shortcut-item">
+                  <label>
+                    <span>Accelerate Time</span>
+                    <input
+                      type="text"
+                      id="shortcutAccelerate"
                       class="shortcut-input"
                       placeholder="Press a key..."
                       readonly

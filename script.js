@@ -1,3 +1,19 @@
+// Show timer digits only after Azeret Mono has loaded to prevent font flicker
+(function () {
+  function showTimer() {
+    document.documentElement.classList.add('fonts-ready');
+  }
+  if (document.fonts?.load) {
+    document.fonts
+      .load('600 1em "Azeret Mono"')
+      .then(showTimer)
+      .catch(showTimer);
+    setTimeout(showTimer, 3000); // Show anyway if font fails or is slow
+  } else {
+    showTimer();
+  }
+})();
+
 // DOM Elements
 let minutesDisplay,
   secondsDisplay,
@@ -198,6 +214,10 @@ const keyboardShortcutsUtils = {
       keyboardShortcuts.reset
     );
     keyboardShortcutsUtils.updateShortcutDisplay(
+      'shortcutAccelerate',
+      keyboardShortcuts.accelerate
+    );
+    keyboardShortcutsUtils.updateShortcutDisplay(
       'shortcutFullscreen',
       keyboardShortcuts.fullscreen
     );
@@ -214,8 +234,9 @@ const keyboardShortcutsUtils = {
     // Update the UI immediately
     keyboardShortcutsUtils.loadShortcuts();
 
-    // Update wake up shortcut hint
+    // Update shortcut hints on buttons
     updateWakeUpShortcutHint();
+    updateAccelerateShortcutHint();
 
     // Save the clean defaults to localStorage
     saveSettings();
@@ -242,6 +263,8 @@ const keyboardShortcutsUtils = {
 
     // Update the UI immediately
     keyboardShortcutsUtils.loadShortcuts();
+    updateWakeUpShortcutHint();
+    updateAccelerateShortcutHint();
 
     // Save the clean defaults to localStorage
     saveSettings();
@@ -258,6 +281,7 @@ const keyboardShortcutsUtils = {
       settings: '',
       wakeUp: '',
       reset: '',
+      accelerate: '',
       fullscreen: '',
       info: '',
     };
@@ -265,8 +289,9 @@ const keyboardShortcutsUtils = {
     // Update the UI immediately
     keyboardShortcutsUtils.loadShortcuts();
 
-    // Update wake up shortcut hint
+    // Update shortcut hints on buttons
     updateWakeUpShortcutHint();
+    updateAccelerateShortcutHint();
 
     // Save the cleared shortcuts to localStorage
     saveSettings();
@@ -282,6 +307,8 @@ const BUTTON_LABELS = {
   RESUME: '▶️ Resume Day',
   RESET: '🔄 Reset Day',
   ACCELERATE: '⏩ Accelerate Time',
+  ACCELERATE_CONFIRM: 'Confirm…',
+  ACCELERATE_TIME_FLIES: '{time flies}',
   START_DAY: (day) => `▶ Start Day ${day}`,
   FULLSCREEN: {
     ENTER:
@@ -323,6 +350,7 @@ let currentInterval = normalInterval;
 let wakeUpTimeout = null;
 let isEndSoundPlaying = false; // New state variable
 let hasReset = false; // New state variable to track reset state
+let accelerateConfirmTimeout = null;
 
 // Game pace multipliers
 const PACE_MULTIPLIERS = {
@@ -337,6 +365,12 @@ let playerCount = 10; // Default to 10 players
 let travellerCount = 0; // Default to 0 travellers
 let isFirstLoad = false;
 let currentDay = null;
+/** Day number → preset index used for that day. Only presets we skipped get 💀; used presets keep "Day N"; rest renumbered from current. */
+let usedPresetByDay = {};
+/** Preset day indices permanently hidden when their day ended (countdown reached zero). Never shown again until new game. */
+let hiddenPresetDays = [];
+/** True only when the timer has run out this day (dusk); used so we show compact preset list only then, not when e.g. clicking a preset. */
+let isDuskPresetView = false;
 let currentPace = 'normal'; // Default pace
 let playMusic = false; // Default to false for new users
 let playMusicAtNight = false; // Default to false for new users
@@ -361,6 +395,7 @@ const DEFAULT_KEYBOARD_SHORTCUTS = {
   settings: 'q',
   wakeUp: ' ',
   reset: 'r',
+  accelerate: 'a',
   fullscreen: 'f',
   info: 'i',
 };
@@ -401,6 +436,7 @@ function startShortcutRecording(input, action) {
       shortcutSettings: 'settings',
       shortcutWakeUp: 'wakeUp',
       shortcutReset: 'reset',
+      shortcutAccelerate: 'accelerate',
       shortcutFullscreen: 'fullscreen',
       shortcutInfo: 'info',
     };
@@ -469,9 +505,12 @@ function startShortcutRecording(input, action) {
       // Re-enable other shortcut inputs
       reEnableShortcutInputs();
 
-      // Update wake up shortcut hint if wakeUp was changed
+      // Update shortcut hints if changed
       if (action === 'wakeUp') {
         updateWakeUpShortcutHint();
+      }
+      if (action === 'accelerate') {
+        updateAccelerateShortcutHint();
       }
 
       saveSettings();
@@ -512,6 +551,31 @@ function updateWakeUpShortcutHint() {
   } else {
     hintElement.textContent = shortcutKey.toUpperCase();
   }
+}
+
+// Helper function to update accelerate shortcut hint
+function updateAccelerateShortcutHint() {
+  const hintElement = document.getElementById('accelerateShortcutHint');
+  if (!hintElement) return;
+
+  const shortcutKey = keyboardShortcuts.accelerate;
+
+  if (!shortcutKey) {
+    hintElement.textContent = '';
+    return;
+  }
+
+  hintElement.textContent = shortcutKey.toUpperCase();
+}
+
+// Helper to set only the accelerate button label (preserves shortcut hint)
+function setAccelerateButtonLabel(text) {
+  const textEl = accelerateBtn?.querySelector('.button-text');
+  if (textEl) textEl.textContent = text;
+}
+
+function getAccelerateButtonLabel() {
+  return accelerateBtn?.querySelector('.button-text')?.textContent ?? '';
 }
 
 // Helper function to update start button text (preserving the shortcut hint)
@@ -633,7 +697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   playerCountInput = document.getElementById('playerCount');
   travellerCountInput = document.getElementById('travellerCount');
   accelerateBtn = document.getElementById('accelerateBtn');
-  accelerateBtn.textContent = BUTTON_LABELS.ACCELERATE;
+  resetAccelerateButton();
   accelerateBtn.disabled = true; // Accelerate button should be disabled initially
   minuteButtons = document.querySelectorAll('.minute-btn');
   secondButtons = document.querySelectorAll('.second-btn');
@@ -745,24 +809,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-  // Add hold-to-activate for accelerate button
-  timerUtils.holdToActivate(
-    accelerateBtn,
-    2000, // 2 seconds hold duration
-    (progress) => {
-      // Progress is now handled by CSS custom property
-    },
-    () => {
-      // Reset button appearance and trigger acceleration
-      accelerateBtn.style.setProperty('--progress-width', '0%');
-      if (!accelerateBtn.disabled) {
-        accelerateTime();
+  // Accelerate button: click -> "Confirm…", second click within 5s triggers acceleration
+  accelerateBtn.addEventListener('click', () => {
+    if (accelerateBtn.disabled) return;
+    if (getAccelerateButtonLabel() === BUTTON_LABELS.ACCELERATE) {
+      setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_CONFIRM);
+      accelerateBtn.setAttribute(
+        'aria-label',
+        'Click again to accelerate time'
+      );
+      if (accelerateConfirmTimeout) clearTimeout(accelerateConfirmTimeout);
+      accelerateConfirmTimeout = setTimeout(() => {
+        accelerateConfirmTimeout = null;
+        resetAccelerateButton();
+      }, ACCELERATE_CONFIRM_SECONDS * 1000);
+    } else {
+      // Confirm: clear timeout, show "time flies", disable, then accelerate
+      if (accelerateConfirmTimeout) {
+        clearTimeout(accelerateConfirmTimeout);
+        accelerateConfirmTimeout = null;
       }
+      setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_TIME_FLIES);
+      accelerateBtn.disabled = true;
+      accelerateTime();
     }
-  );
-
-  // Remove the click event listener for accelerate button since we're using hold now
-  accelerateBtn.removeEventListener('click', accelerateTime);
+  });
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
@@ -822,6 +893,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         shortcutSettings: 'settings',
         shortcutWakeUp: 'wakeUp',
         shortcutReset: 'reset',
+        shortcutAccelerate: 'accelerate',
         shortcutFullscreen: 'fullscreen',
         shortcutInfo: 'info',
       };
@@ -1019,14 +1091,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Create YouTube container immediately if music is enabled
   if (playMusic) {
-    createYoutubePlayer();
+    initYoutubePlayer();
   }
 
   // Load keyboard shortcuts into UI
   keyboardShortcutsUtils.loadShortcuts();
 
-  // Update wake up shortcut hint
+  // Update shortcut hints on buttons
   updateWakeUpShortcutHint();
+  updateAccelerateShortcutHint();
 
   // Setup keyboard navigation after shortcuts are loaded
   setupKeyboardNavigation();
@@ -1047,6 +1120,23 @@ function roundToNearestQuarter(n) {
   return Math.round(n * 4) / 4;
 }
 
+function resolveUsedPresetByDay(settings, currentDay) {
+  if (
+    settings.usedPresetByDay &&
+    typeof settings.usedPresetByDay === 'object'
+  ) {
+    return settings.usedPresetByDay;
+  }
+  if (settings.dayOnePresetIndex == null) {
+    return {};
+  }
+  // Migrate: assume sequential use from dayOnePresetIndex
+  const result = {};
+  for (let d = 1; d <= currentDay; d++)
+    result[d] = settings.dayOnePresetIndex + d - 1;
+  return result;
+}
+
 // Apply parsed settings object to globals and persist; runs migration and version check
 function applyParsedSettings(settings) {
   const normaliseSoundFile = (value, defaultVal) => {
@@ -1057,6 +1147,10 @@ function applyParsedSettings(settings) {
   playerCount = settings.playerCount || 10;
   travellerCount = settings.travellerCount || 0;
   currentDay = settings.currentDay || 1;
+  usedPresetByDay = resolveUsedPresetByDay(settings, currentDay);
+  hiddenPresetDays = Array.isArray(settings.hiddenPresetDays)
+    ? settings.hiddenPresetDays
+    : [];
   currentPace = settings.currentPace || 'normal';
   playMusic = settings.playMusic === undefined ? false : settings.playMusic;
   playMusicAtNight =
@@ -1094,6 +1188,10 @@ function applyParsedSettings(settings) {
   if (keyboardShortcuts.wakeup && !keyboardShortcuts.wakeUp) {
     keyboardShortcuts.wakeUp = keyboardShortcuts.wakeup;
     delete keyboardShortcuts.wakeup;
+    saveSettings();
+  }
+  if (keyboardShortcuts.accelerate === undefined) {
+    keyboardShortcuts.accelerate = DEFAULT_KEYBOARD_SHORTCUTS.accelerate;
     saveSettings();
   }
 
@@ -1215,6 +1313,13 @@ function loadSettings() {
   const savedSettings = localStorage.getItem('quickTimerSettings');
   if (savedSettings) {
     applyParsedSettings(JSON.parse(savedSettings));
+    // Recreate Audio objects so they use the loaded sound files (they were
+    // initially created with defaults in DOMContentLoaded).
+    endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
+    wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
+    nominationsOpenSound = new Audio(
+      `sounds/nominations-open/${nominationsOpenSoundFile}`
+    );
   } else {
     initSoundsFirstLoad();
   }
@@ -1290,6 +1395,8 @@ function saveSettings() {
     playerCount,
     travellerCount,
     currentDay,
+    usedPresetByDay,
+    hiddenPresetDays,
     currentPace,
     playMusic,
     playMusicAtNight,
@@ -1312,46 +1419,149 @@ function saveSettings() {
   localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
 }
 
+// Returns { label, effectiveDay } for a preset. effectiveDay is null for skipped (💀).
+function getPresetDayLabel(presetDay, numberOfDays) {
+  const used = Object.values(usedPresetByDay).filter((p) => p >= 1);
+  if (used.length === 0) {
+    return { label: `Day ${presetDay}`, effectiveDay: presetDay };
+  }
+  const usedSorted = [...used].sort((a, b) => a - b);
+  const minUsed = usedSorted[0];
+  const maxUsed = usedSorted.at(-1);
+  // Used for a specific day → show that day
+  for (const [d, p] of Object.entries(usedPresetByDay)) {
+    if (Number(p) === presetDay) {
+      return { label: `Day ${d}`, effectiveDay: Number(d) };
+    }
+  }
+  if (presetDay < minUsed) return { label: '💀', effectiveDay: null };
+  // Between two used presets → skipped
+  for (let i = 0; i < usedSorted.length - 1; i++) {
+    if (presetDay > usedSorted[i] && presetDay < usedSorted[i + 1])
+      return { label: '💀', effectiveDay: null };
+  }
+  // From current day's preset onward (or from first future if in dusk)
+  const anchor =
+    usedPresetByDay[currentDay] === undefined
+      ? maxUsed + 1
+      : usedPresetByDay[currentDay];
+  const baseDay =
+    usedPresetByDay[currentDay] === undefined ? currentDay + 1 : currentDay;
+  if (presetDay >= anchor) {
+    const eff = baseDay + (presetDay - anchor);
+    return { label: `Day ${eff}`, effectiveDay: eff };
+  }
+  return { label: '💀', effectiveDay: null };
+}
+
 // Settings functionality
 function updateClocktowerPresets() {
   const clocktowerPresetsDiv = document.getElementById('clocktowerPresets');
   clocktowerPresetsDiv.innerHTML = ''; // Clear existing presets
 
   const presets = generateDayPresets(playerCount);
-  presets.forEach((preset) => {
+  const numberOfDays = presets.length;
+
+  // Count skipped presets and ensure we have enough extras so we never run out of preset slots.
+  // We need at least one preset per day; if user skips ahead (e.g. Day 8 for Day 1, then Day 8 for Day 2),
+  // the max preset index used can exceed the base count, so add extras to cover that.
+  let skippedCount = 0;
+  for (const preset of presets) {
+    if (getPresetDayLabel(preset.day, numberOfDays).effectiveDay === null)
+      skippedCount++;
+  }
+  const maxUsed =
+    currentDay !== null && Object.keys(usedPresetByDay).length > 0
+      ? Math.max(...Object.values(usedPresetByDay))
+      : 0;
+  const curDay = currentDay ?? 1;
+  const extrasNeeded = Math.max(skippedCount, Math.max(0, maxUsed - curDay));
+  const lastBasePreset = presets[numberOfDays - 1];
+  for (let i = 1; i <= extrasNeeded; i++) {
+    presets.push({
+      minutes: lastBasePreset.minutes,
+      seconds: lastBasePreset.seconds,
+      display: lastBasePreset.display,
+      day: numberOfDays + i,
+    });
+  }
+
+  // Preset visibility: ONLY about hiding skipped (💀) presets. Never hide "Day N" presets.
+  // Dusk: hide all skips (compact next-day picker). Day 2+: hide only 💀 before Day N-1's preset.
+  let presetsToShow = presets;
+  if (isDuskPresetView) {
+    presetsToShow = presetsToShow.filter(
+      (p) => getPresetDayLabel(p.day, numberOfDays).effectiveDay !== null
+    );
+  } else if (currentDay >= 2) {
+    const skipCutoff = usedPresetByDay[currentDay - 1];
+    if (skipCutoff !== undefined) {
+      presetsToShow = presets.filter((p) => {
+        const { effectiveDay } = getPresetDayLabel(p.day, numberOfDays);
+        if (effectiveDay !== null) return true; // always show every Day preset
+        return p.day >= skipCutoff; // hide only 💀 before Day N-1's preset
+      });
+    }
+  }
+
+  presetsToShow.forEach((preset) => {
+    const { label: dayLabel, effectiveDay: eff } = getPresetDayLabel(
+      preset.day,
+      numberOfDays
+    );
     const button = document.createElement('button');
     button.className = 'preset-btn clocktower-btn';
-    if (preset.day === currentDay) {
+    if (eff === null) {
+      button.classList.add('skipped-day');
+    }
+    if (eff !== null && eff === currentDay) {
       button.classList.add('current-day');
+    }
+    if (eff !== null && eff < currentDay) {
+      button.classList.add('past-day');
     }
     button.innerHTML = `
       <span class="time">${preset.display}</span>
-      <span class="day">Day ${preset.day}</span>
+      <span class="day">${dayLabel}</span>
     `;
     button.dataset.minutes = preset.minutes;
     button.dataset.seconds = preset.seconds;
     button.dataset.day = preset.day;
 
     button.addEventListener('click', (e) => {
-      // Update active state
+      const { effectiveDay: eff } = getPresetDayLabel(preset.day, numberOfDays);
+      const isAhead = eff !== null && eff > currentDay;
+
+      if (isAhead && !isDuskPresetView) {
+        // Not in dusk: use this preset for current day (keeps full preset row including skipped)
+        usedPresetByDay[currentDay] = preset.day;
+        saveSettings();
+        updateClocktowerPresets();
+      } else if (isDuskPresetView && currentDay !== null) {
+        // In dusk: use this preset for the next day
+        usedPresetByDay[currentDay + 1] = preset.day;
+        currentDay++;
+        saveSettings();
+        // Clear dusk so new day shows full preset row until its countdown ends
+        updateDayDisplay();
+        updateClocktowerPresets();
+      }
+
+      // Update active state (use selector in case presets were just rebuilt)
       document
         .querySelectorAll('.clocktower-btn')
         .forEach((btn) => btn.classList.remove('active'));
-      button.classList.add('active');
+      document
+        .querySelector(`.clocktower-btn[data-day="${preset.day}"]`)
+        ?.classList.add('active');
 
       // Update selected time
       selectedMinutes = preset.minutes;
       selectedSeconds = preset.seconds;
 
-      // Reset any existing timer
+      // Reset any existing timer and cancel nominations countdown when starting a new day
       clearInterval(timerId);
-
-      // Check if we're in dusk state and increment day if needed
-      const dayInfo = document.querySelector('.day-display');
-      if (currentDay !== null && dayInfo.classList.contains('dusk')) {
-        currentDay++;
-        saveSettings();
-      }
+      clearNominationsCountdown();
 
       // Set and display the new time
       timeLeft = selectedMinutes * 60 + selectedSeconds;
@@ -1378,6 +1588,7 @@ function updateClocktowerPresets() {
       startCountdown();
       startBtn.disabled = false;
       updateStartButtonText(BUTTON_LABELS.PAUSE);
+      resetAccelerateButton();
       accelerateBtn.disabled = false;
       resetBtn.disabled = false; // Enable reset button when starting timer
     });
@@ -1623,7 +1834,9 @@ function updateDisplay() {
   } else if (isRunning) {
     updateStartButtonText(BUTTON_LABELS.PAUSE);
     startBtn.disabled = false;
-    accelerateBtn.disabled = false;
+    // Keep accelerate disabled during accelerated countdown ("time flies")
+    accelerateBtn.disabled =
+      getAccelerateButtonLabel() === BUTTON_LABELS.ACCELERATE_TIME_FLIES;
     resetBtn.disabled = false; // Enable reset while running
   } else if (timeLeft > 0 && !hasReset) {
     updateStartButtonText(BUTTON_LABELS.RESUME);
@@ -1642,6 +1855,21 @@ function updateDisplay() {
     'aria-label',
     `Timer: ${minutes} minutes and ${seconds} seconds remaining`
   );
+}
+
+const ACCELERATE_CONFIRM_SECONDS = 5;
+
+function resetAccelerateButton() {
+  if (accelerateConfirmTimeout) {
+    clearTimeout(accelerateConfirmTimeout);
+    accelerateConfirmTimeout = null;
+  }
+  setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE);
+  accelerateBtn.setAttribute(
+    'aria-label',
+    'Accelerate time (click then confirm)'
+  );
+  accelerateBtn.style.setProperty('--progress-width', '0%');
 }
 
 // Acceleration functionality
@@ -1677,6 +1905,7 @@ function accelerateTime() {
       }
       if (currentDay !== null) {
         updateDayDisplay('dusk');
+        updateClocktowerPresets();
       }
       updateDisplay(); // Make sure to update display one final time
 
@@ -1686,7 +1915,7 @@ function accelerateTime() {
     }
   }, currentInterval);
 
-  // Disable accelerate button after use
+  // Disable accelerate button after use (do not reset label during accelerated countdown)
   accelerateBtn.disabled = true;
 }
 
@@ -1751,6 +1980,7 @@ function resetTimer() {
   // Reset button states
   startBtn.disabled = false;
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
+  resetAccelerateButton();
   accelerateBtn.disabled = true;
   resetBtn.disabled = true;
 
@@ -1878,7 +2108,7 @@ function playWakeUpSound() {
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   accelerateBtn.disabled = true;
 
-  let countdownSeconds = 10;
+  let countdownSeconds = 6;
   timeLeft = countdownSeconds;
   updateDisplay();
 
@@ -1894,9 +2124,17 @@ function playWakeUpSound() {
       // Remove dawn state and show regular day display
       updateDayDisplay();
 
-      // Find and start the current day's timer directly instead of clicking the preset
+      // Find and start the current day's timer (honour skip-ahead numbering)
+      let currentPresetDay = usedPresetByDay[currentDay];
+      if (currentPresetDay === undefined) {
+        const used = Object.values(usedPresetByDay);
+        currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
+        usedPresetByDay[currentDay] = currentPresetDay;
+        saveSettings();
+        updateClocktowerPresets();
+      }
       const dayPreset = document.querySelector(
-        `.clocktower-btn[data-day="${currentDay}"]`
+        `.clocktower-btn[data-day="${currentPresetDay}"]`
       );
       if (dayPreset) {
         // Update active state
@@ -1917,6 +2155,7 @@ function playWakeUpSound() {
         startCountdown();
         startBtn.disabled = false;
         updateStartButtonText(BUTTON_LABELS.PAUSE);
+        resetAccelerateButton();
         accelerateBtn.disabled = false;
         resetBtn.disabled = false;
       }
@@ -1966,6 +2205,7 @@ function startCountdown() {
       }
       if (currentDay !== null) {
         updateDayDisplay('dusk');
+        updateClocktowerPresets();
       }
       updateDisplay();
 
@@ -1986,11 +2226,14 @@ function startNewGame() {
 
   // Set to Day 1
   currentDay = 1;
+  usedPresetByDay = {};
+  hiddenPresetDays = [];
   updateDayDisplay();
 
   // Set button to Wake Up state
   startBtn.disabled = false;
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
+  resetAccelerateButton();
   accelerateBtn.disabled = true; // Accelerate button should start disabled
 
   saveSettings();
@@ -2020,6 +2263,9 @@ function updateDayDisplay(state = '') {
   // Remove existing state classes
   dayInfo.classList.remove('dawn', 'dusk');
 
+  // Single source of truth: compact preset list only when timer has run out (dusk), not when e.g. clicking a preset
+  isDuskPresetView = state === 'dusk';
+
   // Ensure currentDay is at least 1
   if (currentDay === null || currentDay === undefined) {
     currentDay = 1;
@@ -2043,18 +2289,25 @@ function updateDayDisplay(state = '') {
     // Ensure button states are correct for dusk
     startBtn.disabled = false;
     updateStartButtonText(BUTTON_LABELS.WAKE_UP);
+    resetAccelerateButton();
     accelerateBtn.disabled = true;
     resetBtn.disabled = true;
   } else {
     dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
   }
 
-  // Update preset button highlighting
+  // Update preset button highlighting (honour skip-ahead: use next preset if current day not yet chosen)
+  const numberOfDays = document.querySelectorAll('.clocktower-btn').length;
+  let currentPresetDay = usedPresetByDay[currentDay];
+  if (currentPresetDay === undefined) {
+    const used = Object.values(usedPresetByDay);
+    currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
+  }
   document.querySelectorAll('.clocktower-btn').forEach((btn) => {
-    btn.classList.toggle(
-      'current-day',
-      Number.parseInt(btn.dataset.day) === currentDay
-    );
+    const btnDay = Number.parseInt(btn.dataset.day);
+    const { effectiveDay: eff } = getPresetDayLabel(btnDay, numberOfDays);
+    btn.classList.toggle('current-day', btnDay === currentPresetDay);
+    btn.classList.toggle('past-day', eff !== null && eff < currentDay);
   });
 
   // Save the current state
@@ -2854,6 +3107,17 @@ function setupKeyboardNavigation() {
       }
     }
     tryHandleResetShortcut(e, currentKey);
+    if (
+      keyboardShortcuts.accelerate &&
+      currentKey === keyboardShortcuts.accelerate &&
+      !settingsDialog.open &&
+      !infoDialog.open
+    ) {
+      e.preventDefault();
+      if (!accelerateBtn.disabled) {
+        accelerateBtn.click();
+      }
+    }
     if (
       keyboardShortcuts.fullscreen &&
       currentKey === keyboardShortcuts.fullscreen

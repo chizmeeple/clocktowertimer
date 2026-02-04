@@ -334,6 +334,13 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 0.1em;
+  /* Hidden until Azeret Mono loads to avoid font flicker */
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+html.fonts-ready .timer-display .time {
+  opacity: 1;
 }
 
 .timer-display.wake-up-countdown .time {
@@ -384,6 +391,20 @@ h1 {
   flex-direction: column;
   gap: 0.5rem;
   margin-top: 0;
+  border: none;
+  padding: 0;
+  min-inline-size: 0;
+}
+
+.controls legend {
+  padding: 0;
+  float: inline-start;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
 }
 
 .time-inputs {
@@ -549,6 +570,13 @@ h1 {
   transition: transform var(--transition-fast),
     box-shadow var(--transition-fast), background-color var(--transition-fast);
   --progress-width: 0%;
+}
+
+#accelerateBtn .button-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 #accelerateBtn:focus-visible {
@@ -1183,6 +1211,29 @@ body[data-pace='blitz'] .info-value {
   background-color: #45a049;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.clocktower-presets button.skipped-day {
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+  background-color: rgba(26, 26, 26, 0.85);
+  border: 1px solid var(--colour-border);
+  opacity: 0.55;
+  filter: saturate(0.5);
+}
+
+.clocktower-presets button.skipped-day:hover {
+  opacity: 0.65;
+  background-color: rgba(32, 32, 32, 0.9);
+}
+
+.clocktower-presets button.past-day {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.clocktower-presets button.past-day:hover {
+  opacity: 0.7;
 }
 
 .clocktower-presets button.current-day {
@@ -2721,8 +2772,8 @@ button:disabled {
   margin-bottom: 1rem;
 }
 
-/* Make the 5th shortcut (Open Info) span both columns */
-.shortcut-item:nth-child(5) {
+/* Make the 6th shortcut (Open Info) span both columns */
+.shortcut-item:nth-child(6) {
   grid-column: 1 / -1;
 }
 
@@ -2732,7 +2783,7 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .shortcut-item:nth-child(5) {
+  .shortcut-item:nth-child(6) {
     grid-column: 1;
   }
 }

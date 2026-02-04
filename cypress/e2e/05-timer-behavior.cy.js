@@ -11,6 +11,10 @@ describe('Timer Behavior', () => {
     // Settings dialog should be open on fresh start
     cy.get('#settingsDialog').should('be.visible');
 
+    // Turn OFF effects (trigger change so playSoundEffects is updated before save)
+    cy.get('.tab-button[data-tab="effects"]').click();
+    cy.get('#playSoundEffects').uncheck().trigger('change');
+
     // Save and Close settings
     cy.get('#closeSettings').click();
     cy.get('#settingsDialog').should('not.be.visible');
@@ -49,6 +53,11 @@ describe('Timer Behavior', () => {
     cy.visit('/');
 
     cy.get('#settingsDialog').should('be.visible');
+
+    // Turn OFF effects (trigger change so playSoundEffects is updated before save)
+    cy.get('.tab-button[data-tab="effects"]').click();
+    cy.get('#playSoundEffects').uncheck().trigger('change');
+
     cy.get('#closeSettings').click();
     cy.get('#settingsDialog').should('not.be.visible');
 

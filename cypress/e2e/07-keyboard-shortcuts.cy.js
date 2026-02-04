@@ -21,6 +21,7 @@ describe('Keyboard Shortcuts', () => {
     cy.get('#shortcutSettings').should('exist');
     cy.get('#shortcutWakeUp').should('exist');
     cy.get('#shortcutReset').should('exist');
+    cy.get('#shortcutAccelerate').should('exist');
     cy.get('#shortcutFullscreen').should('exist');
     cy.get('#shortcutInfo').should('exist');
 
@@ -28,6 +29,7 @@ describe('Keyboard Shortcuts', () => {
     cy.get('#shortcutSettings').should('have.value', 'q');
     cy.get('#shortcutWakeUp').should('have.value', 'Space');
     cy.get('#shortcutReset').should('have.value', 'r');
+    cy.get('#shortcutAccelerate').should('have.value', 'a');
     cy.get('#shortcutFullscreen').should('have.value', 'f');
     cy.get('#shortcutInfo').should('have.value', 'i');
 
@@ -53,6 +55,7 @@ describe('Keyboard Shortcuts', () => {
     // Verify other inputs are disabled during recording
     cy.get('#shortcutSettings').should('be.disabled');
     cy.get('#shortcutReset').should('be.disabled');
+    cy.get('#shortcutAccelerate').should('be.disabled');
     cy.get('#shortcutFullscreen').should('be.disabled');
     cy.get('#shortcutInfo').should('be.disabled');
 
@@ -66,6 +69,7 @@ describe('Keyboard Shortcuts', () => {
     // Verify other inputs are re-enabled
     cy.get('#shortcutSettings').should('not.be.disabled');
     cy.get('#shortcutReset').should('not.be.disabled');
+    cy.get('#shortcutAccelerate').should('not.be.disabled');
     cy.get('#shortcutFullscreen').should('not.be.disabled');
     cy.get('#shortcutInfo').should('not.be.disabled');
   });
@@ -161,6 +165,7 @@ describe('Keyboard Shortcuts', () => {
     cy.get('#shortcutSettings').should('have.value', 'q');
     cy.get('#shortcutWakeUp').should('have.value', 'Space');
     cy.get('#shortcutReset').should('have.value', 'r');
+    cy.get('#shortcutAccelerate').should('have.value', 'a');
     cy.get('#shortcutFullscreen').should('have.value', 'f');
     cy.get('#shortcutInfo').should('have.value', 'i');
   });
@@ -182,6 +187,7 @@ describe('Keyboard Shortcuts', () => {
     cy.get('#shortcutSettings').should('have.value', '');
     cy.get('#shortcutWakeUp').should('have.value', '');
     cy.get('#shortcutReset').should('have.value', '');
+    cy.get('#shortcutAccelerate').should('have.value', '');
     cy.get('#shortcutFullscreen').should('have.value', '');
     cy.get('#shortcutInfo').should('have.value', '');
   });
@@ -245,10 +251,10 @@ describe('Keyboard Shortcuts', () => {
     cy.get('.shortcuts-container').should('have.css', 'grid-template-columns');
 
     // Verify all shortcut items are present
-    cy.get('.shortcut-item').should('have.length', 5);
+    cy.get('.shortcut-item').should('have.length', 6);
 
-    // Verify the 5th item spans both columns
-    cy.get('.shortcut-item:nth-child(5)').should(
+    // Verify the 6th item spans both columns
+    cy.get('.shortcut-item:nth-child(6)').should(
       'have.css',
       'grid-column',
       '1 / -1'

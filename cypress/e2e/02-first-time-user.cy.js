@@ -39,9 +39,8 @@ describe('First Time User Flow', () => {
     cy.get('#startBtn .button-text').should('have.text', '⏰ Wake Up!');
     cy.get('#startBtn').should('not.be.disabled');
     cy.get('#resetBtn').should('have.text', '🔄 Reset Day').and('be.disabled');
-    cy.get('#accelerateBtn')
-      .should('have.text', '⏩ Accelerate Time')
-      .and('be.disabled');
+    cy.get('#accelerateBtn .button-text').should('have.text', '⏩ Accelerate Time');
+    cy.get('#accelerateBtn').should('be.disabled');
 
     // Verify navigation buttons exist
     cy.get('#settingsBtn').should('exist');
