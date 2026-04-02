@@ -13,12 +13,14 @@ export const characterAmounts = {
   15: [9, 2, 3, 1],
 };
 
+const FALLBACK_AMOUNTS = [0, 0, 0, 0];
+
 /**
  * Updates the character amounts display in the UI
  * @param {number} playerCount - The number of players (5-15)
  */
 export function updateCharacterAmounts(playerCount) {
-  const numbersArray = characterAmounts[playerCount];
+  const numbersArray = characterAmounts[playerCount] ?? FALLBACK_AMOUNTS;
   document.getElementById('townsfolkAmount').textContent = numbersArray[0];
   document.getElementById('outsiderAmount').textContent = numbersArray[1];
   document.getElementById('minionAmount').textContent = numbersArray[2];
