@@ -2540,6 +2540,7 @@ async function createYoutubePlayer() {
         console.log('Error destroying player:', e);
       }
       player = null;
+      youtubePlayer = null;
     }
 
     const existingContainer = document.querySelector(
@@ -2590,9 +2591,12 @@ async function createYoutubePlayer() {
         onError: onPlayerError,
       },
     });
+    // Keep legacy handle in sync with the active player instance.
+    youtubePlayer = player;
   } catch (error) {
     console.error('Error initializing YouTube player:', error);
     updatePlaylistBadge('');
+    youtubePlayer = null;
   }
 }
 
