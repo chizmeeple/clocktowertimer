@@ -2129,7 +2129,7 @@ function playWakeUpSound() {
 
     if (timeLeft === 0) {
       clearInterval(timerId);
-      timerDisplay.classList.remove('wake-up-countdown');
+      timerDisplayEl.classList.remove('wake-up-countdown');
 
       // Remove dawn state and show regular day display
       updateDayDisplay();
