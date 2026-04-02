@@ -1,7 +1,21 @@
 // Version tracking
-export const APP_VERSION = '1.0.27';
+export const APP_VERSION = '1.0.28';
 
 export const CHANGELOG = {
+  '1.0.28': {
+    date: '2026-04-02',
+    changes: {
+      fixes: [
+        'YouTube music: keep the `youtubePlayer` handle in sync with the real iframe API instance so pause, stop, and destroy actually run — avoids background playback and reduces browser tab crashes on low-memory devices (e38d30c).',
+      ],
+      improvements: [
+        'Dev dependencies: bump minimatch and serve (9fc98c9).',
+        'Dev dependencies: bump qs from 6.14.1 to 6.14.2 (6dc5672).',
+        'Code quality: general improvements and refactoring (7ae8298).',
+        'YouTube player: refactor and hardening — single player handle, shared container lookup, proper tear-down when music is disabled or the device goes offline (8585f17).',
+      ],
+    },
+  },
   '1.0.27': {
     date: '2026-02-03',
     changes: {

@@ -2895,6 +2895,7 @@ function showWhatsNew(lastVersion) {
   content.innerHTML = versions
     .map(([version, data]) => {
       const features = data.changes.features || [];
+      const fixes = data.changes.fixes || [];
       const improvements = data.changes.improvements || [];
 
       return `
@@ -2915,6 +2916,18 @@ function showWhatsNew(lastVersion) {
             <h3>New Features</h3>
             <ul class="features-list">
               ${features.map((feature) => `<li>${feature}</li>`).join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
+        ${
+          fixes.length > 0
+            ? `
+          <div class="changes-section">
+            <h3>Fixes</h3>
+            <ul class="fixes-list">
+              ${fixes.map((fix) => `<li>${fix}</li>`).join('')}
             </ul>
           </div>
         `
@@ -2968,6 +2981,7 @@ function showChangeHistory() {
   let html = '';
   versions.forEach(([version, data], index) => {
     const features = data.changes.features || [];
+    const fixes = data.changes.fixes || [];
     const improvements = data.changes.improvements || [];
 
     html += `
@@ -2983,6 +2997,18 @@ function showChangeHistory() {
             <h3>New Features</h3>
             <ul class="features-list">
               ${features.map((feature) => `<li>${feature}</li>`).join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
+        ${
+          fixes.length > 0
+            ? `
+          <div class="changes-section">
+            <h3>Fixes</h3>
+            <ul class="fixes-list">
+              ${fixes.map((fix) => `<li>${fix}</li>`).join('')}
             </ul>
           </div>
         `
