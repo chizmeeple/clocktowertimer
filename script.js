@@ -96,6 +96,12 @@ function setYoutubeControlButtonIcon(playing) {
   btn.innerHTML = playing ? YOUTUBE_CONTROL_SVG_PAUSE : YOUTUBE_CONTROL_SVG_PLAY;
 }
 
+const YOUTUBE_PLAYER_CONTAINER_CLASS = 'youtube-player-container';
+
+function getYoutubePlayerContainer() {
+  return document.querySelector(`.${YOUTUBE_PLAYER_CONTAINER_CLASS}`);
+}
+
 const timerUtils = {
   stop: () => {
     clearInterval(timerId);
@@ -675,7 +681,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         youtubePlayer = null;
       }
-      const container = document.querySelector('.youtube-player-container');
+      const container = getYoutubePlayerContainer();
       if (container) {
         container.remove();
       }
@@ -1352,9 +1358,7 @@ function loadSettings() {
   if (playMusic) {
     initYoutubePlayer();
   } else {
-    const existingContainer = document.querySelector(
-      '.youtube-player-container'
-    );
+    const existingContainer = getYoutubePlayerContainer();
     if (existingContainer) {
       existingContainer.remove();
     }
@@ -2434,7 +2438,7 @@ globalThis.onYouTubeIframeAPIReady = function () {
 
 function createYoutubePlayerContainer() {
   const container = document.createElement('div');
-  container.className = 'youtube-player-container';
+  container.className = YOUTUBE_PLAYER_CONTAINER_CLASS;
 
   const playlistNameSpan = document.createElement('span');
   playlistNameSpan.className = 'playlist-name';
@@ -2503,9 +2507,7 @@ async function createYoutubePlayer() {
       youtubePlayer = null;
     }
 
-    const existingContainer = document.querySelector(
-      '.youtube-player-container'
-    );
+    const existingContainer = getYoutubePlayerContainer();
     if (existingContainer) {
       existingContainer.remove();
     }
@@ -2686,7 +2688,7 @@ function updateMusicPlayback() {
       }
       youtubePlayer = null;
     }
-    const container = document.querySelector('.youtube-player-container');
+    const container = getYoutubePlayerContainer();
     if (container) {
       container.remove();
     }
