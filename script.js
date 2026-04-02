@@ -1,3 +1,5 @@
+import { updateCharacterAmounts } from './helper.js';
+
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
   function showTimer() {
@@ -17,6 +19,7 @@
 // DOM Elements
 let minutesDisplay,
   secondsDisplay,
+  timerDisplayEl,
   startBtn,
   resetBtn,
   fullscreenBtn,
@@ -82,6 +85,22 @@ const youtubeUtils = {
     }
   },
 };
+
+/** Inline SVG for the in-page YouTube play/pause control (`playing` → show pause icon). */
+const YOUTUBE_CONTROL_SVG_PLAY = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+const YOUTUBE_CONTROL_SVG_PAUSE = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+
+function setYoutubeControlButtonIcon(playing) {
+  const btn = document.querySelector('.youtube-control');
+  if (!btn) return;
+  btn.innerHTML = playing ? YOUTUBE_CONTROL_SVG_PAUSE : YOUTUBE_CONTROL_SVG_PLAY;
+}
+
+const YOUTUBE_PLAYER_CONTAINER_CLASS = 'youtube-player-container';
+
+function getYoutubePlayerContainer() {
+  return document.querySelector(`.${YOUTUBE_PLAYER_CONTAINER_CLASS}`);
+}
 
 const timerUtils = {
   stop: () => {
@@ -390,6 +409,8 @@ let autoOpenNominations = false;
 let autoOpenNominationsDelay = 60; // seconds
 let autoOpenNominationsInterval = null;
 let nominationsCountdownRemaining = 0;
+/** Reused for fallback beep to avoid allocating a new AudioContext each time */
+let beepAudioContext = null;
 
 // Keyboard shortcuts
 const DEFAULT_KEYBOARD_SHORTCUTS = {
@@ -403,19 +424,14 @@ const DEFAULT_KEYBOARD_SHORTCUTS = {
 
 let keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
 
-// Character amounts mapping
-const characterAmounts = {
-  5: [3, 0, 1, 1],
-  6: [3, 1, 1, 1],
-  7: [5, 0, 1, 1],
-  8: [5, 1, 1, 1],
-  9: [5, 2, 1, 1],
-  10: [7, 0, 2, 1],
-  11: [7, 1, 2, 1],
-  12: [7, 2, 2, 1],
-  13: [9, 0, 3, 1],
-  14: [9, 1, 3, 1],
-  15: [9, 2, 3, 1],
+/** Maps shortcut input element ids to keyboardShortcuts keys */
+const SHORTCUT_INPUT_ID_TO_ACTION = {
+  shortcutSettings: 'settings',
+  shortcutWakeUp: 'wakeUp',
+  shortcutReset: 'reset',
+  shortcutAccelerate: 'accelerate',
+  shortcutFullscreen: 'fullscreen',
+  shortcutInfo: 'info',
 };
 
 // Helper function to re-enable all shortcut inputs
@@ -433,15 +449,7 @@ function startShortcutRecording(input, action) {
     el.classList.remove('recording');
     // Restore the previous value for any inputs that were in recording mode
     const inputId = el.id;
-    const actionMap = {
-      shortcutSettings: 'settings',
-      shortcutWakeUp: 'wakeUp',
-      shortcutReset: 'reset',
-      shortcutAccelerate: 'accelerate',
-      shortcutFullscreen: 'fullscreen',
-      shortcutInfo: 'info',
-    };
-    const actionName = actionMap[inputId];
+    const actionName = SHORTCUT_INPUT_ID_TO_ACTION[inputId];
     if (actionName && keyboardShortcuts[actionName]) {
       keyboardShortcutsUtils.updateShortcutDisplay(
         inputId,
@@ -520,15 +528,6 @@ function startShortcutRecording(input, action) {
   };
 
   document.addEventListener('keydown', handleKeyDown);
-}
-
-// Helper function to update character amounts
-function updateCharacterAmounts(count) {
-  const amounts = characterAmounts[count] || [0, 0, 0, 0];
-  document.getElementById('townsfolkAmount').textContent = amounts[0];
-  document.getElementById('outsiderAmount').textContent = amounts[1];
-  document.getElementById('minionAmount').textContent = amounts[2];
-  document.getElementById('demonAmount').textContent = amounts[3];
 }
 
 // Helper function to update wake up shortcut hint
@@ -673,18 +672,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     },
     () => {
-      // When we go offline, remove the YouTube player
-      const container = document.querySelector('.youtube-player-container');
+      // When we go offline, tear down the YouTube player (iframe + API object)
+      if (youtubePlayer) {
+        try {
+          youtubePlayer.destroy();
+        } catch (e) {
+          console.log('Error destroying YouTube player on offline:', e);
+        }
+        youtubePlayer = null;
+      }
+      const container = getYoutubePlayerContainer();
       if (container) {
         container.remove();
       }
-      youtubePlayer = null;
     }
   );
 
   // Initialize DOM elements
   minutesDisplay = document.getElementById('minutes');
   secondsDisplay = document.getElementById('seconds');
+  timerDisplayEl = document.querySelector('.timer-display');
   startBtn = document.getElementById('startBtn');
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   startBtn.disabled = false; // Ensure Wake Up button is enabled on load
@@ -1351,9 +1358,7 @@ function loadSettings() {
   if (playMusic) {
     initYoutubePlayer();
   } else {
-    const existingContainer = document.querySelector(
-      '.youtube-player-container'
-    );
+    const existingContainer = getYoutubePlayerContainer();
     if (existingContainer) {
       existingContainer.remove();
     }
@@ -1586,10 +1591,9 @@ function updateClocktowerPresets() {
       updateDayDisplay();
 
       // Play wake-up sound if sound effects are enabled and we're not in a wake-up countdown
-      const timerDisplay = document.querySelector('.timer-display');
       if (
         playSoundEffects &&
-        !timerDisplay.classList.contains('wake-up-countdown')
+        !timerDisplayEl.classList.contains('wake-up-countdown')
       ) {
         wakeUpSound.currentTime = 0;
         wakeUpSound.volume = soundEffectsVolume / 100;
@@ -1721,14 +1725,9 @@ function playEndSound() {
   if (!playSoundEffects) return;
 
   // Stop music if playing and not set to play at night
-  if (playMusic && !playMusicAtNight && player) {
-    player.pauseVideo();
-    const playPauseBtn = document.querySelector('.youtube-control');
-    if (playPauseBtn) {
-      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M8 5v14l11-7z"/>
-      </svg>`;
-    }
+  if (playMusic && !playMusicAtNight && youtubePlayer) {
+    youtubePlayer.pauseVideo();
+    setYoutubeControlButtonIcon(false);
   }
 
   isEndSoundPlaying = true;
@@ -1751,14 +1750,9 @@ function playEndSound() {
       isEndSoundPlaying = false;
       updateDisplay();
       // Resume music if playMusicAtNight is enabled
-      if (playMusic && playMusicAtNight && player) {
-        player.playVideo();
-        const playPauseBtn = document.querySelector('.youtube-control');
-        if (playPauseBtn) {
-          playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-          </svg>`;
-        }
+      if (playMusic && playMusicAtNight && youtubePlayer) {
+        youtubePlayer.playVideo();
+        setYoutubeControlButtonIcon(true);
       }
     },
     { once: true }
@@ -1823,8 +1817,14 @@ function startNominationsCountdown() {
 function createBeep() {
   if (!playSoundEffects) return;
 
-  const audioContext = new (globalThis.AudioContext ||
-    globalThis.webkitAudioContext)();
+  if (!beepAudioContext) {
+    beepAudioContext = new (globalThis.AudioContext ||
+      globalThis.webkitAudioContext)();
+  }
+  const audioContext = beepAudioContext;
+  if (audioContext.state === 'suspended') {
+    void audioContext.resume();
+  }
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
 
@@ -1850,9 +1850,8 @@ function updateDisplay() {
   minutesDisplay.textContent = minutes.toString().padStart(2, '0');
   secondsDisplay.textContent = seconds.toString().padStart(2, '0');
 
-  const timerDisplay = document.querySelector('.timer-display');
   const isWakeUpCountdown =
-    timerDisplay.classList.contains('wake-up-countdown');
+    timerDisplayEl.classList.contains('wake-up-countdown');
 
   // Handle the combined button states
   if (isWakeUpCountdown) {
@@ -1880,7 +1879,7 @@ function updateDisplay() {
   }
 
   // Update ARIA labels
-  timerDisplay.setAttribute(
+  timerDisplayEl.setAttribute(
     'aria-label',
     `Timer: ${minutes} minutes and ${seconds} seconds remaining`
   );
@@ -1953,14 +1952,9 @@ function startTimer() {
   if (isRunning) {
     // Pause timer
     timerUtils.stop();
-    if (playMusic && player) {
-      player.pauseVideo();
-      const playPauseBtn = document.querySelector('.youtube-control');
-      if (playPauseBtn) {
-        playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M8 5v14l11-7z"/>
-        </svg>`;
-      }
+    if (playMusic && youtubePlayer) {
+      youtubePlayer.pauseVideo();
+      setYoutubeControlButtonIcon(false);
     }
     return;
   }
@@ -1969,14 +1963,9 @@ function startTimer() {
   if (timeLeft > 0) {
     isRunning = true;
     hasReset = false; // Clear the reset state when starting timer
-    if (playMusic && player) {
-      player.playVideo();
-      const playPauseBtn = document.querySelector('.youtube-control');
-      if (playPauseBtn) {
-        playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-        </svg>`;
-      }
+    if (playMusic && youtubePlayer) {
+      youtubePlayer.playVideo();
+      setYoutubeControlButtonIcon(true);
     }
     startCountdown();
     return;
@@ -2014,23 +2003,16 @@ function resetTimer() {
   resetBtn.disabled = true;
 
   // Stop music and update play/pause button
-  if (playMusic && player) {
-    player.stopVideo();
-    const playPauseBtn = document.querySelector('.youtube-control');
-    if (playPauseBtn) {
-      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M8 5v14l11-7z"/>
-      </svg>`;
-    }
+  if (playMusic && youtubePlayer) {
+    youtubePlayer.stopVideo();
+    setYoutubeControlButtonIcon(false);
   }
 
   // Reset day display to normal state
   updateDayDisplay();
 
   // Clear wake-up countdown state
-  document
-    .querySelector('.timer-display')
-    .classList.remove('wake-up-countdown');
+  timerDisplayEl.classList.remove('wake-up-countdown');
 
   // Clear active state from preset buttons
   timerUtils.updateButtonStates(document.querySelectorAll('.clocktower-btn'));
@@ -2126,8 +2108,7 @@ function playWakeUpSound() {
   }
 
   // Start countdown display
-  const timerDisplay = document.querySelector('.timer-display');
-  timerDisplay.classList.add('wake-up-countdown');
+  timerDisplayEl.classList.add('wake-up-countdown');
 
   // Show dawn state for current day
   updateDayDisplay('dawn');
@@ -2202,15 +2183,12 @@ function startCountdown() {
   const dayInfo = document.querySelector('.day-display');
   const isDusk = dayInfo?.classList?.contains('dusk');
   if (playMusic && !isDusk) {
-    if (player && player.getPlayerState() !== YT.PlayerState.PLAYING) {
-      player.playVideo();
-      // Update play/pause button state
-      const playPauseBtn = document.querySelector('.youtube-control');
-      if (playPauseBtn) {
-        playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-        </svg>`;
-      }
+    if (
+      youtubePlayer &&
+      youtubePlayer.getPlayerState() !== YT.PlayerState.PLAYING
+    ) {
+      youtubePlayer.playVideo();
+      setYoutubeControlButtonIcon(true);
     }
   }
 
@@ -2222,15 +2200,9 @@ function startCountdown() {
       clearInterval(timerId);
       playEndSound();
       isRunning = false;
-      if (playMusic && player?.pauseVideo) {
-        player.pauseVideo();
-        // Update play/pause button state
-        const playPauseBtn = document.querySelector('.youtube-control');
-        if (playPauseBtn) {
-          playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
-          </svg>`;
-        }
+      if (playMusic && youtubePlayer?.pauseVideo) {
+        youtubePlayer.pauseVideo();
+        setYoutubeControlButtonIcon(false);
       }
       if (currentDay !== null) {
         updateDayDisplay('dusk');
@@ -2434,7 +2406,6 @@ document.getElementById('gamePace').addEventListener('change', (e) => {
 
 // YouTube player functionality
 let youtubeApiReady = false;
-let player = null;
 
 // Load YouTube IFrame API
 function loadYoutubeApi() {
@@ -2467,7 +2438,7 @@ globalThis.onYouTubeIframeAPIReady = function () {
 
 function createYoutubePlayerContainer() {
   const container = document.createElement('div');
-  container.className = 'youtube-player-container';
+  container.className = YOUTUBE_PLAYER_CONTAINER_CLASS;
 
   const playlistNameSpan = document.createElement('span');
   playlistNameSpan.className = 'playlist-name';
@@ -2497,21 +2468,15 @@ function createYoutubePlayerContainer() {
 
   const playPauseBtn = document.createElement('button');
   playPauseBtn.className = 'youtube-control';
-  playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-    <path d="M8 5v14l11-7z"/>
-  </svg>`;
+  playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
   playPauseBtn.addEventListener('click', () => {
-    if (!player) return;
-    if (player.getPlayerState() === YT.PlayerState.PLAYING) {
-      player.pauseVideo();
-      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M8 5v14l11-7z"/>
-      </svg>`;
+    if (!youtubePlayer) return;
+    if (youtubePlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+      youtubePlayer.pauseVideo();
+      playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
     } else {
-      player.playVideo();
-      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-      </svg>`;
+      youtubePlayer.playVideo();
+      playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PAUSE;
     }
   });
   container.appendChild(playPauseBtn);
@@ -2533,19 +2498,16 @@ function createYoutubePlayerContainer() {
 async function createYoutubePlayer() {
   try {
     // Remove existing player and container
-    if (player) {
+    if (youtubePlayer) {
       try {
-        player.destroy();
+        youtubePlayer.destroy();
       } catch (e) {
         console.log('Error destroying player:', e);
       }
-      player = null;
       youtubePlayer = null;
     }
 
-    const existingContainer = document.querySelector(
-      '.youtube-player-container'
-    );
+    const existingContainer = getYoutubePlayerContainer();
     if (existingContainer) {
       existingContainer.remove();
     }
@@ -2567,8 +2529,7 @@ async function createYoutubePlayer() {
       updatePlaylistBadge('Custom');
     }
 
-    // Create new player
-    player = new YT.Player('youtube-player', {
+    youtubePlayer = new YT.Player('youtube-player', {
       height: '1',
       width: '1',
       playerVars: {
@@ -2591,8 +2552,6 @@ async function createYoutubePlayer() {
         onError: onPlayerError,
       },
     });
-    // Keep legacy handle in sync with the active player instance.
-    youtubePlayer = player;
   } catch (error) {
     console.error('Error initializing YouTube player:', error);
     updatePlaylistBadge('');
@@ -2624,16 +2583,10 @@ function onPlayerReady(event) {
 }
 
 function onPlayerStateChange(event) {
-  const playPauseBtn = document.querySelector('.youtube-control');
-
   if (event.data === YT.PlayerState.PLAYING) {
-    if (playPauseBtn) {
-      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-      </svg>`;
-    }
+    setYoutubeControlButtonIcon(true);
     // Get and display the current track title
-    const title = player.getVideoData().title;
+    const title = event.target.getVideoData()?.title;
     if (title) {
       updatePlaylistBadge(title);
     }
@@ -2643,11 +2596,7 @@ function onPlayerStateChange(event) {
     event.data === YT.PlayerState.PAUSED ||
     event.data === YT.PlayerState.CUED
   ) {
-    if (playPauseBtn) {
-      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M8 5v14l11-7z"/>
-      </svg>`;
-    }
+    setYoutubeControlButtonIcon(false);
   } else if (event.data === YT.PlayerState.ENDED) {
     const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
     if (playlistId) {
@@ -2682,23 +2631,6 @@ function updateYoutubePlaylist() {
 
     // If music is enabled, update the player immediately
     if (playMusic) {
-      // Always destroy and recreate the player for URL changes
-      if (youtubePlayer) {
-        try {
-          youtubePlayer.destroy();
-        } catch (e) {
-          console.log('Error destroying player:', e);
-        }
-        youtubePlayer = null;
-      }
-
-      // Remove the container
-      const container = document.querySelector('.youtube-player-container');
-      if (container) {
-        container.remove();
-      }
-
-      // Create new player with updated URL
       createYoutubePlayer();
     }
   } else {
@@ -2747,13 +2679,19 @@ function updateMusicPlayback() {
   if (playMusic) {
     initYoutubePlayer();
   } else {
-    // Stop and remove the player
     youtubeUtils.stop();
-    const container = document.querySelector('.youtube-player-container');
+    if (youtubePlayer) {
+      try {
+        youtubePlayer.destroy();
+      } catch (e) {
+        console.log('Error destroying YouTube player:', e);
+      }
+      youtubePlayer = null;
+    }
+    const container = getYoutubePlayerContainer();
     if (container) {
       container.remove();
     }
-    youtubePlayer = null;
   }
   saveSettings();
 }
@@ -2764,8 +2702,8 @@ function updateYoutubeVolume() {
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
-  if (player?.setVolume) {
-    player.setVolume(youtubeVolume);
+  if (youtubePlayer?.setVolume) {
+    youtubePlayer.setVolume(youtubeVolume);
   }
   // Update volume info display
   const volumeInfo = document.querySelector('.volume-info');
@@ -2957,6 +2895,7 @@ function showWhatsNew(lastVersion) {
   content.innerHTML = versions
     .map(([version, data]) => {
       const features = data.changes.features || [];
+      const fixes = data.changes.fixes || [];
       const improvements = data.changes.improvements || [];
 
       return `
@@ -2977,6 +2916,18 @@ function showWhatsNew(lastVersion) {
             <h3>New Features</h3>
             <ul class="features-list">
               ${features.map((feature) => `<li>${feature}</li>`).join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
+        ${
+          fixes.length > 0
+            ? `
+          <div class="changes-section">
+            <h3>Fixes</h3>
+            <ul class="fixes-list">
+              ${fixes.map((fix) => `<li>${fix}</li>`).join('')}
             </ul>
           </div>
         `
@@ -3030,6 +2981,7 @@ function showChangeHistory() {
   let html = '';
   versions.forEach(([version, data], index) => {
     const features = data.changes.features || [];
+    const fixes = data.changes.fixes || [];
     const improvements = data.changes.improvements || [];
 
     html += `
@@ -3045,6 +2997,18 @@ function showChangeHistory() {
             <h3>New Features</h3>
             <ul class="features-list">
               ${features.map((feature) => `<li>${feature}</li>`).join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
+        ${
+          fixes.length > 0
+            ? `
+          <div class="changes-section">
+            <h3>Fixes</h3>
+            <ul class="fixes-list">
+              ${fixes.map((fix) => `<li>${fix}</li>`).join('')}
             </ul>
           </div>
         `
