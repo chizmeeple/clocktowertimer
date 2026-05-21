@@ -138,10 +138,13 @@
 
     <div class="container">
       <div class="timer-display" role="timer" aria-live="polite">
-        <output class="day-display" aria-label="Current game day">
-          <span id="currentDay">-</span>
-          <div class="pace-indicator">Normal</div>
-        </output>
+        <div class="day-info">
+          <output class="day-display" aria-label="Current game day">
+            <span id="currentDay">-</span>
+            <div class="pace-indicator">Normal</div>
+          </output>
+          <time id="currentTime" class="current-time" aria-label="Current time"></time>
+        </div>
         <div class="time" aria-label="Timer display">
           <span id="minutes" aria-label="minutes">00</span>:<span
             id="seconds"
@@ -158,12 +161,21 @@
         >
           Nominations open in <span id="nominationsCountdownSeconds">0</span>s
         </output>
-        <button id="startBtn" aria-label="Start or pause timer">
-          <span class="button-content">
-            <span class="button-text">⏰ Wake Up!</span>
-            <span id="wakeUpShortcutHint" class="shortcut-hint"></span>
-          </span>
-        </button>
+        <div class="timer-actions">
+          <button id="startBtn" aria-label="Start or pause timer">
+            <span class="button-content">
+              <span class="button-text">⏰ Wake Up!</span>
+              <span id="wakeUpShortcutHint" class="shortcut-hint"></span>
+            </span>
+          </button>
+          <output
+            id="sessionCountdown"
+            class="session-countdown"
+            aria-live="polite"
+            aria-label="Time until session end"
+            hidden
+          ></output>
+        </div>
       </div>
       <fieldset class="controls">
         <legend>Timer controls</legend>
@@ -362,6 +374,7 @@
         <div class="settings-tabs">
           <button class="tab-button active" data-tab="game">Game</button>
           <button class="tab-button" data-tab="display">Display</button>
+          <button class="tab-button" data-tab="time">Time</button>
           <button class="tab-button" data-tab="effects">Effects</button>
           <button class="tab-button" data-tab="music">Music</button>
           <button class="tab-button" data-tab="shortcuts">Shortcuts</button>
@@ -468,6 +481,54 @@
                   <option value="circle-of-people">Circle of People</option>
                   <option value="large-clock-face">Large Clock Face</option>
                 </select>
+              </label>
+            </div>
+          </div>
+
+          <!-- Time Settings Panel -->
+          <div class="settings-panel" data-panel="time">
+            <div class="setting-group">
+              <h3>Clock Display</h3>
+              <label>
+                <span>Show current time</span>
+                <input type="checkbox" id="showCurrentTime" checked />
+              </label>
+              <label>
+                <span>24-hour (15:06)</span>
+                <input
+                  type="radio"
+                  name="clockFormat"
+                  id="clockFormat24"
+                  value="24"
+                  checked
+                />
+              </label>
+              <label>
+                <span>12-hour (3:06 PM)</span>
+                <input
+                  type="radio"
+                  name="clockFormat"
+                  id="clockFormat12"
+                  value="12"
+                />
+              </label>
+            </div>
+            <div class="setting-group">
+              <h3>Session Countdown</h3>
+              <label>
+                <span>Show session countdown</span>
+                <input type="checkbox" id="showSessionCountdown" />
+              </label>
+              <label id="sessionEndTimeLabel">
+                <span>Session end time</span>
+                <div class="session-end-time-inputs">
+                  <select id="sessionEndHour" class="session-end-select"></select>
+                  <span class="session-end-separator">:</span>
+                  <select
+                    id="sessionEndMinute"
+                    class="session-end-select"
+                  ></select>
+                </div>
               </label>
             </div>
           </div>

@@ -1,7 +1,17 @@
 // Version tracking
-export const APP_VERSION = '1.0.28';
+export const APP_VERSION = '1.0.29';
 
 export const CHANGELOG = {
+  '1.0.29': {
+    date: '2026-05-21',
+    changes: {
+      features: [
+        'Show the current time underneath the Day display on the timer screen',
+        'Add Time settings tab to show or hide the clock and choose 12-hour or 24-hour format',
+        'Add optional session countdown under Wake Up with configurable end time',
+      ],
+    },
+  },
   '1.0.28': {
     date: '2026-04-02',
     changes: {

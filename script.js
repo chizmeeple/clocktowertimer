@@ -39,6 +39,169 @@ let minutesDisplay,
   changeHistoryDialog,
   closeChangeHistoryBtn;
 
+let updateCurrentTimeDisplay = () => {};
+let updateSessionCountdownDisplay = () => {};
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_MINUTE_MS = 60 * 1000;
+const SESSION_COUNTDOWN_HOUR_THRESHOLD_MS = 90 * ONE_MINUTE_MS;
+
+function getSessionEndDate(now, hour, minute) {
+  const end = new Date(now);
+  end.setHours(hour, minute, 0, 0);
+
+  if (end <= now) {
+    if (hour < 12 && now.getHours() >= 12) {
+      end.setDate(end.getDate() + 1);
+    } else {
+      return null;
+    }
+  }
+
+  return end;
+}
+
+function formatSessionCountdownText(remainingMs) {
+  if (remainingMs <= 0) {
+    return { text: "TIME'S UP!", phase: 'times-up' };
+  }
+
+  if (remainingMs >= SESSION_COUNTDOWN_HOUR_THRESHOLD_MS) {
+    const hours = Math.floor(remainingMs / ONE_HOUR_MS);
+    return {
+      text: `${hours} hour${hours === 1 ? '' : 's'} remaining`,
+      phase: 'hours',
+    };
+  }
+
+  const minutes = Math.max(1, Math.ceil(remainingMs / ONE_MINUTE_MS));
+  return {
+    text: `${minutes} minute${minutes === 1 ? '' : 's'} remaining`,
+    phase: 'minutes',
+  };
+}
+
+function initSessionEndTimeSelectors() {
+  const hourSelect = document.getElementById('sessionEndHour');
+  const minuteSelect = document.getElementById('sessionEndMinute');
+  if (!hourSelect || !minuteSelect || hourSelect.options.length > 0) return;
+
+  for (let hour = 0; hour < 24; hour += 1) {
+    const option = document.createElement('option');
+    option.value = hour;
+    option.textContent = String(hour).padStart(2, '0');
+    hourSelect.appendChild(option);
+  }
+
+  for (let minute = 0; minute < 60; minute += 1) {
+    const option = document.createElement('option');
+    option.value = minute;
+    option.textContent = String(minute).padStart(2, '0');
+    minuteSelect.appendChild(option);
+  }
+}
+
+function updateTimeSettingsUi() {
+  const showCurrentTimeInput = document.getElementById('showCurrentTime');
+  if (showCurrentTimeInput) {
+    showCurrentTimeInput.checked = showCurrentTime;
+  }
+
+  const currentTimeEl = document.getElementById('currentTime');
+  if (currentTimeEl) {
+    currentTimeEl.hidden = !showCurrentTime;
+  }
+
+  document
+    .querySelectorAll('label:has(input[name="clockFormat"])')
+    .forEach((label) => {
+      label.classList.toggle('inactive', !showCurrentTime);
+      const input = label.querySelector('input');
+      if (input) {
+        input.disabled = !showCurrentTime;
+      }
+    });
+
+  const showSessionCountdownInput = document.getElementById(
+    'showSessionCountdown'
+  );
+  if (showSessionCountdownInput) {
+    showSessionCountdownInput.checked = showSessionCountdown;
+  }
+
+  const sessionEndHourSelect = document.getElementById('sessionEndHour');
+  const sessionEndMinuteSelect = document.getElementById('sessionEndMinute');
+  if (sessionEndHourSelect) {
+    sessionEndHourSelect.value = String(sessionEndHour);
+    sessionEndHourSelect.disabled = !showSessionCountdown;
+  }
+  if (sessionEndMinuteSelect) {
+    sessionEndMinuteSelect.value = String(sessionEndMinute);
+    sessionEndMinuteSelect.disabled = !showSessionCountdown;
+  }
+
+  const sessionEndTimeLabel = document.getElementById('sessionEndTimeLabel');
+  if (sessionEndTimeLabel) {
+    sessionEndTimeLabel.classList.toggle('inactive', !showSessionCountdown);
+  }
+
+  const sessionCountdownEl = document.getElementById('sessionCountdown');
+  if (sessionCountdownEl) {
+    sessionCountdownEl.hidden = !showSessionCountdown;
+  }
+
+  if (showCurrentTime) {
+    updateCurrentTimeDisplay();
+  }
+  if (showSessionCountdown) {
+    updateSessionCountdownDisplay();
+  }
+}
+
+function initTimeDisplays() {
+  initSessionEndTimeSelectors();
+
+  const currentTimeEl = document.getElementById('currentTime');
+  const sessionCountdownEl = document.getElementById('sessionCountdown');
+
+  updateCurrentTimeDisplay = () => {
+    if (!currentTimeEl) return;
+    const now = new Date();
+    currentTimeEl.dateTime = now.toISOString();
+    currentTimeEl.textContent = now.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: clockFormat === '12',
+    });
+  };
+
+  updateSessionCountdownDisplay = () => {
+    if (!sessionCountdownEl) return;
+
+    const now = new Date();
+    const sessionEnd = getSessionEndDate(now, sessionEndHour, sessionEndMinute);
+    const remainingMs = sessionEnd ? sessionEnd - now : 0;
+    const { text, phase } = formatSessionCountdownText(remainingMs);
+
+    sessionCountdownEl.textContent = text;
+    sessionCountdownEl.setAttribute('aria-label', text);
+    sessionCountdownEl.classList.toggle('final-hour', phase === 'minutes');
+    sessionCountdownEl.classList.toggle('times-up', phase === 'times-up');
+  };
+
+  const tickTimeDisplays = () => {
+    if (showCurrentTime) {
+      updateCurrentTimeDisplay();
+    }
+    if (showSessionCountdown) {
+      updateSessionCountdownDisplay();
+    }
+  };
+
+  tickTimeDisplays();
+  setInterval(tickTimeDisplays, 1000);
+}
+
 // Utility functions
 const connectivityUtils = {
   isOnline: () => navigator.onLine,
@@ -400,6 +563,11 @@ let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
 let showPlayerCountQr = false; // Optional QR linking to count.arcane-scripts.net
+let showCurrentTime = true; // Show wall clock under day display
+let clockFormat = '24'; // '12' or '24'
+let showSessionCountdown = false;
+let sessionEndHour = 23;
+let sessionEndMinute = 0;
 let youtubePlayer = null;
 let endOfDaySound = 'cathedral-bell-v2.mp3'; // Default end of day sound
 let wakeUpSoundFile = 'chisel-bell-01-loud-v2.mp3'; // Default wake up sound
@@ -695,6 +863,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   startBtn = document.getElementById('startBtn');
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   startBtn.disabled = false; // Ensure Wake Up button is enabled on load
+  initTimeDisplays();
   resetBtn = document.getElementById('resetBtn');
   resetBtn.textContent = BUTTON_LABELS.RESET;
   resetBtn.disabled = true; // Reset button should be disabled initially
@@ -898,6 +1067,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       .getElementById('playerCountQrWrapper')
       .classList.toggle('visible', showPlayerCountQr);
     saveSettings();
+  });
+  document.getElementById('showCurrentTime').addEventListener('change', (e) => {
+    showCurrentTime = e.target.checked;
+    saveSettings();
+    updateTimeSettingsUi();
+  });
+  document
+    .getElementById('showSessionCountdown')
+    .addEventListener('change', (e) => {
+      showSessionCountdown = e.target.checked;
+      saveSettings();
+      updateTimeSettingsUi();
+    });
+  document.getElementById('sessionEndHour').addEventListener('change', (e) => {
+    sessionEndHour = Number.parseInt(e.target.value, 10);
+    saveSettings();
+    updateSessionCountdownDisplay();
+  });
+  document.getElementById('sessionEndMinute').addEventListener('change', (e) => {
+    sessionEndMinute = Number.parseInt(e.target.value, 10);
+    saveSettings();
+    updateSessionCountdownDisplay();
+  });
+  document.querySelectorAll('input[name="clockFormat"]').forEach((input) => {
+    input.addEventListener('change', (e) => {
+      if (!e.target.checked) return;
+      clockFormat = e.target.value;
+      saveSettings();
+      updateCurrentTimeDisplay();
+    });
   });
 
   // Add keyboard shortcuts event listeners
@@ -1176,6 +1375,22 @@ function applyParsedSettings(settings) {
   keepDisplayOn =
     settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
   showPlayerCountQr = settings.showPlayerCountQr === true;
+  showCurrentTime =
+    settings.showCurrentTime === undefined ? true : settings.showCurrentTime;
+  clockFormat = settings.clockFormat === '12' ? '12' : '24';
+  showSessionCountdown = settings.showSessionCountdown === true;
+  sessionEndHour =
+    Number.isInteger(settings.sessionEndHour) &&
+    settings.sessionEndHour >= 0 &&
+    settings.sessionEndHour <= 23
+      ? settings.sessionEndHour
+      : 23;
+  sessionEndMinute =
+    Number.isInteger(settings.sessionEndMinute) &&
+    settings.sessionEndMinute >= 0 &&
+    settings.sessionEndMinute <= 59
+      ? settings.sessionEndMinute
+      : 0;
   youtubeVolume = settings.youtubeVolume || 15;
   backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
   youtubePlaylistUrl = settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
@@ -1247,6 +1462,10 @@ function applySettingsToForm() {
   document.getElementById('musicVolume').value = youtubeVolume;
   document.getElementById('soundEffectsVolume').value = soundEffectsVolume;
   document.getElementById('backgroundTheme').value = backgroundTheme;
+  document.querySelector(
+    `input[name="clockFormat"][value="${clockFormat}"]`
+  ).checked = true;
+  updateTimeSettingsUi();
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
@@ -1423,6 +1642,11 @@ function saveSettings() {
     soundEffectsVolume,
     keepDisplayOn,
     showPlayerCountQr,
+    showCurrentTime,
+    clockFormat,
+    showSessionCountdown,
+    sessionEndHour,
+    sessionEndMinute,
     youtubeVolume,
     youtubePlaylistUrl,
     backgroundTheme,

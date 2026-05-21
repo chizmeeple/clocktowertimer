@@ -478,12 +478,71 @@ html.fonts-ready .timer-display .time {
   background-color: var(--colour-accent);
 }
 
-#startBtn {
+.timer-actions {
   position: absolute;
   top: 50%;
   right: 0.5rem;
   transform: translateY(-50%);
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.day-info {
+  position: absolute;
+  top: 50%;
+  left: 0.5rem;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 120px;
+}
+
+.current-time {
+  font-family: 'Azeret Mono', ui-monospace, 'Cascadia Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  line-height: 1;
+  width: 100%;
+  text-align: center;
+}
+
+.session-countdown {
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  line-height: 1.2;
+  min-width: 140px;
+  text-align: center;
+}
+
+.session-countdown[hidden] {
+  display: none;
+}
+
+.session-countdown.final-hour {
+  color: var(--colour-gold);
+}
+
+.session-countdown.times-up {
+  color: #ff6b6b;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+#startBtn {
+  position: static;
+  transform: none;
   background-color: var(--colour-accent);
   color: white;
   padding: 1.5rem 1rem;
@@ -547,18 +606,18 @@ html.fonts-ready .timer-display .time {
 
 #startBtn:hover {
   background-color: var(--colour-accent-hover);
-  transform: translateY(calc(-50% + 1px));
+  transform: translateY(1px);
 }
 
 #startBtn:active {
   background-color: var(--colour-accent-hover);
-  transform: translateY(calc(-50% + 2px)) scale(0.98);
+  transform: translateY(2px) scale(0.98);
 }
 
 #startBtn:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
-  transform: translateY(-50%);
+  transform: none;
 }
 
 #resetBtn {
@@ -1132,10 +1191,8 @@ body[data-pace='blitz'] .info-value {
 }
 
 .day-display {
-  position: absolute;
-  top: 50%;
-  left: 0.5rem;
-  transform: translateY(-50%);
+  position: static;
+  transform: none;
   z-index: 2;
   font-size: 1.25rem;
   font-weight: 700;
@@ -1689,6 +1746,40 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
+.session-end-time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.session-end-select {
+  min-width: 4.5rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  font-family: 'Azeret Mono', ui-monospace, 'Cascadia Mono', monospace;
+  border: 1px solid #4a4a4a;
+  border-radius: var(--radius-md);
+  background-color: var(--colour-button-secondary);
+  color: white;
+  cursor: pointer;
+}
+
+.session-end-select:hover {
+  background-color: var(--colour-button-secondary-hover);
+}
+
+.session-end-select:focus {
+  outline: none;
+  border-color: var(--colour-accent);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.session-end-separator {
+  color: rgba(255, 255, 255, 0.8);
+  font-family: 'Azeret Mono', ui-monospace, 'Cascadia Mono', monospace;
+  font-weight: 600;
+}
+
 .game-pace-display {
   font-size: 1rem;
   color: var(--colour-gold);
@@ -1913,12 +2004,16 @@ button:disabled {
 }
 
 /* Restore checkbox styling */
-.setting-group input[type='checkbox'] {
+.setting-group input[type='checkbox'],
+.setting-group input[type='radio'] {
   width: 24px;
   height: 24px;
   accent-color: var(--colour-accent);
   cursor: pointer;
   position: relative;
+}
+
+.setting-group input[type='checkbox'] {
   border-radius: var(--radius-md);
 }
 
