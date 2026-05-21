@@ -41,6 +41,32 @@ let minutesDisplay,
 
 let updateCurrentTimeDisplay = () => {};
 
+function updateClockSettingsUi() {
+  const showCurrentTimeInput = document.getElementById('showCurrentTime');
+  if (showCurrentTimeInput) {
+    showCurrentTimeInput.checked = showCurrentTime;
+  }
+
+  const currentTimeEl = document.getElementById('currentTime');
+  if (currentTimeEl) {
+    currentTimeEl.hidden = !showCurrentTime;
+  }
+
+  document
+    .querySelectorAll('label:has(input[name="clockFormat"])')
+    .forEach((label) => {
+      label.classList.toggle('inactive', !showCurrentTime);
+      const input = label.querySelector('input');
+      if (input) {
+        input.disabled = !showCurrentTime;
+      }
+    });
+
+  if (showCurrentTime) {
+    updateCurrentTimeDisplay();
+  }
+}
+
 function initCurrentTimeDisplay() {
   const currentTimeEl = document.getElementById('currentTime');
   if (!currentTimeEl) return;
@@ -420,6 +446,7 @@ let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
 let showPlayerCountQr = false; // Optional QR linking to count.arcane-scripts.net
+let showCurrentTime = true; // Show wall clock under Wake Up button
 let clockFormat = '24'; // '12' or '24'
 let youtubePlayer = null;
 let endOfDaySound = 'cathedral-bell-v2.mp3'; // Default end of day sound
@@ -921,6 +948,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       .classList.toggle('visible', showPlayerCountQr);
     saveSettings();
   });
+  document.getElementById('showCurrentTime').addEventListener('change', (e) => {
+    showCurrentTime = e.target.checked;
+    saveSettings();
+    updateClockSettingsUi();
+  });
   document.querySelectorAll('input[name="clockFormat"]').forEach((input) => {
     input.addEventListener('change', (e) => {
       if (!e.target.checked) return;
@@ -1206,6 +1238,8 @@ function applyParsedSettings(settings) {
   keepDisplayOn =
     settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
   showPlayerCountQr = settings.showPlayerCountQr === true;
+  showCurrentTime =
+    settings.showCurrentTime === undefined ? true : settings.showCurrentTime;
   clockFormat = settings.clockFormat === '12' ? '12' : '24';
   youtubeVolume = settings.youtubeVolume || 15;
   backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
@@ -1281,7 +1315,7 @@ function applySettingsToForm() {
   document.querySelector(
     `input[name="clockFormat"][value="${clockFormat}"]`
   ).checked = true;
-  updateCurrentTimeDisplay();
+  updateClockSettingsUi();
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
@@ -1458,6 +1492,7 @@ function saveSettings() {
     soundEffectsVolume,
     keepDisplayOn,
     showPlayerCountQr,
+    showCurrentTime,
     clockFormat,
     youtubeVolume,
     youtubePlaylistUrl,
