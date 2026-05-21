@@ -6,8 +6,9 @@ export const CHANGELOG = {
     date: '2026-05-21',
     changes: {
       features: [
-        'Show the current time underneath the Wake Up button on the timer screen',
+        'Show the current time underneath the Day display on the timer screen',
         'Add Time settings tab to show or hide the clock and choose 12-hour or 24-hour format',
+        'Add optional session countdown under Wake Up with configurable end time',
       ],
     },
   },

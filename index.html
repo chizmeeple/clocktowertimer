@@ -138,10 +138,13 @@
 
     <div class="container">
       <div class="timer-display" role="timer" aria-live="polite">
-        <output class="day-display" aria-label="Current game day">
-          <span id="currentDay">-</span>
-          <div class="pace-indicator">Normal</div>
-        </output>
+        <div class="day-info">
+          <output class="day-display" aria-label="Current game day">
+            <span id="currentDay">-</span>
+            <div class="pace-indicator">Normal</div>
+          </output>
+          <time id="currentTime" class="current-time" aria-label="Current time"></time>
+        </div>
         <div class="time" aria-label="Timer display">
           <span id="minutes" aria-label="minutes">00</span>:<span
             id="seconds"
@@ -165,7 +168,13 @@
               <span id="wakeUpShortcutHint" class="shortcut-hint"></span>
             </span>
           </button>
-          <time id="currentTime" class="current-time" aria-label="Current time"></time>
+          <output
+            id="sessionCountdown"
+            class="session-countdown"
+            aria-live="polite"
+            aria-label="Time until session end"
+            hidden
+          ></output>
         </div>
       </div>
       <fieldset class="controls">
@@ -502,6 +511,24 @@
                   id="clockFormat12"
                   value="12"
                 />
+              </label>
+            </div>
+            <div class="setting-group">
+              <h3>Session Countdown</h3>
+              <label>
+                <span>Show session countdown</span>
+                <input type="checkbox" id="showSessionCountdown" />
+              </label>
+              <label id="sessionEndTimeLabel">
+                <span>Session end time</span>
+                <div class="session-end-time-inputs">
+                  <select id="sessionEndHour" class="session-end-select"></select>
+                  <span class="session-end-separator">:</span>
+                  <select
+                    id="sessionEndMinute"
+                    class="session-end-select"
+                  ></select>
+                </div>
               </label>
             </div>
           </div>
