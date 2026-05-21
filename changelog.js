@@ -1,7 +1,16 @@
 // Version tracking
-export const APP_VERSION = '1.0.29';
+export const APP_VERSION = '1.0.30';
 
 export const CHANGELOG = {
+  '1.0.30': {
+    date: '2026-05-21',
+    changes: {
+      improvements: [
+        'YouTube music: lazy-load the iframe only when playback is needed, and unload it during dusk when “Play at night” is off — reduces memory use on low-RAM devices such as Fire TV without changing timer or music behaviour',
+        'YouTube player: shared destroy/reload helpers, remove duplicate initialisation and listeners, and minor clean-up (shuffle once on ready, skip unused playlist API fetch, conditional clock interval)',
+      ],
+    },
+  },
   '1.0.29': {
     date: '2026-05-21',
     changes: {
