@@ -478,12 +478,33 @@ html.fonts-ready .timer-display .time {
   background-color: var(--colour-accent);
 }
 
-#startBtn {
+.timer-actions {
   position: absolute;
   top: 50%;
   right: 0.5rem;
   transform: translateY(-50%);
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.current-time {
+  font-family: 'Azeret Mono', ui-monospace, 'Cascadia Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  line-height: 1;
+  min-width: 140px;
+  text-align: center;
+}
+
+#startBtn {
+  position: static;
+  transform: none;
   background-color: var(--colour-accent);
   color: white;
   padding: 1.5rem 1rem;
@@ -547,18 +568,18 @@ html.fonts-ready .timer-display .time {
 
 #startBtn:hover {
   background-color: var(--colour-accent-hover);
-  transform: translateY(calc(-50% + 1px));
+  transform: translateY(1px);
 }
 
 #startBtn:active {
   background-color: var(--colour-accent-hover);
-  transform: translateY(calc(-50% + 2px)) scale(0.98);
+  transform: translateY(2px) scale(0.98);
 }
 
 #startBtn:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
-  transform: translateY(-50%);
+  transform: none;
 }
 
 #resetBtn {

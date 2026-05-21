@@ -158,12 +158,15 @@
         >
           Nominations open in <span id="nominationsCountdownSeconds">0</span>s
         </output>
-        <button id="startBtn" aria-label="Start or pause timer">
-          <span class="button-content">
-            <span class="button-text">⏰ Wake Up!</span>
-            <span id="wakeUpShortcutHint" class="shortcut-hint"></span>
-          </span>
-        </button>
+        <div class="timer-actions">
+          <button id="startBtn" aria-label="Start or pause timer">
+            <span class="button-content">
+              <span class="button-text">⏰ Wake Up!</span>
+              <span id="wakeUpShortcutHint" class="shortcut-hint"></span>
+            </span>
+          </button>
+          <time id="currentTime" class="current-time" aria-label="Current time"></time>
+        </div>
       </div>
       <fieldset class="controls">
         <legend>Timer controls</legend>

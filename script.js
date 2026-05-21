@@ -39,6 +39,24 @@ let minutesDisplay,
   changeHistoryDialog,
   closeChangeHistoryBtn;
 
+function initCurrentTimeDisplay() {
+  const currentTimeEl = document.getElementById('currentTime');
+  if (!currentTimeEl) return;
+
+  const updateCurrentTime = () => {
+    const now = new Date();
+    currentTimeEl.dateTime = now.toISOString();
+    currentTimeEl.textContent = now.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  updateCurrentTime();
+  setInterval(updateCurrentTime, 1000);
+}
+
 // Utility functions
 const connectivityUtils = {
   isOnline: () => navigator.onLine,
@@ -695,6 +713,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   startBtn = document.getElementById('startBtn');
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   startBtn.disabled = false; // Ensure Wake Up button is enabled on load
+  initCurrentTimeDisplay();
   resetBtn = document.getElementById('resetBtn');
   resetBtn.textContent = BUTTON_LABELS.RESET;
   resetBtn.disabled = true; // Reset button should be disabled initially

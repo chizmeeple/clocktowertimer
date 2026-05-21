@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.28';
+export const APP_VERSION = '1.0.29';
 
 export const CHANGELOG = {
+  '1.0.29': {
+    date: '2026-05-21',
+    changes: {
+      features: [
+        'Show the current time underneath the Wake Up button on the timer screen (24-hour clock)',
+      ],
+    },
+  },
   '1.0.28': {
     date: '2026-04-02',
     changes: {
