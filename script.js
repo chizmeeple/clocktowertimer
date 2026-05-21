@@ -39,22 +39,24 @@ let minutesDisplay,
   changeHistoryDialog,
   closeChangeHistoryBtn;
 
+let updateCurrentTimeDisplay = () => {};
+
 function initCurrentTimeDisplay() {
   const currentTimeEl = document.getElementById('currentTime');
   if (!currentTimeEl) return;
 
-  const updateCurrentTime = () => {
+  updateCurrentTimeDisplay = () => {
     const now = new Date();
     currentTimeEl.dateTime = now.toISOString();
     currentTimeEl.textContent = now.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false,
+      hour12: clockFormat === '12',
     });
   };
 
-  updateCurrentTime();
-  setInterval(updateCurrentTime, 1000);
+  updateCurrentTimeDisplay();
+  setInterval(updateCurrentTimeDisplay, 1000);
 }
 
 // Utility functions
@@ -418,6 +420,7 @@ let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
 let showPlayerCountQr = false; // Optional QR linking to count.arcane-scripts.net
+let clockFormat = '24'; // '12' or '24'
 let youtubePlayer = null;
 let endOfDaySound = 'cathedral-bell-v2.mp3'; // Default end of day sound
 let wakeUpSoundFile = 'chisel-bell-01-loud-v2.mp3'; // Default wake up sound
@@ -918,6 +921,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       .classList.toggle('visible', showPlayerCountQr);
     saveSettings();
   });
+  document.querySelectorAll('input[name="clockFormat"]').forEach((input) => {
+    input.addEventListener('change', (e) => {
+      if (!e.target.checked) return;
+      clockFormat = e.target.value;
+      saveSettings();
+      updateCurrentTimeDisplay();
+    });
+  });
 
   // Add keyboard shortcuts event listeners
   document.querySelectorAll('.shortcut-input').forEach((input) => {
@@ -1195,6 +1206,7 @@ function applyParsedSettings(settings) {
   keepDisplayOn =
     settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
   showPlayerCountQr = settings.showPlayerCountQr === true;
+  clockFormat = settings.clockFormat === '12' ? '12' : '24';
   youtubeVolume = settings.youtubeVolume || 15;
   backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
   youtubePlaylistUrl = settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
@@ -1266,6 +1278,10 @@ function applySettingsToForm() {
   document.getElementById('musicVolume').value = youtubeVolume;
   document.getElementById('soundEffectsVolume').value = soundEffectsVolume;
   document.getElementById('backgroundTheme').value = backgroundTheme;
+  document.querySelector(
+    `input[name="clockFormat"][value="${clockFormat}"]`
+  ).checked = true;
+  updateCurrentTimeDisplay();
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
@@ -1442,6 +1458,7 @@ function saveSettings() {
     soundEffectsVolume,
     keepDisplayOn,
     showPlayerCountQr,
+    clockFormat,
     youtubeVolume,
     youtubePlaylistUrl,
     backgroundTheme,

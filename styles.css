@@ -1934,12 +1934,16 @@ button:disabled {
 }
 
 /* Restore checkbox styling */
-.setting-group input[type='checkbox'] {
+.setting-group input[type='checkbox'],
+.setting-group input[type='radio'] {
   width: 24px;
   height: 24px;
   accent-color: var(--colour-accent);
   cursor: pointer;
   position: relative;
+}
+
+.setting-group input[type='checkbox'] {
   border-radius: var(--radius-md);
 }
 

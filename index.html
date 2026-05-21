@@ -365,6 +365,7 @@
         <div class="settings-tabs">
           <button class="tab-button active" data-tab="game">Game</button>
           <button class="tab-button" data-tab="display">Display</button>
+          <button class="tab-button" data-tab="time">Time</button>
           <button class="tab-button" data-tab="effects">Effects</button>
           <button class="tab-button" data-tab="music">Music</button>
           <button class="tab-button" data-tab="shortcuts">Shortcuts</button>
@@ -471,6 +472,32 @@
                   <option value="circle-of-people">Circle of People</option>
                   <option value="large-clock-face">Large Clock Face</option>
                 </select>
+              </label>
+            </div>
+          </div>
+
+          <!-- Time Settings Panel -->
+          <div class="settings-panel" data-panel="time">
+            <div class="setting-group">
+              <h3>Clock Display</h3>
+              <label>
+                <span>24-hour (15:06)</span>
+                <input
+                  type="radio"
+                  name="clockFormat"
+                  id="clockFormat24"
+                  value="24"
+                  checked
+                />
+              </label>
+              <label>
+                <span>12-hour (3:06 PM)</span>
+                <input
+                  type="radio"
+                  name="clockFormat"
+                  id="clockFormat12"
+                  value="12"
+                />
               </label>
             </div>
           </div>
