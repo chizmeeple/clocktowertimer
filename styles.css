@@ -67,6 +67,70 @@ body {
   position: relative;
 }
 
+body.stale-tab-banner-visible {
+  padding-top: calc(0.25rem + var(--stale-tab-banner-height, 0px));
+}
+
+.stale-tab-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--colour-surface-elevated);
+  border-bottom: 1px solid var(--colour-gold);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.stale-tab-banner[hidden] {
+  display: none;
+}
+
+.stale-tab-banner-message {
+  margin: 0;
+  color: var(--colour-text);
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.stale-tab-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.stale-tab-banner-actions button {
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--colour-border-strong);
+  background: var(--colour-button-secondary);
+  color: var(--colour-text);
+  cursor: pointer;
+  font: inherit;
+  transition: background var(--transition-fast);
+}
+
+.stale-tab-banner-actions button:hover {
+  background: var(--colour-button-secondary-hover);
+}
+
+.stale-tab-banner-actions button.primary-btn {
+  background: var(--colour-accent);
+  border-color: transparent;
+}
+
+.stale-tab-banner-actions button.primary-btn:hover {
+  background: var(--colour-accent-hover);
+}
+
 /* Background theme styles */
 body::before {
   content: '';

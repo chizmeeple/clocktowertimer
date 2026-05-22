@@ -106,6 +106,25 @@
     </script>
   </head>
   <body>
+    <div
+      id="staleTabBanner"
+      class="stale-tab-banner"
+      role="status"
+      aria-live="polite"
+      hidden
+    >
+      <p class="stale-tab-banner-message">
+        This tab has been inactive for a while. Refresh to load the latest
+        version.
+      </p>
+      <div class="stale-tab-banner-actions">
+        <button id="staleTabRefreshBtn" type="button" class="primary-btn">
+          Refresh
+        </button>
+        <button id="staleTabDismissBtn" type="button">Dismiss</button>
+      </div>
+    </div>
+
     <div class="character-counts-wrapper">
       <div id="characterCounts" class="character-counts">
         <div class="character-type">

@@ -44,7 +44,10 @@ let updateSessionCountdownDisplay = () => {};
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_MINUTE_MS = 60 * 1000;
+const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 const SESSION_COUNTDOWN_HOUR_THRESHOLD_MS = 90 * ONE_MINUTE_MS;
+const STALE_TAB_MS = 2 * ONE_DAY_MS;
+const LAST_ACTIVE_AT_KEY = 'lastActiveAt';
 
 function getSessionEndDate(now, hour, minute) {
   const end = new Date(now);
@@ -228,6 +231,73 @@ const orientationUtils = {
     globalThis
       .matchMedia('(orientation: portrait)')
       .removeEventListener('change', callback);
+  },
+};
+
+const staleTabUtils = {
+  bannerDismissed: false,
+  bannerEl: null,
+
+  markActive() {
+    localStorage.setItem(LAST_ACTIVE_AT_KEY, String(Date.now()));
+  },
+
+  isStale() {
+    if (Date.now() - performance.timeOrigin >= STALE_TAB_MS) {
+      return true;
+    }
+
+    const lastActive = Number(localStorage.getItem(LAST_ACTIVE_AT_KEY));
+    return lastActive > 0 && Date.now() - lastActive >= STALE_TAB_MS;
+  },
+
+  showBanner() {
+    if (!this.bannerEl) return;
+    this.bannerEl.removeAttribute('hidden');
+    document.body.classList.add('stale-tab-banner-visible');
+    document.documentElement.style.setProperty(
+      '--stale-tab-banner-height',
+      `${this.bannerEl.offsetHeight}px`
+    );
+  },
+
+  hideBanner() {
+    if (!this.bannerEl) return;
+    this.bannerEl.setAttribute('hidden', '');
+    document.body.classList.remove('stale-tab-banner-visible');
+    document.documentElement.style.removeProperty('--stale-tab-banner-height');
+  },
+
+  checkOnResume() {
+    if (this.isStale() && !this.bannerDismissed) {
+      this.showBanner();
+    }
+  },
+
+  onBecameVisible() {
+    this.bannerDismissed = false;
+    this.checkOnResume();
+    this.markActive();
+  },
+
+  onBecameHidden() {
+    this.markActive();
+  },
+
+  init() {
+    this.bannerEl = document.getElementById('staleTabBanner');
+    document
+      .getElementById('staleTabRefreshBtn')
+      ?.addEventListener('click', () => {
+        location.reload();
+      });
+    document.getElementById('staleTabDismissBtn')?.addEventListener('click', () => {
+      this.bannerDismissed = true;
+      this.hideBanner();
+    });
+
+    this.checkOnResume();
+    this.markActive();
   },
 };
 
@@ -801,17 +871,27 @@ async function releaseWakeLock() {
   }
 }
 
-// Event listeners for wake lock
+// Event listeners for wake lock and stale-tab banner
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
+    staleTabUtils.onBecameVisible();
     await requestWakeLock();
   } else {
+    staleTabUtils.onBecameHidden();
     await releaseWakeLock();
+  }
+});
+
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    staleTabUtils.onBecameVisible();
   }
 });
 
 // Request wake lock and initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
+  staleTabUtils.init();
+
   try {
     await requestWakeLock();
   } catch (error) {
