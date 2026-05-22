@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.29';
+export const APP_VERSION = '1.0.30';
 
 export const CHANGELOG = {
+  '1.0.30': {
+    date: '2026-05-22',
+    changes: {
+      features: [
+        'Show a refresh banner when a tab has been inactive for two or more days, so long-lived tabs can load the latest version',
+      ],
+    },
+  },
   '1.0.29': {
     date: '2026-05-21',
     changes: {
