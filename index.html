@@ -106,23 +106,23 @@
     </script>
   </head>
   <body>
-    <div
-      id="staleTabBanner"
-      class="stale-tab-banner"
-      role="status"
-      aria-live="polite"
-      hidden
-    >
-      <p class="stale-tab-banner-message">
-        This tab has been inactive for a while. Refresh to load the latest
-        version.
+    <div id="staleTabBanner" class="stale-tab-banner" hidden>
+      <p id="staleTabStatus" class="stale-tab-banner-status" role="status"></p>
+      <p id="staleTabMessage" class="stale-tab-banner-message">
+        This tab has been inactive for a while. Refreshing soon to load the
+        latest version.
       </p>
       <div class="stale-tab-banner-actions">
         <button id="staleTabRefreshBtn" type="button" class="primary-btn">
-          Refresh
+          Refresh now
         </button>
         <button id="staleTabDismissBtn" type="button">Dismiss</button>
       </div>
+      <div
+        id="staleTabProgress"
+        class="stale-tab-banner-progress"
+        aria-hidden="true"
+      ></div>
     </div>
 
     <div class="character-counts-wrapper">

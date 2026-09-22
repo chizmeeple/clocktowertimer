@@ -10,6 +10,25 @@ function visitWithLastActiveAt(lastActiveAt) {
   cy.get('#closeSettings').click();
 }
 
+function visitStaleTab({ clocked = false } = {}) {
+  const now = Date.now();
+  if (clocked) {
+    cy.clock(now);
+  }
+  cy.visit('/', {
+    onBeforeLoad(win) {
+      win.localStorage.setItem('lastActiveAt', String(now - THREE_DAYS_MS));
+    },
+  });
+  if (clocked) {
+    // The settings dialog opens on a timer scheduled after an await, so let
+    // that timer be registered on the fake clock before advancing it.
+    cy.wait(50);
+    cy.tick(200);
+  }
+  cy.get('#closeSettings').click();
+}
+
 function visitWithPageAge(pageAgeMs) {
   cy.visit('/', {
     onBeforeLoad(win) {
@@ -42,7 +61,11 @@ describe('Stale tab banner', () => {
     visitWithLastActiveAt(Date.now() - THREE_DAYS_MS);
 
     cy.get('#staleTabBanner').should('be.visible');
-    cy.contains('#staleTabBanner', 'Refresh to load the latest version');
+    cy.contains(
+      '#staleTabBanner',
+      /Refreshing in \d+ seconds? to load the latest version/
+    );
+    cy.get('#staleTabProgress').should('be.visible');
   });
 
   it('shows when the page has been open for more than two days', () => {
@@ -70,7 +93,46 @@ describe('Stale tab banner', () => {
 
     cy.get('#staleTabRefreshBtn')
       .should('be.visible')
-      .and('contain', 'Refresh');
+      .and('contain', 'Refresh now');
+  });
+
+  it('counts down, then reloads automatically', () => {
+    visitStaleTab({ clocked: true });
+
+    cy.window().then((win) => {
+      const origin = win.performance.timeOrigin;
+      cy.contains('#staleTabMessage', 'Refreshing in 10 seconds');
+      cy.tick(1000);
+      cy.contains('#staleTabMessage', 'Refreshing in 9 seconds');
+      cy.tick(8000);
+      cy.contains('#staleTabMessage', 'Refreshing in 1 second');
+      cy.tick(1000);
+      cy.window().its('performance.timeOrigin').should('not.eq', origin);
+    });
+    cy.get('#staleTabBanner').should('not.be.visible');
+  });
+
+  it('reloads immediately when Refresh now is clicked', () => {
+    visitStaleTab();
+
+    cy.window().then((win) => {
+      const origin = win.performance.timeOrigin;
+      cy.get('#staleTabRefreshBtn').click();
+      cy.window().its('performance.timeOrigin').should('not.eq', origin);
+    });
+    cy.get('#staleTabBanner').should('not.be.visible');
+  });
+
+  it('does not reload automatically after it is dismissed', () => {
+    visitStaleTab({ clocked: true });
+
+    cy.window().then((win) => {
+      const origin = win.performance.timeOrigin;
+      cy.get('#staleTabDismissBtn').click();
+      cy.get('#staleTabBanner').should('not.be.visible');
+      cy.tick(15000);
+      cy.window().its('performance.timeOrigin').should('eq', origin);
+    });
   });
 
   it('shows again when returning to the tab after two days away', () => {
