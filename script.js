@@ -47,7 +47,18 @@ const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 const SESSION_COUNTDOWN_HOUR_THRESHOLD_MS = 90 * ONE_MINUTE_MS;
 const STALE_TAB_MS = 2 * ONE_DAY_MS;
-const LAST_ACTIVE_AT_KEY = 'lastActiveAt';
+const STALE_TAB_REFRESH_SECONDS = 10;
+const LAST_ACTIVE_AT_KEY = 'towerTimerLastActiveAt';
+const SETTINGS_STORAGE_KEY = 'towerTimerSettings';
+const LEGACY_SETTINGS_STORAGE_KEY = 'quickTimerSettings';
+
+function migrateLegacySettings() {
+  const legacySettings = localStorage.getItem(LEGACY_SETTINGS_STORAGE_KEY);
+  if (legacySettings === null) return;
+
+  localStorage.setItem(SETTINGS_STORAGE_KEY, legacySettings);
+  localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
+}
 
 function getSessionEndDate(now, hour, minute) {
   const end = new Date(now);
@@ -237,6 +248,11 @@ const orientationUtils = {
 const staleTabUtils = {
   bannerDismissed: false,
   bannerEl: null,
+  messageEl: null,
+  statusEl: null,
+  progressEl: null,
+  refreshTimerId: null,
+  secondsLeft: STALE_TAB_REFRESH_SECONDS,
 
   markActive() {
     localStorage.setItem(LAST_ACTIVE_AT_KEY, String(Date.now()));
@@ -251,18 +267,90 @@ const staleTabUtils = {
     return lastActive > 0 && Date.now() - lastActive >= STALE_TAB_MS;
   },
 
-  showBanner() {
-    if (!this.bannerEl) return;
-    this.bannerEl.removeAttribute('hidden');
-    document.body.classList.add('stale-tab-banner-visible');
+  countdownUnit() {
+    return this.secondsLeft === 1 ? 'second' : 'seconds';
+  },
+
+  renderCountdown() {
+    if (!this.messageEl) return;
+    const count = document.createElement('strong');
+    count.textContent = `${this.secondsLeft} ${this.countdownUnit()}`;
+    this.messageEl.replaceChildren(
+      document.createTextNode(
+        'This tab has been inactive for a while. Refreshing in '
+      ),
+      count,
+      document.createTextNode(' to load the latest version.')
+    );
+  },
+
+  syncBannerHeight() {
+    if (!this.bannerEl || this.bannerEl.hasAttribute('hidden')) return;
     document.documentElement.style.setProperty(
       '--stale-tab-banner-height',
       `${this.bannerEl.offsetHeight}px`
     );
   },
 
+  clearRefreshTimer() {
+    if (this.refreshTimerId !== null) {
+      clearInterval(this.refreshTimerId);
+      this.refreshTimerId = null;
+    }
+  },
+
+  refreshPage() {
+    this.clearRefreshTimer();
+    location.reload();
+  },
+
+  armCountdown() {
+    const reduceMotion = globalThis.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+    if (this.progressEl && !reduceMotion) {
+      this.progressEl.style.animation = 'none';
+      void this.progressEl.offsetWidth;
+      this.progressEl.style.animation = `stale-tab-refresh-countdown ${STALE_TAB_REFRESH_SECONDS}s linear forwards`;
+    }
+
+    this.refreshTimerId = setInterval(() => {
+      this.secondsLeft -= 1;
+      if (this.secondsLeft <= 0) {
+        this.refreshPage();
+        return;
+      }
+      this.renderCountdown();
+      this.syncBannerHeight();
+    }, 1000);
+  },
+
+  showBanner() {
+    if (!this.bannerEl) return;
+    const alreadyCounting =
+      !this.bannerEl.hasAttribute('hidden') && this.refreshTimerId !== null;
+    if (!alreadyCounting) {
+      this.clearRefreshTimer();
+      this.secondsLeft = STALE_TAB_REFRESH_SECONDS;
+      this.renderCountdown();
+    }
+    this.bannerEl.removeAttribute('hidden');
+    document.body.classList.add('stale-tab-banner-visible');
+    this.syncBannerHeight();
+    if (!alreadyCounting) {
+      if (this.statusEl) {
+        this.statusEl.textContent = `This tab has been inactive for a while. Refreshing automatically in ${STALE_TAB_REFRESH_SECONDS} seconds to load the latest version.`;
+      }
+      this.armCountdown();
+    }
+  },
+
   hideBanner() {
     if (!this.bannerEl) return;
+    this.clearRefreshTimer();
+    if (this.progressEl) {
+      this.progressEl.style.animation = 'none';
+    }
     this.bannerEl.setAttribute('hidden', '');
     document.body.classList.remove('stale-tab-banner-visible');
     document.documentElement.style.removeProperty('--stale-tab-banner-height');
@@ -286,10 +374,13 @@ const staleTabUtils = {
 
   init() {
     this.bannerEl = document.getElementById('staleTabBanner');
+    this.messageEl = document.getElementById('staleTabMessage');
+    this.statusEl = document.getElementById('staleTabStatus');
+    this.progressEl = document.getElementById('staleTabProgress');
     document
       .getElementById('staleTabRefreshBtn')
       ?.addEventListener('click', () => {
-        location.reload();
+        this.refreshPage();
       });
     document.getElementById('staleTabDismissBtn')?.addEventListener('click', () => {
       this.bannerDismissed = true;
@@ -499,7 +590,7 @@ const keyboardShortcutsUtils = {
   // Nuclear option: completely remove and recreate the keyboardShortcuts key
   forceReset: () => {
     // Get current settings
-    const savedSettings = localStorage.getItem('quickTimerSettings');
+    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
 
@@ -507,7 +598,7 @@ const keyboardShortcutsUtils = {
       delete settings.keyboardShortcuts;
 
       // Save settings without keyboardShortcuts
-      localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     }
 
     // Reset to defaults
@@ -560,7 +651,7 @@ const BUTTON_LABELS = {
   RESET: '🔄 Reset Day',
   ACCELERATE: '⏩ Accelerate Time',
   ACCELERATE_CONFIRM: 'Confirm…',
-  ACCELERATE_TIME_FLIES: '{time flies}',
+  ACCELERATE_TIME_FLIES: 'Time flies…',
   START_DAY: (day) => `▶ Start Day ${day}`,
   FULLSCREEN: {
     ENTER:
@@ -827,13 +918,18 @@ function updateStartButtonText(text) {
   }
 }
 
-// Helper function to update estimated game length
+const MIN_NOMINATION_SECONDS = 3 * 60;
+
+// Estimated length is each day's timer plus nominations.
+// Nominations are assumed to take as long as that day, and never less than 3 minutes.
 function updateEstimatedGameLength() {
   const presets = generateDayPresets(playerCount);
   let totalSeconds = 0;
 
   presets.forEach((preset) => {
-    totalSeconds += preset.minutes * 60 + preset.seconds;
+    const daySeconds = preset.minutes * 60 + preset.seconds;
+    const nominationSeconds = Math.max(daySeconds, MIN_NOMINATION_SECONDS);
+    totalSeconds += daySeconds + nominationSeconds;
   });
 
   // Round up to the nearest minute
@@ -1087,6 +1183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         accelerateConfirmTimeout = null;
       }
       setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_TIME_FLIES);
+      accelerateBtn.setAttribute('aria-label', 'Time is accelerating');
       accelerateBtn.disabled = true;
       accelerateTime();
     }
@@ -1511,7 +1608,7 @@ function applyParsedSettings(settings) {
     showWhatsNew(lastSeenVersion);
   }
   settings.lastSeenVersion = APP_VERSION;
-  localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   updateDayDisplay(settings.dayState || '');
 }
 
@@ -1630,7 +1727,8 @@ function applySettingsToForm() {
 
 // Load settings from localStorage
 function loadSettings() {
-  const savedSettings = localStorage.getItem('quickTimerSettings');
+  migrateLegacySettings();
+  const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
   if (savedSettings) {
     applyParsedSettings(JSON.parse(savedSettings));
     // Recreate Audio objects so they use the loaded sound files (they were
@@ -1740,7 +1838,7 @@ function saveSettings() {
     acceptedPortraitWarning,
     keyboardShortcuts,
   };
-  localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
 }
 
 // Returns { label, effectiveDay } for a preset. effectiveDay is null for skipped (💀).

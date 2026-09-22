@@ -1,7 +1,20 @@
 // Version tracking
-export const APP_VERSION = '1.0.30';
+export const APP_VERSION = '1.0.31';
 
 export const CHANGELOG = {
+  '1.0.31': {
+    date: '2026-09-22',
+    changes: {
+      fixes: [
+        'Accelerate button shows "Time flies…" while time is speeding up, instead of the placeholder "{time flies}"',
+      ],
+      improvements: [
+        'Blitz mode uses a red bottom button bar and a translucent red overlay on the background image',
+        'Estimated game length includes nominations, guessed as each day\'s length with a 3-minute minimum',
+        'Stale-tab banner refreshes the page automatically after a 10-second countdown, and can still be refreshed or dismissed immediately',
+      ],
+    },
+  },
   '1.0.30': {
     date: '2026-05-22',
     changes: {

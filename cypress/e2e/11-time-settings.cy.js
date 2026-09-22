@@ -193,7 +193,7 @@ describe('Time settings', () => {
 
     cy.window().then((win) => {
       const settings = JSON.parse(
-        win.localStorage.getItem('quickTimerSettings')
+        win.localStorage.getItem('towerTimerSettings')
       );
       expect(settings.showCurrentTime).to.eq(false);
       expect(settings.showSessionCountdown).to.eq(true);
@@ -207,7 +207,7 @@ describe('Time settings', () => {
     cy.visit('/', {
       onBeforeLoad(win) {
         win.localStorage.setItem(
-          'quickTimerSettings',
+          'towerTimerSettings',
           JSON.stringify(SAVED_TIME_SETTINGS)
         );
       },
@@ -225,5 +225,31 @@ describe('Time settings', () => {
     cy.get('#sessionEndHour').should('have.value', '22');
     cy.get('#sessionEndMinute').should('have.value', '30');
     cy.get('#clockFormat12').should('be.checked');
+  });
+
+  it('moves quickTimerSettings to towerTimerSettings and keeps the values', () => {
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem(
+          'quickTimerSettings',
+          JSON.stringify(SAVED_TIME_SETTINGS)
+        );
+      },
+    });
+
+    cy.get('#currentTime').should('not.be.visible');
+    cy.get('#sessionCountdown').should('be.visible');
+
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem('quickTimerSettings')).to.eq(null);
+      const settings = JSON.parse(
+        win.localStorage.getItem('towerTimerSettings')
+      );
+      expect(settings.showCurrentTime).to.eq(false);
+      expect(settings.showSessionCountdown).to.eq(true);
+      expect(settings.sessionEndHour).to.eq(22);
+      expect(settings.sessionEndMinute).to.eq(30);
+      expect(settings.clockFormat).to.eq('12');
+    });
   });
 });
