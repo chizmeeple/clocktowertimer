@@ -827,13 +827,18 @@ function updateStartButtonText(text) {
   }
 }
 
-// Helper function to update estimated game length
+const MIN_NOMINATION_SECONDS = 3 * 60;
+
+// Estimated length is each day's timer plus nominations.
+// Nominations are assumed to take as long as that day, and never less than 3 minutes.
 function updateEstimatedGameLength() {
   const presets = generateDayPresets(playerCount);
   let totalSeconds = 0;
 
   presets.forEach((preset) => {
-    totalSeconds += preset.minutes * 60 + preset.seconds;
+    const daySeconds = preset.minutes * 60 + preset.seconds;
+    const nominationSeconds = Math.max(daySeconds, MIN_NOMINATION_SECONDS);
+    totalSeconds += daySeconds + nominationSeconds;
   });
 
   // Round up to the nearest minute
