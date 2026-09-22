@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.31';
+export const APP_VERSION = '1.0.32';
 
 export const CHANGELOG = {
+  '1.0.32': {
+    date: '2026-09-22',
+    changes: {
+      improvements: [
+        'Dev dependencies: update lockfile packages, including axios, joi, dayjs, semver, and @types/node (df9e67f).',
+      ],
+    },
+  },
   '1.0.31': {
     date: '2026-09-22',
     changes: {
