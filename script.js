@@ -394,19 +394,19 @@ const staleTabUtils = {
 
 const youtubeUtils = {
   play: () => {
-    if (playMusic && youtubePlayer?.playVideo) {
-      youtubePlayer.playVideo();
-    }
+    runYoutube((player) => {
+      player.playVideo?.();
+    });
   },
   pause: () => {
-    if (playMusic && youtubePlayer?.pauseVideo) {
-      youtubePlayer.pauseVideo();
-    }
+    runYoutube((player) => {
+      player.pauseVideo?.();
+    });
   },
   stop: () => {
-    if (playMusic && youtubePlayer?.stopVideo) {
-      youtubePlayer.stopVideo();
-    }
+    runYoutube((player) => {
+      player.stopVideo?.();
+    });
   },
 };
 
@@ -424,6 +424,113 @@ const YOUTUBE_PLAYER_CONTAINER_CLASS = 'youtube-player-container';
 
 function getYoutubePlayerContainer() {
   return document.querySelector(`.${YOUTUBE_PLAYER_CONTAINER_CLASS}`);
+}
+
+// Remove the iframe without calling the YouTube API. destroy() can hang the
+// page once the network has gone, which freezes day controls.
+function detachYoutubePlayer() {
+  youtubePlayer = null;
+  const container = getYoutubePlayerContainer();
+  if (container) {
+    container.remove();
+  }
+}
+
+function destroyYoutubePlayer() {
+  const player = youtubePlayer;
+  youtubePlayer = null;
+  if (player && connectivityUtils.isOnline()) {
+    try {
+      player.destroy();
+    } catch (error) {
+      console.log('Error destroying YouTube player:', error);
+    }
+  }
+  detachYoutubePlayer();
+}
+
+function runYoutube(fn) {
+  if (!playMusic || !youtubePlayer || !connectivityUtils.isOnline()) return;
+  try {
+    fn(youtubePlayer);
+  } catch (error) {
+    console.log('YouTube player call failed:', error);
+    detachYoutubePlayer();
+  }
+}
+
+// Play a sound effect without letting a missing file or a dead network stop the timer.
+function safePlaySound(audio, { onEnded, onError, fallbackBeep = false } = {}) {
+  let finished = false;
+  const fail = (error) => {
+    if (finished) return;
+    finished = true;
+    console.log('Error playing sound:', error);
+    if (fallbackBeep) {
+      try {
+        createBeep();
+      } catch (beepError) {
+        console.log('Error playing fallback beep:', beepError);
+      }
+    }
+    onError?.();
+  };
+
+  if (!playSoundEffects || !audio) {
+    onError?.();
+    return;
+  }
+
+  // Seeking or loading while offline can stall the page. Only play media that
+  // is already buffered; otherwise fall back to a generated beep.
+  const buffered = audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
+  if (!connectivityUtils.isOnline() && !buffered) {
+    fail(new Error('Sound is not available offline'));
+    return;
+  }
+
+  try {
+    audio.volume = soundEffectsVolume / 100;
+    if (connectivityUtils.isOnline()) {
+      try {
+        audio.currentTime = 0;
+      } catch (error) {
+        console.log('Could not rewind sound:', error);
+        if (!buffered) {
+          fail(error);
+          return;
+        }
+      }
+    }
+
+    if (onEnded) {
+      audio.addEventListener(
+        'ended',
+        () => {
+          if (!finished) onEnded();
+        },
+        { once: true }
+      );
+    }
+
+    const playPromise = audio.play();
+    if (!playPromise?.then) return;
+
+    const stallTimer = setTimeout(() => {
+      fail(new Error('Sound playback stalled'));
+    }, 5000);
+
+    playPromise
+      .then(() => {
+        clearTimeout(stallTimer);
+      })
+      .catch((error) => {
+        clearTimeout(stallTimer);
+        fail(error);
+      });
+  } catch (error) {
+    fail(error);
+  }
 }
 
 const timerUtils = {
@@ -1016,19 +1123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     },
     () => {
-      // When we go offline, tear down the YouTube player (iframe + API object)
-      if (youtubePlayer) {
-        try {
-          youtubePlayer.destroy();
-        } catch (e) {
-          console.log('Error destroying YouTube player on offline:', e);
-        }
-        youtubePlayer = null;
-      }
-      const container = getYoutubePlayerContainer();
-      if (container) {
-        container.remove();
-      }
+      // When we go offline, drop the player immediately. destroy() is skipped
+      // because it can hang and leave the timer controls unresponsive.
+      detachYoutubePlayer();
     }
   );
 
@@ -1992,26 +2089,20 @@ function updateClocktowerPresets() {
       // Clear dusk state before starting countdown
       updateDayDisplay();
 
-      // Play wake-up sound if sound effects are enabled and we're not in a wake-up countdown
-      if (
-        playSoundEffects &&
-        !timerDisplayEl.classList.contains('wake-up-countdown')
-      ) {
-        wakeUpSound.currentTime = 0;
-        wakeUpSound.volume = soundEffectsVolume / 100;
-        wakeUpSound.play().catch((error) => {
-          console.log('Error playing wake-up sound:', error);
-          createBeep();
-        });
-      }
-
-      // Start the timer
+      // Start the timer before sound, so a missing file cannot block the day
       startCountdown();
       startBtn.disabled = false;
       updateStartButtonText(BUTTON_LABELS.PAUSE);
       resetAccelerateButton();
       accelerateBtn.disabled = false;
       resetBtn.disabled = false; // Enable reset button when starting timer
+
+      if (
+        playSoundEffects &&
+        !timerDisplayEl.classList.contains('wake-up-countdown')
+      ) {
+        safePlaySound(wakeUpSound, { fallbackBeep: true });
+      }
     });
 
     clocktowerPresetsDiv.appendChild(button);
@@ -2127,48 +2218,41 @@ function playEndSound() {
   if (!playSoundEffects) return;
 
   // Stop music if playing and not set to play at night
-  if (playMusic && !playMusicAtNight && youtubePlayer) {
-    youtubePlayer.pauseVideo();
-    setYoutubeControlButtonIcon(false);
+  if (!playMusicAtNight) {
+    runYoutube((player) => {
+      player.pauseVideo?.();
+      setYoutubeControlButtonIcon(false);
+    });
   }
 
   isEndSoundPlaying = true;
   startBtn.disabled = true;
 
-  endSound.currentTime = 0; // Reset the sound to start
-  endSound.volume = soundEffectsVolume / 100; // Apply volume control
-  endSound.play().catch((error) => {
-    console.log('Error playing sound:', error);
-    // Fallback to beep if sound file fails
-    createBeep();
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
     isEndSoundPlaying = false;
     updateDisplay();
-  });
-
-  // Enable the button after the sound finishes
-  endSound.addEventListener(
-    'ended',
-    () => {
-      isEndSoundPlaying = false;
-      updateDisplay();
-      // Resume music if playMusicAtNight is enabled
-      if (playMusic && playMusicAtNight && youtubePlayer) {
-        youtubePlayer.playVideo();
+    // Resume music if playMusicAtNight is enabled
+    if (playMusicAtNight) {
+      runYoutube((player) => {
+        player.playVideo?.();
         setYoutubeControlButtonIcon(true);
-      }
-    },
-    { once: true }
-  );
+      });
+    }
+  };
+
+  safePlaySound(endSound, {
+    fallbackBeep: true,
+    onEnded: finish,
+    onError: finish,
+  });
 }
 
 // Play nominations open sound
 function playNominationsOpenSound() {
-  if (!playSoundEffects || !nominationsOpenSound) return;
-  nominationsOpenSound.currentTime = 0;
-  nominationsOpenSound.volume = soundEffectsVolume / 100;
-  nominationsOpenSound.play().catch((error) => {
-    console.log('Error playing nominations open sound:', error);
-  });
+  safePlaySound(nominationsOpenSound);
 }
 
 // Clear the nominations countdown (interval and UI)
@@ -2324,19 +2408,16 @@ function accelerateTime() {
 
     if (timeLeft === 0) {
       clearInterval(timerId);
-      playEndSound();
       isRunning = false;
-      startBtn.disabled = true;
-      updateStartButtonText(BUTTON_LABELS.RESUME);
       currentInterval = normalInterval;
-      // Stop YouTube player when accelerated time ends
-      if (playMusic && youtubePlayer?.pauseVideo) {
-        youtubePlayer.pauseVideo();
-      }
+      runYoutube((player) => {
+        player.pauseVideo?.();
+      });
       if (currentDay !== null) {
         updateDayDisplay('dusk');
         updateClocktowerPresets();
       }
+      playEndSound();
       updateDisplay(); // Make sure to update display one final time
 
       if (autoOpenNominations && autoOpenNominationsDelay > 0) {
@@ -2352,12 +2433,12 @@ function accelerateTime() {
 // Start timer
 function startTimer() {
   if (isRunning) {
-    // Pause timer
+    // Pause timer before touching music, so a dead player cannot block the click
     timerUtils.stop();
-    if (playMusic && youtubePlayer) {
-      youtubePlayer.pauseVideo();
+    runYoutube((player) => {
+      player.pauseVideo?.();
       setYoutubeControlButtonIcon(false);
-    }
+    });
     return;
   }
 
@@ -2365,10 +2446,6 @@ function startTimer() {
   if (timeLeft > 0) {
     isRunning = true;
     hasReset = false; // Clear the reset state when starting timer
-    if (playMusic && youtubePlayer) {
-      youtubePlayer.playVideo();
-      setYoutubeControlButtonIcon(true);
-    }
     startCountdown();
     return;
   }
@@ -2396,6 +2473,7 @@ function resetTimer() {
   currentInterval = normalInterval;
   isRunning = false; // Ensure timer is marked as not running
   hasReset = true; // Set the reset state
+  isEndSoundPlaying = false;
 
   // Reset button states
   startBtn.disabled = false;
@@ -2405,10 +2483,10 @@ function resetTimer() {
   resetBtn.disabled = true;
 
   // Stop music and update play/pause button
-  if (playMusic && youtubePlayer) {
-    youtubePlayer.stopVideo();
+  runYoutube((player) => {
+    player.stopVideo?.();
     setYoutubeControlButtonIcon(false);
-  }
+  });
 
   // Reset day display to normal state
   updateDayDisplay();
@@ -2488,18 +2566,9 @@ function playWakeUpSound() {
   }
   clearNominationsCountdown();
 
-  if (playSoundEffects) {
-    // Stop music if playing and not set to play at night
-    if (playMusic && !playMusicAtNight) {
-      youtubeUtils.pause();
-    }
-
-    wakeUpSound.currentTime = 0;
-    wakeUpSound.volume = soundEffectsVolume / 100; // Apply volume control
-    wakeUpSound.play().catch((error) => {
-      console.log('Error playing wake-up sound:', error);
-      createBeep();
-    });
+  // Stop music if playing and not set to play at night
+  if (playSoundEffects && !playMusicAtNight) {
+    youtubeUtils.pause();
   }
 
   // Only increment day if we're in dusk state
@@ -2576,23 +2645,13 @@ function playWakeUpSound() {
 
   // Store the countdown interval ID
   wakeUpTimeout = timerId;
+
+  // Sound comes last so a failed or stalled file cannot skip the countdown
+  safePlaySound(wakeUpSound, { fallbackBeep: true });
 }
 
 function startCountdown() {
   isRunning = true;
-
-  // Start music if enabled and not in dusk state
-  const dayInfo = document.querySelector('.day-display');
-  const isDusk = dayInfo?.classList?.contains('dusk');
-  if (playMusic && !isDusk) {
-    if (
-      youtubePlayer &&
-      youtubePlayer.getPlayerState() !== YT.PlayerState.PLAYING
-    ) {
-      youtubePlayer.playVideo();
-      setYoutubeControlButtonIcon(true);
-    }
-  }
 
   timerId = setInterval(() => {
     timeLeft--;
@@ -2600,16 +2659,16 @@ function startCountdown() {
 
     if (timeLeft === 0) {
       clearInterval(timerId);
-      playEndSound();
       isRunning = false;
-      if (playMusic && youtubePlayer?.pauseVideo) {
-        youtubePlayer.pauseVideo();
+      runYoutube((player) => {
+        player.pauseVideo?.();
         setYoutubeControlButtonIcon(false);
-      }
+      });
       if (currentDay !== null) {
         updateDayDisplay('dusk');
         updateClocktowerPresets();
       }
+      playEndSound();
       updateDisplay();
 
       if (autoOpenNominations && autoOpenNominationsDelay > 0) {
@@ -2617,6 +2676,21 @@ function startCountdown() {
       }
     }
   }, normalInterval);
+
+  // Music is best-effort and must not prevent the countdown from starting
+  const dayInfo = document.querySelector('.day-display');
+  const isDusk = dayInfo?.classList?.contains('dusk');
+  if (!isDusk) {
+    runYoutube((player) => {
+      const playing =
+        globalThis.YT &&
+        player.getPlayerState?.() === globalThis.YT.PlayerState.PLAYING;
+      if (!playing) {
+        player.playVideo?.();
+        setYoutubeControlButtonIcon(true);
+      }
+    });
+  }
 }
 
 function startNewGame() {
@@ -2625,6 +2699,7 @@ function startNewGame() {
   clearNominationsCountdown();
   timeLeft = 0;
   isRunning = false;
+  isEndSoundPlaying = false;
   currentInterval = normalInterval;
 
   // Set to Day 1
@@ -2642,20 +2717,19 @@ function startNewGame() {
   saveSettings();
   closeSettings();
 
-  // Stop any playing video and reshuffle playlist
-  if (playMusic && youtubePlayer) {
+  // Stop any playing video and reshuffle playlist. Failure must not undo the new game.
+  runYoutube((player) => {
     const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
-    if (playlistId) {
-      youtubePlayer.stopVideo();
-      youtubePlayer.setShuffle(true);
-      youtubePlayer.cuePlaylist({
-        list: playlistId,
-        listType: 'playlist',
-        index: Math.floor(Math.random() * 50),
-        suggestedQuality: 'small',
-      });
-    }
-  }
+    if (!playlistId) return;
+    player.stopVideo?.();
+    player.setShuffle?.(true);
+    player.cuePlaylist?.({
+      list: playlistId,
+      listType: 'playlist',
+      index: Math.floor(Math.random() * 50),
+      suggestedQuality: 'small',
+    });
+  });
 }
 
 // Update day display
@@ -2823,6 +2897,7 @@ function loadYoutubeApi() {
 }
 
 function initYoutubePlayer() {
+  if (!playMusic || !connectivityUtils.isOnline()) return;
   if (!globalThis.YT || !youtubeApiReady) {
     loadYoutubeApi();
   } else {
@@ -2833,7 +2908,7 @@ function initYoutubePlayer() {
 // Called by YouTube API when ready
 globalThis.onYouTubeIframeAPIReady = function () {
   youtubeApiReady = true;
-  if (playMusic) {
+  if (playMusic && connectivityUtils.isOnline()) {
     createYoutubePlayer();
   }
 };
@@ -2872,14 +2947,15 @@ function createYoutubePlayerContainer() {
   playPauseBtn.className = 'youtube-control';
   playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
   playPauseBtn.addEventListener('click', () => {
-    if (!youtubePlayer) return;
-    if (youtubePlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-      youtubePlayer.pauseVideo();
-      playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
-    } else {
-      youtubePlayer.playVideo();
-      playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PAUSE;
-    }
+    runYoutube((player) => {
+      if (player.getPlayerState?.() === globalThis.YT?.PlayerState?.PLAYING) {
+        player.pauseVideo?.();
+        playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
+      } else {
+        player.playVideo?.();
+        playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PAUSE;
+      }
+    });
   });
   container.appendChild(playPauseBtn);
 
@@ -2898,21 +2974,9 @@ function createYoutubePlayerContainer() {
 }
 
 async function createYoutubePlayer() {
+  if (!playMusic || !connectivityUtils.isOnline()) return;
   try {
-    // Remove existing player and container
-    if (youtubePlayer) {
-      try {
-        youtubePlayer.destroy();
-      } catch (e) {
-        console.log('Error destroying player:', e);
-      }
-      youtubePlayer = null;
-    }
-
-    const existingContainer = getYoutubePlayerContainer();
-    if (existingContainer) {
-      existingContainer.remove();
-    }
+    destroyYoutubePlayer();
 
     // Create new container with controls
     createYoutubePlayerContainer();
@@ -2962,57 +3026,74 @@ async function createYoutubePlayer() {
 }
 
 function onPlayerReady(event) {
-  event.target.setVolume(youtubeVolume);
-  const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
-
-  if (playlistId) {
-    event.target.cuePlaylist({
-      list: playlistId,
-      listType: 'playlist',
-      index: Math.floor(Math.random() * 50),
-      suggestedQuality: 'small',
-    });
+  if (!connectivityUtils.isOnline()) {
+    detachYoutubePlayer();
+    return;
   }
+  try {
+    event.target.setVolume(youtubeVolume);
+    const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
 
-  // If timer is already running, start playing
-  if (isRunning && timeLeft > 0) {
-    const dayInfo = document.querySelector('.day-display');
-    const isDusk = dayInfo?.classList?.contains('dusk');
-    if (!isDusk) {
-      event.target.playVideo();
+    if (playlistId) {
+      event.target.cuePlaylist({
+        list: playlistId,
+        listType: 'playlist',
+        index: Math.floor(Math.random() * 50),
+        suggestedQuality: 'small',
+      });
     }
+
+    // If timer is already running, start playing
+    if (isRunning && timeLeft > 0) {
+      const dayInfo = document.querySelector('.day-display');
+      const isDusk = dayInfo?.classList?.contains('dusk');
+      if (!isDusk) {
+        event.target.playVideo();
+      }
+    }
+  } catch (error) {
+    console.log('YouTube player ready handler failed:', error);
+    detachYoutubePlayer();
   }
 }
 
 function onPlayerStateChange(event) {
-  if (event.data === YT.PlayerState.PLAYING) {
-    setYoutubeControlButtonIcon(true);
-    // Get and display the current track title
-    const title = event.target.getVideoData()?.title;
-    if (title) {
-      updatePlaylistBadge(title);
+  try {
+    if (event.data === YT.PlayerState.PLAYING) {
+      setYoutubeControlButtonIcon(true);
+      // Get and display the current track title
+      const title = event.target.getVideoData()?.title;
+      if (title) {
+        updatePlaylistBadge(title);
+      }
+      // Ensure volume is set correctly when starting playback
+      event.target.setVolume(youtubeVolume);
+    } else if (
+      event.data === YT.PlayerState.PAUSED ||
+      event.data === YT.PlayerState.CUED
+    ) {
+      setYoutubeControlButtonIcon(false);
+    } else if (event.data === YT.PlayerState.ENDED) {
+      const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
+      if (playlistId) {
+        event.target.setShuffle(true);
+        event.target.playVideoAt(0);
+      } else {
+        event.target.playVideo();
+      }
     }
-    // Ensure volume is set correctly when starting playback
-    event.target.setVolume(youtubeVolume);
-  } else if (
-    event.data === YT.PlayerState.PAUSED ||
-    event.data === YT.PlayerState.CUED
-  ) {
-    setYoutubeControlButtonIcon(false);
-  } else if (event.data === YT.PlayerState.ENDED) {
-    const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
-    if (playlistId) {
-      event.target.setShuffle(true);
-      event.target.playVideoAt(0);
-    } else {
-      event.target.playVideo();
-    }
+  } catch (error) {
+    console.log('YouTube player state handler failed:', error);
+    detachYoutubePlayer();
   }
 }
 
 function onPlayerError(event) {
   console.error('YouTube player error:', event);
   updatePlaylistBadge('');
+  if (!connectivityUtils.isOnline()) {
+    detachYoutubePlayer();
+  }
 }
 
 // Update YouTube playlist URL
@@ -3081,19 +3162,7 @@ function updateMusicPlayback() {
   if (playMusic) {
     initYoutubePlayer();
   } else {
-    youtubeUtils.stop();
-    if (youtubePlayer) {
-      try {
-        youtubePlayer.destroy();
-      } catch (e) {
-        console.log('Error destroying YouTube player:', e);
-      }
-      youtubePlayer = null;
-    }
-    const container = getYoutubePlayerContainer();
-    if (container) {
-      container.remove();
-    }
+    destroyYoutubePlayer();
   }
   saveSettings();
 }
@@ -3104,9 +3173,9 @@ function updateYoutubeVolume() {
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
-  if (youtubePlayer?.setVolume) {
-    youtubePlayer.setVolume(youtubeVolume);
-  }
+  runYoutube((player) => {
+    player.setVolume?.(youtubeVolume);
+  });
   // Update volume info display
   const volumeInfo = document.querySelector('.volume-info');
   if (volumeInfo) {
