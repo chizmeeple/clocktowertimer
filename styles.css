@@ -343,6 +343,20 @@ body[data-pace='blitz'] .portrait-warning-dialog button:hover {
   background-color: #e53935;
 }
 
+body[data-pace='blitz']::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(244, 67, 54, 0.28);
+  pointer-events: none;
+  z-index: -1;
+}
+
+body[data-pace='blitz'] .bottom-container {
+  background: rgba(183, 28, 28, 0.78);
+  border-top-color: rgba(244, 67, 54, 0.55);
+}
+
 /* Background theme selector styles */
 .background-theme-select {
   width: 100%;
