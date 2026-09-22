@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.32';
+export const APP_VERSION = '1.0.33';
 
 export const CHANGELOG = {
+  '1.0.33': {
+    date: '2026-09-22',
+    changes: {
+      fixes: [
+        'Timer controls keep working when the device goes offline, so days can still be started, paused, reset, and a new game can be started without music or a network connection',
+      ],
+    },
+  },
   '1.0.32': {
     date: '2026-09-22',
     changes: {
