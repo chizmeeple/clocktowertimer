@@ -53,7 +53,7 @@ describe('First Time User Flow', () => {
     // Verify localStorage has been updated with settings
     cy.window().then((win) => {
       const settings = JSON.parse(
-        win.localStorage.getItem('quickTimerSettings')
+        win.localStorage.getItem('towerTimerSettings')
       );
       expect(settings).to.not.be.null;
       expect(settings).to.have.property('playerCount');
