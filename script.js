@@ -560,7 +560,7 @@ const BUTTON_LABELS = {
   RESET: '🔄 Reset Day',
   ACCELERATE: '⏩ Accelerate Time',
   ACCELERATE_CONFIRM: 'Confirm…',
-  ACCELERATE_TIME_FLIES: '{time flies}',
+  ACCELERATE_TIME_FLIES: 'Time flies…',
   START_DAY: (day) => `▶ Start Day ${day}`,
   FULLSCREEN: {
     ENTER:
@@ -1087,6 +1087,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         accelerateConfirmTimeout = null;
       }
       setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_TIME_FLIES);
+      accelerateBtn.setAttribute('aria-label', 'Time is accelerating');
       accelerateBtn.disabled = true;
       accelerateTime();
     }
