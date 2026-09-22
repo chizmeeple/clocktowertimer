@@ -48,7 +48,7 @@ const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 const SESSION_COUNTDOWN_HOUR_THRESHOLD_MS = 90 * ONE_MINUTE_MS;
 const STALE_TAB_MS = 2 * ONE_DAY_MS;
 const STALE_TAB_REFRESH_SECONDS = 10;
-const LAST_ACTIVE_AT_KEY = 'lastActiveAt';
+const LAST_ACTIVE_AT_KEY = 'towerTimerLastActiveAt';
 
 function getSessionEndDate(now, hour, minute) {
   const end = new Date(now);

@@ -4,7 +4,7 @@ const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 function visitWithLastActiveAt(lastActiveAt) {
   cy.visit('/', {
     onBeforeLoad(win) {
-      win.localStorage.setItem('lastActiveAt', String(lastActiveAt));
+      win.localStorage.setItem('towerTimerLastActiveAt', String(lastActiveAt));
     },
   });
   cy.get('#closeSettings').click();
@@ -17,7 +17,7 @@ function visitStaleTab({ clocked = false } = {}) {
   }
   cy.visit('/', {
     onBeforeLoad(win) {
-      win.localStorage.setItem('lastActiveAt', String(now - THREE_DAYS_MS));
+      win.localStorage.setItem('towerTimerLastActiveAt', String(now - THREE_DAYS_MS));
     },
   });
   if (clocked) {
