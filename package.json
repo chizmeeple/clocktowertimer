@@ -9,7 +9,7 @@
   "devDependencies": {
     "cypress": "^16.1.0",
     "serve": "^14.2.6",
-    "start-server-and-test": "^2.0.3"
+    "start-server-and-test": "^3.0.0"
   },
   "allowScripts": {
     "cypress@16.1.0": true
