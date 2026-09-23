@@ -99,16 +99,19 @@ describe('Stale tab banner', () => {
   it('counts down, then reloads automatically', () => {
     visitStaleTab({ clocked: true });
 
+    // cy.clock() replaces performance.timeOrigin with the fake clock epoch,
+    // which Cypress restores unchanged across a reload. A property on the
+    // window object only survives if this is still the same document.
     cy.window().then((win) => {
-      const origin = win.performance.timeOrigin;
-      cy.contains('#staleTabMessage', 'Refreshing in 10 seconds');
-      cy.tick(1000);
-      cy.contains('#staleTabMessage', 'Refreshing in 9 seconds');
-      cy.tick(8000);
-      cy.contains('#staleTabMessage', 'Refreshing in 1 second');
-      cy.tick(1000);
-      cy.window().its('performance.timeOrigin').should('not.eq', origin);
+      win.beforeReload = true;
     });
+    cy.contains('#staleTabMessage', 'Refreshing in 10 seconds');
+    cy.tick(1000);
+    cy.contains('#staleTabMessage', 'Refreshing in 9 seconds');
+    cy.tick(8000);
+    cy.contains('#staleTabMessage', 'Refreshing in 1 second');
+    cy.tick(1000);
+    cy.window().should('not.have.prop', 'beforeReload');
     cy.get('#staleTabBanner').should('not.be.visible');
   });
 
@@ -127,12 +130,12 @@ describe('Stale tab banner', () => {
     visitStaleTab({ clocked: true });
 
     cy.window().then((win) => {
-      const origin = win.performance.timeOrigin;
-      cy.get('#staleTabDismissBtn').click();
-      cy.get('#staleTabBanner').should('not.be.visible');
-      cy.tick(15000);
-      cy.window().its('performance.timeOrigin').should('eq', origin);
+      win.beforeReload = true;
     });
+    cy.get('#staleTabDismissBtn').click();
+    cy.get('#staleTabBanner').should('not.be.visible');
+    cy.tick(15000);
+    cy.window().should('have.prop', 'beforeReload', true);
   });
 
   it('shows again when returning to the tab after two days away', () => {
