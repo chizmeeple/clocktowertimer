@@ -292,7 +292,7 @@ describe('Keyboard Shortcuts', () => {
         },
       };
       win.localStorage.setItem(
-        'quickTimerSettings',
+        'towerTimerSettings',
         JSON.stringify(oldSettings)
       );
     });
@@ -310,7 +310,7 @@ describe('Keyboard Shortcuts', () => {
     // Verify the old lowercase key was removed and camelCase key exists
     cy.window().then((win) => {
       const settings = JSON.parse(
-        win.localStorage.getItem('quickTimerSettings')
+        win.localStorage.getItem('towerTimerSettings')
       );
       expect(settings.keyboardShortcuts).to.have.property('wakeUp', 'w');
       expect(settings.keyboardShortcuts).to.not.have.property('wakeup');
