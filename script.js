@@ -39,6 +39,183 @@ let minutesDisplay,
   changeHistoryDialog,
   closeChangeHistoryBtn;
 
+let updateCurrentTimeDisplay = () => {};
+let updateSessionCountdownDisplay = () => {};
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_MINUTE_MS = 60 * 1000;
+const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+const SESSION_COUNTDOWN_HOUR_THRESHOLD_MS = 90 * ONE_MINUTE_MS;
+const STALE_TAB_MS = 2 * ONE_DAY_MS;
+const STALE_TAB_REFRESH_SECONDS = 10;
+const LAST_ACTIVE_AT_KEY = 'towerTimerLastActiveAt';
+const SETTINGS_STORAGE_KEY = 'towerTimerSettings';
+const LEGACY_SETTINGS_STORAGE_KEY = 'quickTimerSettings';
+
+function migrateLegacySettings() {
+  const legacySettings = localStorage.getItem(LEGACY_SETTINGS_STORAGE_KEY);
+  if (legacySettings === null) return;
+
+  localStorage.setItem(SETTINGS_STORAGE_KEY, legacySettings);
+  localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
+}
+
+function getSessionEndDate(now, hour, minute) {
+  const end = new Date(now);
+  end.setHours(hour, minute, 0, 0);
+
+  if (end <= now) {
+    if (hour < 12 && now.getHours() >= 12) {
+      end.setDate(end.getDate() + 1);
+    } else {
+      return null;
+    }
+  }
+
+  return end;
+}
+
+function formatSessionCountdownText(remainingMs) {
+  if (remainingMs <= 0) {
+    return { text: "TIME'S UP!", phase: 'times-up' };
+  }
+
+  if (remainingMs >= SESSION_COUNTDOWN_HOUR_THRESHOLD_MS) {
+    const hours = Math.floor(remainingMs / ONE_HOUR_MS);
+    return {
+      text: `${hours} hour${hours === 1 ? '' : 's'} remaining`,
+      phase: 'hours',
+    };
+  }
+
+  const minutes = Math.max(1, Math.ceil(remainingMs / ONE_MINUTE_MS));
+  return {
+    text: `${minutes} minute${minutes === 1 ? '' : 's'} remaining`,
+    phase: 'minutes',
+  };
+}
+
+function initSessionEndTimeSelectors() {
+  const hourSelect = document.getElementById('sessionEndHour');
+  const minuteSelect = document.getElementById('sessionEndMinute');
+  if (!hourSelect || !minuteSelect || hourSelect.options.length > 0) return;
+
+  for (let hour = 0; hour < 24; hour += 1) {
+    const option = document.createElement('option');
+    option.value = hour;
+    option.textContent = String(hour).padStart(2, '0');
+    hourSelect.appendChild(option);
+  }
+
+  for (let minute = 0; minute < 60; minute += 1) {
+    const option = document.createElement('option');
+    option.value = minute;
+    option.textContent = String(minute).padStart(2, '0');
+    minuteSelect.appendChild(option);
+  }
+}
+
+function updateTimeSettingsUi() {
+  const showCurrentTimeInput = document.getElementById('showCurrentTime');
+  if (showCurrentTimeInput) {
+    showCurrentTimeInput.checked = showCurrentTime;
+  }
+
+  const currentTimeEl = document.getElementById('currentTime');
+  if (currentTimeEl) {
+    currentTimeEl.hidden = !showCurrentTime;
+  }
+
+  document
+    .querySelectorAll('label:has(input[name="clockFormat"])')
+    .forEach((label) => {
+      label.classList.toggle('inactive', !showCurrentTime);
+      const input = label.querySelector('input');
+      if (input) {
+        input.disabled = !showCurrentTime;
+      }
+    });
+
+  const showSessionCountdownInput = document.getElementById(
+    'showSessionCountdown'
+  );
+  if (showSessionCountdownInput) {
+    showSessionCountdownInput.checked = showSessionCountdown;
+  }
+
+  const sessionEndHourSelect = document.getElementById('sessionEndHour');
+  const sessionEndMinuteSelect = document.getElementById('sessionEndMinute');
+  if (sessionEndHourSelect) {
+    sessionEndHourSelect.value = String(sessionEndHour);
+    sessionEndHourSelect.disabled = !showSessionCountdown;
+  }
+  if (sessionEndMinuteSelect) {
+    sessionEndMinuteSelect.value = String(sessionEndMinute);
+    sessionEndMinuteSelect.disabled = !showSessionCountdown;
+  }
+
+  const sessionEndTimeLabel = document.getElementById('sessionEndTimeLabel');
+  if (sessionEndTimeLabel) {
+    sessionEndTimeLabel.classList.toggle('inactive', !showSessionCountdown);
+  }
+
+  const sessionCountdownEl = document.getElementById('sessionCountdown');
+  if (sessionCountdownEl) {
+    sessionCountdownEl.hidden = !showSessionCountdown;
+  }
+
+  if (showCurrentTime) {
+    updateCurrentTimeDisplay();
+  }
+  if (showSessionCountdown) {
+    updateSessionCountdownDisplay();
+  }
+}
+
+function initTimeDisplays() {
+  initSessionEndTimeSelectors();
+
+  const currentTimeEl = document.getElementById('currentTime');
+  const sessionCountdownEl = document.getElementById('sessionCountdown');
+
+  updateCurrentTimeDisplay = () => {
+    if (!currentTimeEl) return;
+    const now = new Date();
+    currentTimeEl.dateTime = now.toISOString();
+    currentTimeEl.textContent = now.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: clockFormat === '12',
+    });
+  };
+
+  updateSessionCountdownDisplay = () => {
+    if (!sessionCountdownEl) return;
+
+    const now = new Date();
+    const sessionEnd = getSessionEndDate(now, sessionEndHour, sessionEndMinute);
+    const remainingMs = sessionEnd ? sessionEnd - now : 0;
+    const { text, phase } = formatSessionCountdownText(remainingMs);
+
+    sessionCountdownEl.textContent = text;
+    sessionCountdownEl.setAttribute('aria-label', text);
+    sessionCountdownEl.classList.toggle('final-hour', phase === 'minutes');
+    sessionCountdownEl.classList.toggle('times-up', phase === 'times-up');
+  };
+
+  const tickTimeDisplays = () => {
+    if (showCurrentTime) {
+      updateCurrentTimeDisplay();
+    }
+    if (showSessionCountdown) {
+      updateSessionCountdownDisplay();
+    }
+  };
+
+  tickTimeDisplays();
+  setInterval(tickTimeDisplays, 1000);
+}
+
 // Utility functions
 const connectivityUtils = {
   isOnline: () => navigator.onLine,
@@ -68,21 +245,168 @@ const orientationUtils = {
   },
 };
 
+const staleTabUtils = {
+  bannerDismissed: false,
+  bannerEl: null,
+  messageEl: null,
+  statusEl: null,
+  progressEl: null,
+  refreshTimerId: null,
+  secondsLeft: STALE_TAB_REFRESH_SECONDS,
+
+  markActive() {
+    localStorage.setItem(LAST_ACTIVE_AT_KEY, String(Date.now()));
+  },
+
+  isStale() {
+    if (Date.now() - performance.timeOrigin >= STALE_TAB_MS) {
+      return true;
+    }
+
+    const lastActive = Number(localStorage.getItem(LAST_ACTIVE_AT_KEY));
+    return lastActive > 0 && Date.now() - lastActive >= STALE_TAB_MS;
+  },
+
+  countdownUnit() {
+    return this.secondsLeft === 1 ? 'second' : 'seconds';
+  },
+
+  renderCountdown() {
+    if (!this.messageEl) return;
+    const count = document.createElement('strong');
+    count.textContent = `${this.secondsLeft} ${this.countdownUnit()}`;
+    this.messageEl.replaceChildren(
+      document.createTextNode(
+        'This tab has been inactive for a while. Refreshing in '
+      ),
+      count,
+      document.createTextNode(' to load the latest version.')
+    );
+  },
+
+  syncBannerHeight() {
+    if (!this.bannerEl || this.bannerEl.hasAttribute('hidden')) return;
+    document.documentElement.style.setProperty(
+      '--stale-tab-banner-height',
+      `${this.bannerEl.offsetHeight}px`
+    );
+  },
+
+  clearRefreshTimer() {
+    if (this.refreshTimerId !== null) {
+      clearInterval(this.refreshTimerId);
+      this.refreshTimerId = null;
+    }
+  },
+
+  refreshPage() {
+    this.clearRefreshTimer();
+    location.reload();
+  },
+
+  armCountdown() {
+    const reduceMotion = globalThis.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+    if (this.progressEl && !reduceMotion) {
+      this.progressEl.style.animation = 'none';
+      void this.progressEl.offsetWidth;
+      this.progressEl.style.animation = `stale-tab-refresh-countdown ${STALE_TAB_REFRESH_SECONDS}s linear forwards`;
+    }
+
+    this.refreshTimerId = setInterval(() => {
+      this.secondsLeft -= 1;
+      if (this.secondsLeft <= 0) {
+        this.refreshPage();
+        return;
+      }
+      this.renderCountdown();
+      this.syncBannerHeight();
+    }, 1000);
+  },
+
+  showBanner() {
+    if (!this.bannerEl) return;
+    const alreadyCounting =
+      !this.bannerEl.hasAttribute('hidden') && this.refreshTimerId !== null;
+    if (!alreadyCounting) {
+      this.clearRefreshTimer();
+      this.secondsLeft = STALE_TAB_REFRESH_SECONDS;
+      this.renderCountdown();
+    }
+    this.bannerEl.removeAttribute('hidden');
+    document.body.classList.add('stale-tab-banner-visible');
+    this.syncBannerHeight();
+    if (!alreadyCounting) {
+      if (this.statusEl) {
+        this.statusEl.textContent = `This tab has been inactive for a while. Refreshing automatically in ${STALE_TAB_REFRESH_SECONDS} seconds to load the latest version.`;
+      }
+      this.armCountdown();
+    }
+  },
+
+  hideBanner() {
+    if (!this.bannerEl) return;
+    this.clearRefreshTimer();
+    if (this.progressEl) {
+      this.progressEl.style.animation = 'none';
+    }
+    this.bannerEl.setAttribute('hidden', '');
+    document.body.classList.remove('stale-tab-banner-visible');
+    document.documentElement.style.removeProperty('--stale-tab-banner-height');
+  },
+
+  checkOnResume() {
+    if (this.isStale() && !this.bannerDismissed) {
+      this.showBanner();
+    }
+  },
+
+  onBecameVisible() {
+    this.bannerDismissed = false;
+    this.checkOnResume();
+    this.markActive();
+  },
+
+  onBecameHidden() {
+    this.markActive();
+  },
+
+  init() {
+    this.bannerEl = document.getElementById('staleTabBanner');
+    this.messageEl = document.getElementById('staleTabMessage');
+    this.statusEl = document.getElementById('staleTabStatus');
+    this.progressEl = document.getElementById('staleTabProgress');
+    document
+      .getElementById('staleTabRefreshBtn')
+      ?.addEventListener('click', () => {
+        this.refreshPage();
+      });
+    document.getElementById('staleTabDismissBtn')?.addEventListener('click', () => {
+      this.bannerDismissed = true;
+      this.hideBanner();
+    });
+
+    this.checkOnResume();
+    this.markActive();
+  },
+};
+
 const youtubeUtils = {
   play: () => {
-    if (playMusic && youtubePlayer?.playVideo) {
-      youtubePlayer.playVideo();
-    }
+    runYoutube((player) => {
+      player.playVideo?.();
+    });
   },
   pause: () => {
-    if (playMusic && youtubePlayer?.pauseVideo) {
-      youtubePlayer.pauseVideo();
-    }
+    runYoutube((player) => {
+      player.pauseVideo?.();
+    });
   },
   stop: () => {
-    if (playMusic && youtubePlayer?.stopVideo) {
-      youtubePlayer.stopVideo();
-    }
+    runYoutube((player) => {
+      player.stopVideo?.();
+    });
   },
 };
 
@@ -100,6 +424,113 @@ const YOUTUBE_PLAYER_CONTAINER_CLASS = 'youtube-player-container';
 
 function getYoutubePlayerContainer() {
   return document.querySelector(`.${YOUTUBE_PLAYER_CONTAINER_CLASS}`);
+}
+
+// Remove the iframe without calling the YouTube API. destroy() can hang the
+// page once the network has gone, which freezes day controls.
+function detachYoutubePlayer() {
+  youtubePlayer = null;
+  const container = getYoutubePlayerContainer();
+  if (container) {
+    container.remove();
+  }
+}
+
+function destroyYoutubePlayer() {
+  const player = youtubePlayer;
+  youtubePlayer = null;
+  if (player && connectivityUtils.isOnline()) {
+    try {
+      player.destroy();
+    } catch (error) {
+      console.log('Error destroying YouTube player:', error);
+    }
+  }
+  detachYoutubePlayer();
+}
+
+function runYoutube(fn) {
+  if (!playMusic || !youtubePlayer || !connectivityUtils.isOnline()) return;
+  try {
+    fn(youtubePlayer);
+  } catch (error) {
+    console.log('YouTube player call failed:', error);
+    detachYoutubePlayer();
+  }
+}
+
+// Play a sound effect without letting a missing file or a dead network stop the timer.
+function safePlaySound(audio, { onEnded, onError, fallbackBeep = false } = {}) {
+  let finished = false;
+  const fail = (error) => {
+    if (finished) return;
+    finished = true;
+    console.log('Error playing sound:', error);
+    if (fallbackBeep) {
+      try {
+        createBeep();
+      } catch (beepError) {
+        console.log('Error playing fallback beep:', beepError);
+      }
+    }
+    onError?.();
+  };
+
+  if (!playSoundEffects || !audio) {
+    onError?.();
+    return;
+  }
+
+  // Seeking or loading while offline can stall the page. Only play media that
+  // is already buffered; otherwise fall back to a generated beep.
+  const buffered = audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
+  if (!connectivityUtils.isOnline() && !buffered) {
+    fail(new Error('Sound is not available offline'));
+    return;
+  }
+
+  try {
+    audio.volume = soundEffectsVolume / 100;
+    if (connectivityUtils.isOnline()) {
+      try {
+        audio.currentTime = 0;
+      } catch (error) {
+        console.log('Could not rewind sound:', error);
+        if (!buffered) {
+          fail(error);
+          return;
+        }
+      }
+    }
+
+    if (onEnded) {
+      audio.addEventListener(
+        'ended',
+        () => {
+          if (!finished) onEnded();
+        },
+        { once: true }
+      );
+    }
+
+    const playPromise = audio.play();
+    if (!playPromise?.then) return;
+
+    const stallTimer = setTimeout(() => {
+      fail(new Error('Sound playback stalled'));
+    }, 5000);
+
+    playPromise
+      .then(() => {
+        clearTimeout(stallTimer);
+      })
+      .catch((error) => {
+        clearTimeout(stallTimer);
+        fail(error);
+      });
+  } catch (error) {
+    fail(error);
+  }
 }
 
 const timerUtils = {
@@ -266,7 +697,7 @@ const keyboardShortcutsUtils = {
   // Nuclear option: completely remove and recreate the keyboardShortcuts key
   forceReset: () => {
     // Get current settings
-    const savedSettings = localStorage.getItem('quickTimerSettings');
+    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
 
@@ -274,7 +705,7 @@ const keyboardShortcutsUtils = {
       delete settings.keyboardShortcuts;
 
       // Save settings without keyboardShortcuts
-      localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     }
 
     // Reset to defaults
@@ -327,7 +758,7 @@ const BUTTON_LABELS = {
   RESET: '🔄 Reset Day',
   ACCELERATE: '⏩ Accelerate Time',
   ACCELERATE_CONFIRM: 'Confirm…',
-  ACCELERATE_TIME_FLIES: '{time flies}',
+  ACCELERATE_TIME_FLIES: 'Time flies…',
   START_DAY: (day) => `▶ Start Day ${day}`,
   FULLSCREEN: {
     ENTER:
@@ -400,6 +831,11 @@ let backgroundTheme = 'medieval-cartoon'; // Default background theme
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
 let keepDisplayOn = true; // Default to true for wake lock
 let showPlayerCountQr = false; // Optional QR linking to count.arcane-scripts.net
+let showCurrentTime = true; // Show wall clock under day display
+let clockFormat = '24'; // '12' or '24'
+let showSessionCountdown = false;
+let sessionEndHour = 23;
+let sessionEndMinute = 0;
 let youtubePlayer = null;
 let endOfDaySound = 'cathedral-bell-v2.mp3'; // Default end of day sound
 let wakeUpSoundFile = 'chisel-bell-01-loud-v2.mp3'; // Default wake up sound
@@ -589,13 +1025,18 @@ function updateStartButtonText(text) {
   }
 }
 
-// Helper function to update estimated game length
+const MIN_NOMINATION_SECONDS = 3 * 60;
+
+// Estimated length is each day's timer plus nominations.
+// Nominations are assumed to take as long as that day, and never less than 3 minutes.
 function updateEstimatedGameLength() {
   const presets = generateDayPresets(playerCount);
   let totalSeconds = 0;
 
   presets.forEach((preset) => {
-    totalSeconds += preset.minutes * 60 + preset.seconds;
+    const daySeconds = preset.minutes * 60 + preset.seconds;
+    const nominationSeconds = Math.max(daySeconds, MIN_NOMINATION_SECONDS);
+    totalSeconds += daySeconds + nominationSeconds;
   });
 
   // Round up to the nearest minute
@@ -633,17 +1074,27 @@ async function releaseWakeLock() {
   }
 }
 
-// Event listeners for wake lock
+// Event listeners for wake lock and stale-tab banner
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
+    staleTabUtils.onBecameVisible();
     await requestWakeLock();
   } else {
+    staleTabUtils.onBecameHidden();
     await releaseWakeLock();
+  }
+});
+
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    staleTabUtils.onBecameVisible();
   }
 });
 
 // Request wake lock and initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
+  staleTabUtils.init();
+
   try {
     await requestWakeLock();
   } catch (error) {
@@ -672,19 +1123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     },
     () => {
-      // When we go offline, tear down the YouTube player (iframe + API object)
-      if (youtubePlayer) {
-        try {
-          youtubePlayer.destroy();
-        } catch (e) {
-          console.log('Error destroying YouTube player on offline:', e);
-        }
-        youtubePlayer = null;
-      }
-      const container = getYoutubePlayerContainer();
-      if (container) {
-        container.remove();
-      }
+      // When we go offline, drop the player immediately. destroy() is skipped
+      // because it can hang and leave the timer controls unresponsive.
+      detachYoutubePlayer();
     }
   );
 
@@ -695,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   startBtn = document.getElementById('startBtn');
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   startBtn.disabled = false; // Ensure Wake Up button is enabled on load
+  initTimeDisplays();
   resetBtn = document.getElementById('resetBtn');
   resetBtn.textContent = BUTTON_LABELS.RESET;
   resetBtn.disabled = true; // Reset button should be disabled initially
@@ -838,6 +1280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         accelerateConfirmTimeout = null;
       }
       setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_TIME_FLIES);
+      accelerateBtn.setAttribute('aria-label', 'Time is accelerating');
       accelerateBtn.disabled = true;
       accelerateTime();
     }
@@ -898,6 +1341,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       .getElementById('playerCountQrWrapper')
       .classList.toggle('visible', showPlayerCountQr);
     saveSettings();
+  });
+  document.getElementById('showCurrentTime').addEventListener('change', (e) => {
+    showCurrentTime = e.target.checked;
+    saveSettings();
+    updateTimeSettingsUi();
+  });
+  document
+    .getElementById('showSessionCountdown')
+    .addEventListener('change', (e) => {
+      showSessionCountdown = e.target.checked;
+      saveSettings();
+      updateTimeSettingsUi();
+    });
+  document.getElementById('sessionEndHour').addEventListener('change', (e) => {
+    sessionEndHour = Number.parseInt(e.target.value, 10);
+    saveSettings();
+    updateSessionCountdownDisplay();
+  });
+  document.getElementById('sessionEndMinute').addEventListener('change', (e) => {
+    sessionEndMinute = Number.parseInt(e.target.value, 10);
+    saveSettings();
+    updateSessionCountdownDisplay();
+  });
+  document.querySelectorAll('input[name="clockFormat"]').forEach((input) => {
+    input.addEventListener('change', (e) => {
+      if (!e.target.checked) return;
+      clockFormat = e.target.value;
+      saveSettings();
+      updateCurrentTimeDisplay();
+    });
   });
 
   // Add keyboard shortcuts event listeners
@@ -1176,6 +1649,22 @@ function applyParsedSettings(settings) {
   keepDisplayOn =
     settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
   showPlayerCountQr = settings.showPlayerCountQr === true;
+  showCurrentTime =
+    settings.showCurrentTime === undefined ? true : settings.showCurrentTime;
+  clockFormat = settings.clockFormat === '12' ? '12' : '24';
+  showSessionCountdown = settings.showSessionCountdown === true;
+  sessionEndHour =
+    Number.isInteger(settings.sessionEndHour) &&
+    settings.sessionEndHour >= 0 &&
+    settings.sessionEndHour <= 23
+      ? settings.sessionEndHour
+      : 23;
+  sessionEndMinute =
+    Number.isInteger(settings.sessionEndMinute) &&
+    settings.sessionEndMinute >= 0 &&
+    settings.sessionEndMinute <= 59
+      ? settings.sessionEndMinute
+      : 0;
   youtubeVolume = settings.youtubeVolume || 15;
   backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
   youtubePlaylistUrl = settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
@@ -1216,7 +1705,7 @@ function applyParsedSettings(settings) {
     showWhatsNew(lastSeenVersion);
   }
   settings.lastSeenVersion = APP_VERSION;
-  localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   updateDayDisplay(settings.dayState || '');
 }
 
@@ -1247,6 +1736,10 @@ function applySettingsToForm() {
   document.getElementById('musicVolume').value = youtubeVolume;
   document.getElementById('soundEffectsVolume').value = soundEffectsVolume;
   document.getElementById('backgroundTheme').value = backgroundTheme;
+  document.querySelector(
+    `input[name="clockFormat"][value="${clockFormat}"]`
+  ).checked = true;
+  updateTimeSettingsUi();
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
@@ -1331,7 +1824,8 @@ function applySettingsToForm() {
 
 // Load settings from localStorage
 function loadSettings() {
-  const savedSettings = localStorage.getItem('quickTimerSettings');
+  migrateLegacySettings();
+  const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
   if (savedSettings) {
     applyParsedSettings(JSON.parse(savedSettings));
     // Recreate Audio objects so they use the loaded sound files (they were
@@ -1423,6 +1917,11 @@ function saveSettings() {
     soundEffectsVolume,
     keepDisplayOn,
     showPlayerCountQr,
+    showCurrentTime,
+    clockFormat,
+    showSessionCountdown,
+    sessionEndHour,
+    sessionEndMinute,
     youtubeVolume,
     youtubePlaylistUrl,
     backgroundTheme,
@@ -1436,7 +1935,7 @@ function saveSettings() {
     acceptedPortraitWarning,
     keyboardShortcuts,
   };
-  localStorage.setItem('quickTimerSettings', JSON.stringify(settings));
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
 }
 
 // Returns { label, effectiveDay } for a preset. effectiveDay is null for skipped (💀).
@@ -1590,26 +2089,20 @@ function updateClocktowerPresets() {
       // Clear dusk state before starting countdown
       updateDayDisplay();
 
-      // Play wake-up sound if sound effects are enabled and we're not in a wake-up countdown
-      if (
-        playSoundEffects &&
-        !timerDisplayEl.classList.contains('wake-up-countdown')
-      ) {
-        wakeUpSound.currentTime = 0;
-        wakeUpSound.volume = soundEffectsVolume / 100;
-        wakeUpSound.play().catch((error) => {
-          console.log('Error playing wake-up sound:', error);
-          createBeep();
-        });
-      }
-
-      // Start the timer
+      // Start the timer before sound, so a missing file cannot block the day
       startCountdown();
       startBtn.disabled = false;
       updateStartButtonText(BUTTON_LABELS.PAUSE);
       resetAccelerateButton();
       accelerateBtn.disabled = false;
       resetBtn.disabled = false; // Enable reset button when starting timer
+
+      if (
+        playSoundEffects &&
+        !timerDisplayEl.classList.contains('wake-up-countdown')
+      ) {
+        safePlaySound(wakeUpSound, { fallbackBeep: true });
+      }
     });
 
     clocktowerPresetsDiv.appendChild(button);
@@ -1725,48 +2218,41 @@ function playEndSound() {
   if (!playSoundEffects) return;
 
   // Stop music if playing and not set to play at night
-  if (playMusic && !playMusicAtNight && youtubePlayer) {
-    youtubePlayer.pauseVideo();
-    setYoutubeControlButtonIcon(false);
+  if (!playMusicAtNight) {
+    runYoutube((player) => {
+      player.pauseVideo?.();
+      setYoutubeControlButtonIcon(false);
+    });
   }
 
   isEndSoundPlaying = true;
   startBtn.disabled = true;
 
-  endSound.currentTime = 0; // Reset the sound to start
-  endSound.volume = soundEffectsVolume / 100; // Apply volume control
-  endSound.play().catch((error) => {
-    console.log('Error playing sound:', error);
-    // Fallback to beep if sound file fails
-    createBeep();
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
     isEndSoundPlaying = false;
     updateDisplay();
-  });
-
-  // Enable the button after the sound finishes
-  endSound.addEventListener(
-    'ended',
-    () => {
-      isEndSoundPlaying = false;
-      updateDisplay();
-      // Resume music if playMusicAtNight is enabled
-      if (playMusic && playMusicAtNight && youtubePlayer) {
-        youtubePlayer.playVideo();
+    // Resume music if playMusicAtNight is enabled
+    if (playMusicAtNight) {
+      runYoutube((player) => {
+        player.playVideo?.();
         setYoutubeControlButtonIcon(true);
-      }
-    },
-    { once: true }
-  );
+      });
+    }
+  };
+
+  safePlaySound(endSound, {
+    fallbackBeep: true,
+    onEnded: finish,
+    onError: finish,
+  });
 }
 
 // Play nominations open sound
 function playNominationsOpenSound() {
-  if (!playSoundEffects || !nominationsOpenSound) return;
-  nominationsOpenSound.currentTime = 0;
-  nominationsOpenSound.volume = soundEffectsVolume / 100;
-  nominationsOpenSound.play().catch((error) => {
-    console.log('Error playing nominations open sound:', error);
-  });
+  safePlaySound(nominationsOpenSound);
 }
 
 // Clear the nominations countdown (interval and UI)
@@ -1922,19 +2408,16 @@ function accelerateTime() {
 
     if (timeLeft === 0) {
       clearInterval(timerId);
-      playEndSound();
       isRunning = false;
-      startBtn.disabled = true;
-      updateStartButtonText(BUTTON_LABELS.RESUME);
       currentInterval = normalInterval;
-      // Stop YouTube player when accelerated time ends
-      if (playMusic && youtubePlayer?.pauseVideo) {
-        youtubePlayer.pauseVideo();
-      }
+      runYoutube((player) => {
+        player.pauseVideo?.();
+      });
       if (currentDay !== null) {
         updateDayDisplay('dusk');
         updateClocktowerPresets();
       }
+      playEndSound();
       updateDisplay(); // Make sure to update display one final time
 
       if (autoOpenNominations && autoOpenNominationsDelay > 0) {
@@ -1950,12 +2433,12 @@ function accelerateTime() {
 // Start timer
 function startTimer() {
   if (isRunning) {
-    // Pause timer
+    // Pause timer before touching music, so a dead player cannot block the click
     timerUtils.stop();
-    if (playMusic && youtubePlayer) {
-      youtubePlayer.pauseVideo();
+    runYoutube((player) => {
+      player.pauseVideo?.();
       setYoutubeControlButtonIcon(false);
-    }
+    });
     return;
   }
 
@@ -1963,10 +2446,6 @@ function startTimer() {
   if (timeLeft > 0) {
     isRunning = true;
     hasReset = false; // Clear the reset state when starting timer
-    if (playMusic && youtubePlayer) {
-      youtubePlayer.playVideo();
-      setYoutubeControlButtonIcon(true);
-    }
     startCountdown();
     return;
   }
@@ -1994,6 +2473,7 @@ function resetTimer() {
   currentInterval = normalInterval;
   isRunning = false; // Ensure timer is marked as not running
   hasReset = true; // Set the reset state
+  isEndSoundPlaying = false;
 
   // Reset button states
   startBtn.disabled = false;
@@ -2003,10 +2483,10 @@ function resetTimer() {
   resetBtn.disabled = true;
 
   // Stop music and update play/pause button
-  if (playMusic && youtubePlayer) {
-    youtubePlayer.stopVideo();
+  runYoutube((player) => {
+    player.stopVideo?.();
     setYoutubeControlButtonIcon(false);
-  }
+  });
 
   // Reset day display to normal state
   updateDayDisplay();
@@ -2086,18 +2566,9 @@ function playWakeUpSound() {
   }
   clearNominationsCountdown();
 
-  if (playSoundEffects) {
-    // Stop music if playing and not set to play at night
-    if (playMusic && !playMusicAtNight) {
-      youtubeUtils.pause();
-    }
-
-    wakeUpSound.currentTime = 0;
-    wakeUpSound.volume = soundEffectsVolume / 100; // Apply volume control
-    wakeUpSound.play().catch((error) => {
-      console.log('Error playing wake-up sound:', error);
-      createBeep();
-    });
+  // Stop music if playing and not set to play at night
+  if (playSoundEffects && !playMusicAtNight) {
+    youtubeUtils.pause();
   }
 
   // Only increment day if we're in dusk state
@@ -2174,23 +2645,13 @@ function playWakeUpSound() {
 
   // Store the countdown interval ID
   wakeUpTimeout = timerId;
+
+  // Sound comes last so a failed or stalled file cannot skip the countdown
+  safePlaySound(wakeUpSound, { fallbackBeep: true });
 }
 
 function startCountdown() {
   isRunning = true;
-
-  // Start music if enabled and not in dusk state
-  const dayInfo = document.querySelector('.day-display');
-  const isDusk = dayInfo?.classList?.contains('dusk');
-  if (playMusic && !isDusk) {
-    if (
-      youtubePlayer &&
-      youtubePlayer.getPlayerState() !== YT.PlayerState.PLAYING
-    ) {
-      youtubePlayer.playVideo();
-      setYoutubeControlButtonIcon(true);
-    }
-  }
 
   timerId = setInterval(() => {
     timeLeft--;
@@ -2198,16 +2659,16 @@ function startCountdown() {
 
     if (timeLeft === 0) {
       clearInterval(timerId);
-      playEndSound();
       isRunning = false;
-      if (playMusic && youtubePlayer?.pauseVideo) {
-        youtubePlayer.pauseVideo();
+      runYoutube((player) => {
+        player.pauseVideo?.();
         setYoutubeControlButtonIcon(false);
-      }
+      });
       if (currentDay !== null) {
         updateDayDisplay('dusk');
         updateClocktowerPresets();
       }
+      playEndSound();
       updateDisplay();
 
       if (autoOpenNominations && autoOpenNominationsDelay > 0) {
@@ -2215,6 +2676,21 @@ function startCountdown() {
       }
     }
   }, normalInterval);
+
+  // Music is best-effort and must not prevent the countdown from starting
+  const dayInfo = document.querySelector('.day-display');
+  const isDusk = dayInfo?.classList?.contains('dusk');
+  if (!isDusk) {
+    runYoutube((player) => {
+      const playing =
+        globalThis.YT &&
+        player.getPlayerState?.() === globalThis.YT.PlayerState.PLAYING;
+      if (!playing) {
+        player.playVideo?.();
+        setYoutubeControlButtonIcon(true);
+      }
+    });
+  }
 }
 
 function startNewGame() {
@@ -2223,6 +2699,7 @@ function startNewGame() {
   clearNominationsCountdown();
   timeLeft = 0;
   isRunning = false;
+  isEndSoundPlaying = false;
   currentInterval = normalInterval;
 
   // Set to Day 1
@@ -2240,20 +2717,19 @@ function startNewGame() {
   saveSettings();
   closeSettings();
 
-  // Stop any playing video and reshuffle playlist
-  if (playMusic && youtubePlayer) {
+  // Stop any playing video and reshuffle playlist. Failure must not undo the new game.
+  runYoutube((player) => {
     const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
-    if (playlistId) {
-      youtubePlayer.stopVideo();
-      youtubePlayer.setShuffle(true);
-      youtubePlayer.cuePlaylist({
-        list: playlistId,
-        listType: 'playlist',
-        index: Math.floor(Math.random() * 50),
-        suggestedQuality: 'small',
-      });
-    }
-  }
+    if (!playlistId) return;
+    player.stopVideo?.();
+    player.setShuffle?.(true);
+    player.cuePlaylist?.({
+      list: playlistId,
+      listType: 'playlist',
+      index: Math.floor(Math.random() * 50),
+      suggestedQuality: 'small',
+    });
+  });
 }
 
 // Update day display
@@ -2421,6 +2897,7 @@ function loadYoutubeApi() {
 }
 
 function initYoutubePlayer() {
+  if (!playMusic || !connectivityUtils.isOnline()) return;
   if (!globalThis.YT || !youtubeApiReady) {
     loadYoutubeApi();
   } else {
@@ -2431,7 +2908,7 @@ function initYoutubePlayer() {
 // Called by YouTube API when ready
 globalThis.onYouTubeIframeAPIReady = function () {
   youtubeApiReady = true;
-  if (playMusic) {
+  if (playMusic && connectivityUtils.isOnline()) {
     createYoutubePlayer();
   }
 };
@@ -2470,14 +2947,15 @@ function createYoutubePlayerContainer() {
   playPauseBtn.className = 'youtube-control';
   playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
   playPauseBtn.addEventListener('click', () => {
-    if (!youtubePlayer) return;
-    if (youtubePlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-      youtubePlayer.pauseVideo();
-      playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
-    } else {
-      youtubePlayer.playVideo();
-      playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PAUSE;
-    }
+    runYoutube((player) => {
+      if (player.getPlayerState?.() === globalThis.YT?.PlayerState?.PLAYING) {
+        player.pauseVideo?.();
+        playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
+      } else {
+        player.playVideo?.();
+        playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PAUSE;
+      }
+    });
   });
   container.appendChild(playPauseBtn);
 
@@ -2496,21 +2974,9 @@ function createYoutubePlayerContainer() {
 }
 
 async function createYoutubePlayer() {
+  if (!playMusic || !connectivityUtils.isOnline()) return;
   try {
-    // Remove existing player and container
-    if (youtubePlayer) {
-      try {
-        youtubePlayer.destroy();
-      } catch (e) {
-        console.log('Error destroying player:', e);
-      }
-      youtubePlayer = null;
-    }
-
-    const existingContainer = getYoutubePlayerContainer();
-    if (existingContainer) {
-      existingContainer.remove();
-    }
+    destroyYoutubePlayer();
 
     // Create new container with controls
     createYoutubePlayerContainer();
@@ -2560,57 +3026,74 @@ async function createYoutubePlayer() {
 }
 
 function onPlayerReady(event) {
-  event.target.setVolume(youtubeVolume);
-  const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
-
-  if (playlistId) {
-    event.target.cuePlaylist({
-      list: playlistId,
-      listType: 'playlist',
-      index: Math.floor(Math.random() * 50),
-      suggestedQuality: 'small',
-    });
+  if (!connectivityUtils.isOnline()) {
+    detachYoutubePlayer();
+    return;
   }
+  try {
+    event.target.setVolume(youtubeVolume);
+    const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
 
-  // If timer is already running, start playing
-  if (isRunning && timeLeft > 0) {
-    const dayInfo = document.querySelector('.day-display');
-    const isDusk = dayInfo?.classList?.contains('dusk');
-    if (!isDusk) {
-      event.target.playVideo();
+    if (playlistId) {
+      event.target.cuePlaylist({
+        list: playlistId,
+        listType: 'playlist',
+        index: Math.floor(Math.random() * 50),
+        suggestedQuality: 'small',
+      });
     }
+
+    // If timer is already running, start playing
+    if (isRunning && timeLeft > 0) {
+      const dayInfo = document.querySelector('.day-display');
+      const isDusk = dayInfo?.classList?.contains('dusk');
+      if (!isDusk) {
+        event.target.playVideo();
+      }
+    }
+  } catch (error) {
+    console.log('YouTube player ready handler failed:', error);
+    detachYoutubePlayer();
   }
 }
 
 function onPlayerStateChange(event) {
-  if (event.data === YT.PlayerState.PLAYING) {
-    setYoutubeControlButtonIcon(true);
-    // Get and display the current track title
-    const title = event.target.getVideoData()?.title;
-    if (title) {
-      updatePlaylistBadge(title);
+  try {
+    if (event.data === YT.PlayerState.PLAYING) {
+      setYoutubeControlButtonIcon(true);
+      // Get and display the current track title
+      const title = event.target.getVideoData()?.title;
+      if (title) {
+        updatePlaylistBadge(title);
+      }
+      // Ensure volume is set correctly when starting playback
+      event.target.setVolume(youtubeVolume);
+    } else if (
+      event.data === YT.PlayerState.PAUSED ||
+      event.data === YT.PlayerState.CUED
+    ) {
+      setYoutubeControlButtonIcon(false);
+    } else if (event.data === YT.PlayerState.ENDED) {
+      const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
+      if (playlistId) {
+        event.target.setShuffle(true);
+        event.target.playVideoAt(0);
+      } else {
+        event.target.playVideo();
+      }
     }
-    // Ensure volume is set correctly when starting playback
-    event.target.setVolume(youtubeVolume);
-  } else if (
-    event.data === YT.PlayerState.PAUSED ||
-    event.data === YT.PlayerState.CUED
-  ) {
-    setYoutubeControlButtonIcon(false);
-  } else if (event.data === YT.PlayerState.ENDED) {
-    const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
-    if (playlistId) {
-      event.target.setShuffle(true);
-      event.target.playVideoAt(0);
-    } else {
-      event.target.playVideo();
-    }
+  } catch (error) {
+    console.log('YouTube player state handler failed:', error);
+    detachYoutubePlayer();
   }
 }
 
 function onPlayerError(event) {
   console.error('YouTube player error:', event);
   updatePlaylistBadge('');
+  if (!connectivityUtils.isOnline()) {
+    detachYoutubePlayer();
+  }
 }
 
 // Update YouTube playlist URL
@@ -2679,19 +3162,7 @@ function updateMusicPlayback() {
   if (playMusic) {
     initYoutubePlayer();
   } else {
-    youtubeUtils.stop();
-    if (youtubePlayer) {
-      try {
-        youtubePlayer.destroy();
-      } catch (e) {
-        console.log('Error destroying YouTube player:', e);
-      }
-      youtubePlayer = null;
-    }
-    const container = getYoutubePlayerContainer();
-    if (container) {
-      container.remove();
-    }
+    destroyYoutubePlayer();
   }
   saveSettings();
 }
@@ -2702,9 +3173,9 @@ function updateYoutubeVolume() {
   document.querySelector(
     'label:has(#musicVolume) .volume-value'
   ).textContent = `${youtubeVolume}%`;
-  if (youtubePlayer?.setVolume) {
-    youtubePlayer.setVolume(youtubeVolume);
-  }
+  runYoutube((player) => {
+    player.setVolume?.(youtubeVolume);
+  });
   // Update volume info display
   const volumeInfo = document.querySelector('.volume-info');
   if (volumeInfo) {

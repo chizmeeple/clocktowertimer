@@ -1,7 +1,54 @@
 // Version tracking
-export const APP_VERSION = '1.0.28';
+export const APP_VERSION = '1.0.33';
 
 export const CHANGELOG = {
+  '1.0.33': {
+    date: '2026-09-22',
+    changes: {
+      fixes: [
+        'Timer controls keep working when the device goes offline, so days can still be started, paused, reset, and a new game can be started without music or a network connection',
+      ],
+    },
+  },
+  '1.0.32': {
+    date: '2026-09-22',
+    changes: {
+      improvements: [
+        'Dev dependencies: update lockfile packages, including axios, joi, dayjs, semver, and @types/node (df9e67f).',
+      ],
+    },
+  },
+  '1.0.31': {
+    date: '2026-09-22',
+    changes: {
+      fixes: [
+        'Accelerate button shows "Time flies…" while time is speeding up, instead of the placeholder "{time flies}"',
+      ],
+      improvements: [
+        'Blitz mode uses a red bottom button bar and a translucent red overlay on the background image',
+        'Estimated game length includes nominations, guessed as each day\'s length with a 3-minute minimum',
+        'Stale-tab banner refreshes the page automatically after a 10-second countdown, and can still be refreshed or dismissed immediately',
+      ],
+    },
+  },
+  '1.0.30': {
+    date: '2026-05-22',
+    changes: {
+      features: [
+        'Show a refresh banner when a tab has been inactive for two or more days, so long-lived tabs can load the latest version',
+      ],
+    },
+  },
+  '1.0.29': {
+    date: '2026-05-21',
+    changes: {
+      features: [
+        'Show the current time underneath the Day display on the timer screen',
+        'Add Time settings tab to show or hide the clock and choose 12-hour or 24-hour format',
+        'Add optional session countdown under Wake Up with configurable end time',
+      ],
+    },
+  },
   '1.0.28': {
     date: '2026-04-02',
     changes: {
