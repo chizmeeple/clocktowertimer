@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.0.33';
+export const APP_VERSION = '1.0.34';
 
 export const CHANGELOG = {
+  '1.0.34': {
+    date: '2026-10-09',
+    changes: {
+      improvements: [
+        'Estimated game length includes a 4-minute night before each day',
+      ],
+    },
+  },
   '1.0.33': {
     date: '2026-09-22',
     changes: {
