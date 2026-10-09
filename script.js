@@ -1026,8 +1026,10 @@ function updateStartButtonText(text) {
 }
 
 const MIN_NOMINATION_SECONDS = 3 * 60;
+const NIGHT_PHASE_SECONDS = 4 * 60;
 
-// Estimated length is each day's timer plus nominations.
+// Estimated length is a night before each day, that day's timer, and nominations.
+// Each night is assumed to take 4 minutes.
 // Nominations are assumed to take as long as that day, and never less than 3 minutes.
 function updateEstimatedGameLength() {
   const presets = generateDayPresets(playerCount);
@@ -1036,7 +1038,7 @@ function updateEstimatedGameLength() {
   presets.forEach((preset) => {
     const daySeconds = preset.minutes * 60 + preset.seconds;
     const nominationSeconds = Math.max(daySeconds, MIN_NOMINATION_SECONDS);
-    totalSeconds += daySeconds + nominationSeconds;
+    totalSeconds += NIGHT_PHASE_SECONDS + daySeconds + nominationSeconds;
   });
 
   // Round up to the nearest minute
