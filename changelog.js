@@ -5,6 +5,9 @@ export const CHANGELOG = {
   '1.0.35': {
     date: '2026-10-10',
     changes: {
+      fixes: [
+        'Orientation listeners are removed with the same handler that was registered, so they do not keep running after they are unregistered',
+      ],
       improvements: [
         'Day and wake-up countdowns stay accurate when the browser delays timer updates, including in a background tab',
         'Pause still skips time spent waiting, and Accelerate keeps the same faster rate without jumping the clock',

@@ -1,4 +1,4 @@
-import { updateCharacterAmounts } from './helper.js';
+import { orientationUtils, updateCharacterAmounts } from './helper.js';
 
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
@@ -226,22 +226,6 @@ const connectivityUtils = {
   removeStatusListener: (onlineCallback, offlineCallback) => {
     globalThis.removeEventListener('online', onlineCallback);
     globalThis.removeEventListener('offline', offlineCallback);
-  },
-};
-
-const orientationUtils = {
-  isPortrait: () => globalThis.matchMedia('(orientation: portrait)').matches,
-  addOrientationListener: (callback) => {
-    globalThis
-      .matchMedia('(orientation: portrait)')
-      .addEventListener('change', (e) => {
-        callback(e.matches);
-      });
-  },
-  removeOrientationListener: (callback) => {
-    globalThis
-      .matchMedia('(orientation: portrait)')
-      .removeEventListener('change', callback);
   },
 };
 
