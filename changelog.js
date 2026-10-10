@@ -7,6 +7,8 @@ export const CHANGELOG = {
     changes: {
       fixes: [
         'Orientation listeners are removed with the same handler that was registered, so they do not keep running after they are unregistered',
+        'Malformed or unexpected saved settings no longer stop the timer from starting; valid preferences are kept and invalid values fall back to their defaults',
+        'The timer stays usable when browser storage cannot be read or written',
       ],
       improvements: [
         'Day and wake-up countdowns stay accurate when the browser delays timer updates, including in a background tab',
