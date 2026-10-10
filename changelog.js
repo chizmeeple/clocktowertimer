@@ -1,7 +1,16 @@
 // Version tracking
-export const APP_VERSION = '1.0.34';
+export const APP_VERSION = '1.0.35';
 
 export const CHANGELOG = {
+  '1.0.35': {
+    date: '2026-10-10',
+    changes: {
+      improvements: [
+        'Day and wake-up countdowns stay accurate when the browser delays timer updates, including in a background tab',
+        'Pause still skips time spent waiting, and Accelerate keeps the same faster rate without jumping the clock',
+      ],
+    },
+  },
   '1.0.34': {
     date: '2026-10-09',
     changes: {
