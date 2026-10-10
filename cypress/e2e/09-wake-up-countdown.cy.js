@@ -29,7 +29,16 @@ describe('Wake-up countdown', () => {
 
     cy.get('.day-display').should('have.class', 'dusk');
 
-    cy.clock();
+    // performance.now() must advance with the fake clock, because the countdown
+    // measures elapsed monotonic time rather than interval ticks.
+    cy.clock(Date.now(), [
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'Date',
+      'performance',
+    ]);
 
     cy.get('#startBtn').click();
 

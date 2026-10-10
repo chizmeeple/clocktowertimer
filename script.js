@@ -535,7 +535,10 @@ function safePlaySound(audio, { onEnded, onError, fallbackBeep = false } = {}) {
 
 const timerUtils = {
   stop: () => {
-    clearInterval(timerId);
+    if (countdownActive) {
+      timeLeft = readRemainingMs() / 1000;
+    }
+    clearCountdownSchedule();
     isRunning = false;
     updateDisplay();
   },
@@ -789,7 +792,10 @@ let previewSound = null; // New audio element for previews
 // Wake Lock state
 let wakeLock = null;
 
-// Timer state
+// Timer state.
+// Remaining time is a duration anchored to performance.now(), not a count of
+// interval callbacks. Each running segment records the remaining milliseconds
+// and the countdown speed that applies until the next pause or speed change.
 let timeLeft = 0;
 let timerId = null;
 let isRunning = false;
@@ -801,6 +807,14 @@ let wakeUpTimeout = null;
 let isEndSoundPlaying = false; // New state variable
 let hasReset = false; // New state variable to track reset state
 let accelerateConfirmTimeout = null;
+const COUNTDOWN_REFRESH_MS = 50;
+const NORMAL_COUNTDOWN_MS_PER_REAL_MS = 1;
+let countdownActive = false;
+let countdownKind = null; // 'day' or 'wake-up' while a segment is running
+let segmentStartRemainingMs = 0;
+let segmentStartAt = 0;
+let segmentCountdownPerRealMs = 0;
+let lastRenderedSeconds = null;
 
 // Game pace multipliers
 const PACE_MULTIPLIERS = {
@@ -1079,6 +1093,11 @@ async function releaseWakeLock() {
 // Event listeners for wake lock and stale-tab banner
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
+    // A throttled interval may not have run while the tab was hidden.
+    // Catch the display and completion up to monotonic time immediately.
+    if (countdownActive) {
+      renderCountdownFrame();
+    }
     staleTabUtils.onBecameVisible();
     await requestWakeLock();
   } else {
@@ -2081,7 +2100,7 @@ function updateClocktowerPresets() {
       selectedSeconds = preset.seconds;
 
       // Reset any existing timer and cancel nominations countdown when starting a new day
-      clearInterval(timerId);
+      clearCountdownSchedule();
       clearNominationsCountdown();
 
       // Set and display the new time
@@ -2331,12 +2350,176 @@ function createBeep() {
   }, 500);
 }
 
+function monotonicNow() {
+  return performance.now();
+}
+
+// Whole seconds shown on the clock. The current second stays up until it has
+// fully elapsed, matching the previous once-per-second decrement.
+function displaySeconds(secondsRemaining) {
+  if (!(secondsRemaining > 0)) return 0;
+  const millis = Math.round(secondsRemaining * 1000);
+  if (millis <= 0) return 0;
+  return Math.ceil(millis / 1000);
+}
+
+function readRemainingMs(now = monotonicNow()) {
+  if (!countdownActive) return Math.max(0, Math.round(timeLeft * 1000));
+  const elapsed = now - segmentStartAt;
+  if (!(elapsed > 0)) return segmentStartRemainingMs;
+  const remaining =
+    segmentStartRemainingMs - elapsed * segmentCountdownPerRealMs;
+  if (remaining <= 0.001) return 0;
+  return remaining;
+}
+
+function settleCountdown(now = monotonicNow()) {
+  if (countdownActive) {
+    timeLeft = readRemainingMs(now) / 1000;
+  }
+  return now;
+}
+
+function anchorSegment(countdownPerRealMs, now = monotonicNow()) {
+  segmentStartRemainingMs = Math.max(0, Math.round(timeLeft * 1000));
+  // Keep a sub-millisecond remainder counting so it can still reach zero.
+  if (segmentStartRemainingMs === 0 && timeLeft > 0) {
+    segmentStartRemainingMs = 1;
+  }
+  segmentStartAt = now;
+  segmentCountdownPerRealMs = countdownPerRealMs;
+  countdownActive = segmentStartRemainingMs > 0;
+}
+
+function clearCountdownSchedule() {
+  if (timerId !== null) {
+    clearInterval(timerId);
+    timerId = null;
+  }
+  countdownActive = false;
+  countdownKind = null;
+  segmentCountdownPerRealMs = 0;
+  wakeUpTimeout = null;
+}
+
+function ensureCountdownLoop() {
+  if (timerId !== null) return;
+  timerId = setInterval(renderCountdownFrame, COUNTDOWN_REFRESH_MS);
+  if (countdownKind === 'wake-up') {
+    wakeUpTimeout = timerId;
+  }
+}
+
+// Apply time already elapsed at the current speed, then run at `countdownPerRealMs`.
+function continueCountdownAt(kind, countdownPerRealMs) {
+  const now = monotonicNow();
+  if (countdownActive) {
+    timeLeft = readRemainingMs(now) / 1000;
+    if (timeLeft <= 0) {
+      renderCountdownFrame();
+      return;
+    }
+  }
+  if (!(timeLeft > 0)) return;
+  countdownKind = kind;
+  anchorSegment(countdownPerRealMs, now);
+  ensureCountdownLoop();
+}
+
+function renderCountdownFrame() {
+  if (!countdownActive) return;
+  const remainingMs = readRemainingMs();
+  if (remainingMs <= 0) {
+    const kind = countdownKind;
+    const wasAccelerated =
+      segmentCountdownPerRealMs !== NORMAL_COUNTDOWN_MS_PER_REAL_MS;
+    timeLeft = 0;
+    clearCountdownSchedule();
+    isRunning = false;
+    currentInterval = normalInterval;
+    if (kind === 'wake-up') {
+      finishWakeUpCountdown();
+    } else {
+      finishDayCountdown(wasAccelerated);
+    }
+    return;
+  }
+
+  timeLeft = remainingMs / 1000;
+  const shown = displaySeconds(timeLeft);
+  if (shown !== lastRenderedSeconds) {
+    updateDisplay();
+  }
+}
+
+function finishDayCountdown(wasAccelerated) {
+  runYoutube((player) => {
+    player.pauseVideo?.();
+    if (!wasAccelerated) {
+      setYoutubeControlButtonIcon(false);
+    }
+  });
+  if (currentDay !== null) {
+    updateDayDisplay('dusk');
+    updateClocktowerPresets();
+  }
+  playEndSound();
+  updateDisplay();
+
+  if (autoOpenNominations && autoOpenNominationsDelay > 0) {
+    startNominationsCountdown();
+  }
+}
+
+function finishWakeUpCountdown() {
+  timerDisplayEl.classList.remove('wake-up-countdown');
+  updateDayDisplay();
+
+  let currentPresetDay = usedPresetByDay[currentDay];
+  if (currentPresetDay === undefined) {
+    const used = Object.values(usedPresetByDay);
+    currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
+    usedPresetByDay[currentDay] = currentPresetDay;
+    saveSettings();
+    updateClocktowerPresets();
+  }
+  const dayPreset = document.querySelector(
+    `.clocktower-btn[data-day="${currentPresetDay}"]`
+  );
+  if (!dayPreset) return;
+
+  document
+    .querySelectorAll('.clocktower-btn')
+    .forEach((btn) => btn.classList.remove('active'));
+  dayPreset.classList.add('active');
+
+  selectedMinutes = Number.parseInt(dayPreset.dataset.minutes);
+  selectedSeconds = Number.parseInt(dayPreset.dataset.seconds);
+  timeLeft = selectedMinutes * 60 + selectedSeconds;
+  updateDisplay();
+
+  startCountdown();
+  startBtn.disabled = false;
+  updateStartButtonText(BUTTON_LABELS.PAUSE);
+  resetAccelerateButton();
+  accelerateBtn.disabled = false;
+  resetBtn.disabled = false;
+}
+
 // Update display
 function updateDisplay() {
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  minutesDisplay.textContent = minutes.toString().padStart(2, '0');
-  secondsDisplay.textContent = seconds.toString().padStart(2, '0');
+  const totalSeconds = displaySeconds(timeLeft);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const minuteText = minutes.toString().padStart(2, '0');
+  const secondText = seconds.toString().padStart(2, '0');
+  if (minutesDisplay.textContent !== minuteText) {
+    minutesDisplay.textContent = minuteText;
+  }
+  if (secondsDisplay.textContent !== secondText) {
+    secondsDisplay.textContent = secondText;
+  }
+  lastRenderedSeconds = totalSeconds;
 
   const isWakeUpCountdown =
     timerDisplayEl.classList.contains('wake-up-countdown');
@@ -2388,45 +2571,33 @@ function resetAccelerateButton() {
   accelerateBtn.style.setProperty('--progress-width', '0%');
 }
 
-// Acceleration functionality
+// Acceleration functionality.
+// The multiplier is unchanged: `timePerTick` countdown seconds per 50ms of
+// monotonic time. Elapsed time is applied at the speed that was already
+// running, then the new speed starts, so the switch does not skip or
+// double-count. Completion is the moment remaining time reaches zero, rather
+// than the previous final tick subtracting a full `timePerTick` early.
 function accelerateTime() {
   if (!isRunning || timeLeft <= 0) return;
+
+  const now = settleCountdown();
+  if (timeLeft <= 0) {
+    renderCountdownFrame();
+    return;
+  }
 
   // Calculate a random completion time between 3-10 seconds
   const completionTime = Math.floor(Math.random() * 8000) + 3000; // 3000-10000ms
 
   // Calculate how many intervals we need
   const intervals = Math.min(timeLeft, Math.floor(completionTime / 50)); // Use 50ms intervals
+  if (!(intervals > 0)) return;
   const timePerTick = Math.ceil(timeLeft / intervals);
 
-  // Clear existing timer
-  clearInterval(timerId);
-
-  // Start accelerated timer
   currentInterval = 50; // 50ms intervals for smooth countdown
-  timerId = setInterval(() => {
-    timeLeft = Math.max(0, timeLeft - timePerTick);
-    updateDisplay();
-
-    if (timeLeft === 0) {
-      clearInterval(timerId);
-      isRunning = false;
-      currentInterval = normalInterval;
-      runYoutube((player) => {
-        player.pauseVideo?.();
-      });
-      if (currentDay !== null) {
-        updateDayDisplay('dusk');
-        updateClocktowerPresets();
-      }
-      playEndSound();
-      updateDisplay(); // Make sure to update display one final time
-
-      if (autoOpenNominations && autoOpenNominationsDelay > 0) {
-        startNominationsCountdown();
-      }
-    }
-  }, currentInterval);
+  countdownKind = 'day';
+  anchorSegment((timePerTick * 1000) / 50, now);
+  ensureCountdownLoop();
 
   // Disable accelerate button after use (do not reset label during accelerated countdown)
   accelerateBtn.disabled = true;
@@ -2562,10 +2733,13 @@ function playWakeUpSound() {
     resetTimer();
   }
 
-  // Clear any existing wake-up timeout
+  // Clear any existing wake-up timeout and countdown segment before
+  // assigning the six-second wake-up duration.
   if (wakeUpTimeout) {
     clearTimeout(wakeUpTimeout);
+    wakeUpTimeout = null;
   }
+  clearCountdownSchedule();
   clearNominationsCountdown();
 
   // Stop music if playing and not set to play at night
@@ -2595,58 +2769,8 @@ function playWakeUpSound() {
   timeLeft = countdownSeconds;
   updateDisplay();
 
-  // Update countdown every second
-  timerId = setInterval(() => {
-    timeLeft--;
-    updateDisplay();
-
-    if (timeLeft === 0) {
-      clearInterval(timerId);
-      timerDisplayEl.classList.remove('wake-up-countdown');
-
-      // Remove dawn state and show regular day display
-      updateDayDisplay();
-
-      // Find and start the current day's timer (honour skip-ahead numbering)
-      let currentPresetDay = usedPresetByDay[currentDay];
-      if (currentPresetDay === undefined) {
-        const used = Object.values(usedPresetByDay);
-        currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
-        usedPresetByDay[currentDay] = currentPresetDay;
-        saveSettings();
-        updateClocktowerPresets();
-      }
-      const dayPreset = document.querySelector(
-        `.clocktower-btn[data-day="${currentPresetDay}"]`
-      );
-      if (dayPreset) {
-        // Update active state
-        document
-          .querySelectorAll('.clocktower-btn')
-          .forEach((btn) => btn.classList.remove('active'));
-        dayPreset.classList.add('active');
-
-        // Update selected time
-        selectedMinutes = Number.parseInt(dayPreset.dataset.minutes);
-        selectedSeconds = Number.parseInt(dayPreset.dataset.seconds);
-
-        // Set and display the new time
-        timeLeft = selectedMinutes * 60 + selectedSeconds;
-        updateDisplay();
-
-        // Start the timer
-        startCountdown();
-        startBtn.disabled = false;
-        updateStartButtonText(BUTTON_LABELS.PAUSE);
-        resetAccelerateButton();
-        accelerateBtn.disabled = false;
-        resetBtn.disabled = false;
-      }
-    }
-  }, 1000);
-
-  // Store the countdown interval ID
-  wakeUpTimeout = timerId;
+  currentInterval = normalInterval;
+  continueCountdownAt('wake-up', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
 
   // Sound comes last so a failed or stalled file cannot skip the countdown
   safePlaySound(wakeUpSound, { fallbackBeep: true });
@@ -2654,30 +2778,9 @@ function playWakeUpSound() {
 
 function startCountdown() {
   isRunning = true;
-
-  timerId = setInterval(() => {
-    timeLeft--;
-    updateDisplay();
-
-    if (timeLeft === 0) {
-      clearInterval(timerId);
-      isRunning = false;
-      runYoutube((player) => {
-        player.pauseVideo?.();
-        setYoutubeControlButtonIcon(false);
-      });
-      if (currentDay !== null) {
-        updateDayDisplay('dusk');
-        updateClocktowerPresets();
-      }
-      playEndSound();
-      updateDisplay();
-
-      if (autoOpenNominations && autoOpenNominationsDelay > 0) {
-        startNominationsCountdown();
-      }
-    }
-  }, normalInterval);
+  currentInterval = normalInterval;
+  continueCountdownAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+  updateDisplay();
 
   // Music is best-effort and must not prevent the countdown from starting
   const dayInfo = document.querySelector('.day-display');
@@ -2697,7 +2800,7 @@ function startCountdown() {
 
 function startNewGame() {
   // Reset timer state
-  clearInterval(timerId);
+  clearCountdownSchedule();
   clearNominationsCountdown();
   timeLeft = 0;
   isRunning = false;
@@ -2832,10 +2935,18 @@ function updateGamePace(newPace) {
 
   // If timer is running, adjust current time
   if (isRunning && timeLeft > 0) {
+    const now = settleCountdown();
     const oldTimeLeft = timeLeft;
     const multiplier =
       PACE_MULTIPLIERS[newPace] / PACE_MULTIPLIERS[currentPace];
-    timeLeft = Math.round(oldTimeLeft * multiplier);
+    // Whole-second rounding matches the previous integer countdown. A running
+    // segment may hold a fractional second; keep it when the pace does not scale.
+    timeLeft = Number.isInteger(oldTimeLeft)
+      ? Math.round(oldTimeLeft * multiplier)
+      : oldTimeLeft * multiplier;
+    if (countdownActive) {
+      anchorSegment(segmentCountdownPerRealMs, now);
+    }
     updateDisplay();
   }
 }
