@@ -1,8 +1,9 @@
 {
   "name": "clocktowertimer",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Clock Tower Timer Application",
   "scripts": {
+    "stamp-release": "node scripts/release-assets.mjs --write",
     "test": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress run'",
     "test:open": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress open'"
   },
