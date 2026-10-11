@@ -48,6 +48,8 @@ const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 const SESSION_COUNTDOWN_HOUR_THRESHOLD_MS = 90 * ONE_MINUTE_MS;
 const STALE_TAB_MS = 2 * ONE_DAY_MS;
 const STALE_TAB_REFRESH_SECONDS = 10;
+const STALE_TAB_HELD_MESSAGE =
+  'This tab has been inactive for a while. Automatic refresh is paused while a game is in progress.';
 const LAST_ACTIVE_AT_KEY = 'towerTimerLastActiveAt';
 const SETTINGS_STORAGE_KEY = 'towerTimerSettings';
 const LEGACY_SETTINGS_STORAGE_KEY = 'quickTimerSettings';
@@ -272,6 +274,59 @@ const connectivityUtils = {
   },
 };
 
+// Set when this page starts a countdown or restores a dawn/dusk phase.
+// A finished, paused, or between-days timer does not clear it. Reset Day
+// and Start New Game do. A fresh page with no live session stays idle.
+let gameSessionActive = false;
+// Dawn/dusk in storage is consulted only until saved settings are applied.
+let initialSettingsApplied = false;
+
+function peekSavedDayState() {
+  const raw = readStorageItem(SETTINGS_STORAGE_KEY);
+  if (!raw) return '';
+  const parsed = parseStoredSettings(raw);
+  if (!parsed.ok || !isPlainObject(parsed.value)) return '';
+  return readDayState(parsed.value.dayState);
+}
+
+// Automatic reload is allowed only when this page can positively show that
+// no game is in progress. Anything uncertain stays on the page.
+function isSafeToAutoRefresh() {
+  if (gameSessionActive) return false;
+  if (isRunning || countdownActive || countdownKind) return false;
+  if (wakeUpTimeout) return false;
+  if (isEndSoundPlaying) return false;
+  if (autoOpenNominationsInterval) return false;
+  // A paused countdown still has time left. Reset Day sets hasReset.
+  if (timeLeft > 0 && !hasReset) return false;
+  if (isDuskPresetView) return false;
+
+  const dayInfo = document.querySelector('.day-display');
+  if (
+    dayInfo?.classList.contains('dusk') ||
+    dayInfo?.classList.contains('dawn')
+  ) {
+    return false;
+  }
+
+  if (!initialSettingsApplied) {
+    const savedDayState = peekSavedDayState();
+    if (savedDayState === 'dawn' || savedDayState === 'dusk') return false;
+  }
+
+  return true;
+}
+
+function beginGameSession() {
+  gameSessionActive = true;
+  staleTabUtils.onGameActivityChanged();
+}
+
+function endGameSession() {
+  gameSessionActive = false;
+  staleTabUtils.onGameActivityChanged();
+}
+
 const staleTabUtils = {
   bannerDismissed: false,
   bannerEl: null,
@@ -279,6 +334,7 @@ const staleTabUtils = {
   statusEl: null,
   progressEl: null,
   refreshTimerId: null,
+  refreshGeneration: 0,
   secondsLeft: STALE_TAB_REFRESH_SECONDS,
 
   markActive() {
@@ -320,31 +376,94 @@ const staleTabUtils = {
   },
 
   clearRefreshTimer() {
+    // Bump the generation first so a callback that already started, or one
+    // that still runs after clearInterval, cannot reload the page.
+    this.refreshGeneration += 1;
     if (this.refreshTimerId !== null) {
       clearInterval(this.refreshTimerId);
       this.refreshTimerId = null;
     }
   },
 
+  // Explicit Refresh now. This does not consult automatic-refresh safety.
   refreshPage() {
     this.clearRefreshTimer();
     location.reload();
   },
 
+  // Last step of a scheduled refresh. Safety is decided here, not when the
+  // countdown was armed. A stale generation means the callback was cancelled.
+  requestAutomaticRefresh(generation = this.refreshGeneration) {
+    if (generation !== this.refreshGeneration) return;
+    if (!isSafeToAutoRefresh()) {
+      this.holdAutoRefresh();
+      return;
+    }
+    this.refreshPage();
+  },
+
+  renderHeldMessage() {
+    if (!this.messageEl) return;
+    this.messageEl.textContent = STALE_TAB_HELD_MESSAGE;
+  },
+
+  announceCountdown() {
+    if (!this.statusEl) return;
+    this.statusEl.textContent = `This tab has been inactive for a while. Refreshing automatically in ${STALE_TAB_REFRESH_SECONDS} seconds to load the latest version.`;
+  },
+
+  announceHeld() {
+    if (!this.statusEl) return;
+    this.statusEl.textContent = STALE_TAB_HELD_MESSAGE;
+  },
+
+  revealBanner() {
+    this.bannerEl.removeAttribute('hidden');
+    document.body.classList.add('stale-tab-banner-visible');
+    this.syncBannerHeight();
+  },
+
+  holdAutoRefresh() {
+    this.clearRefreshTimer();
+    if (this.progressEl) {
+      this.progressEl.style.animation = 'none';
+      this.progressEl.style.transform = 'scaleX(0)';
+    }
+    if (!this.bannerEl || this.bannerEl.hasAttribute('hidden')) return;
+    this.renderHeldMessage();
+    this.announceHeld();
+    this.syncBannerHeight();
+  },
+
   armCountdown() {
+    if (this.refreshTimerId !== null) return;
+    if (!isSafeToAutoRefresh()) {
+      this.holdAutoRefresh();
+      return;
+    }
+
     const reduceMotion = globalThis.matchMedia(
       '(prefers-reduced-motion: reduce)'
     ).matches;
-    if (this.progressEl && !reduceMotion) {
-      this.progressEl.style.animation = 'none';
-      void this.progressEl.offsetWidth;
-      this.progressEl.style.animation = `stale-tab-refresh-countdown ${STALE_TAB_REFRESH_SECONDS}s linear forwards`;
+    if (this.progressEl) {
+      this.progressEl.style.transform = '';
+      if (!reduceMotion) {
+        this.progressEl.style.animation = 'none';
+        void this.progressEl.offsetWidth;
+        this.progressEl.style.animation = `stale-tab-refresh-countdown ${STALE_TAB_REFRESH_SECONDS}s linear forwards`;
+      }
     }
 
+    const generation = this.refreshGeneration;
     this.refreshTimerId = setInterval(() => {
+      if (generation !== this.refreshGeneration) return;
+      if (!isSafeToAutoRefresh()) {
+        this.holdAutoRefresh();
+        return;
+      }
       this.secondsLeft -= 1;
       if (this.secondsLeft <= 0) {
-        this.refreshPage();
+        this.requestAutomaticRefresh(generation);
         return;
       }
       this.renderCountdown();
@@ -352,8 +471,22 @@ const staleTabUtils = {
     }, 1000);
   },
 
+  resumeCountdown() {
+    if (this.refreshTimerId !== null) return;
+    if (!isSafeToAutoRefresh()) return;
+    this.secondsLeft = STALE_TAB_REFRESH_SECONDS;
+    this.renderCountdown();
+    this.announceCountdown();
+    this.armCountdown();
+  },
+
   showBanner() {
     if (!this.bannerEl) return;
+    if (!isSafeToAutoRefresh()) {
+      this.revealBanner();
+      this.holdAutoRefresh();
+      return;
+    }
     const alreadyCounting =
       !this.bannerEl.hasAttribute('hidden') && this.refreshTimerId !== null;
     if (!alreadyCounting) {
@@ -361,13 +494,9 @@ const staleTabUtils = {
       this.secondsLeft = STALE_TAB_REFRESH_SECONDS;
       this.renderCountdown();
     }
-    this.bannerEl.removeAttribute('hidden');
-    document.body.classList.add('stale-tab-banner-visible');
-    this.syncBannerHeight();
+    this.revealBanner();
     if (!alreadyCounting) {
-      if (this.statusEl) {
-        this.statusEl.textContent = `This tab has been inactive for a while. Refreshing automatically in ${STALE_TAB_REFRESH_SECONDS} seconds to load the latest version.`;
-      }
+      this.announceCountdown();
       this.armCountdown();
     }
   },
@@ -387,6 +516,31 @@ const staleTabUtils = {
     if (this.isStale() && !this.bannerDismissed) {
       this.showBanner();
     }
+  },
+
+  // Cancel a pending refresh when a game becomes active, and arm one
+  // countdown only when a visible banner becomes safe again.
+  onGameActivityChanged() {
+    if (!isSafeToAutoRefresh()) {
+      if (this.bannerEl && !this.bannerEl.hasAttribute('hidden')) {
+        this.holdAutoRefresh();
+      } else {
+        this.clearRefreshTimer();
+      }
+      return;
+    }
+
+    if (
+      this.bannerDismissed ||
+      !this.bannerEl ||
+      this.bannerEl.hasAttribute('hidden')
+    ) {
+      return;
+    }
+
+    // The banner was shown because the tab was already stale. markActive()
+    // updates the stored timestamp, so do not ask isStale() again here.
+    this.resumeCountdown();
   },
 
   onBecameVisible() {
@@ -413,6 +567,10 @@ const staleTabUtils = {
       this.bannerDismissed = true;
       this.hideBanner();
     });
+
+    if (globalThis.Cypress) {
+      globalThis.staleTabUtils = this;
+    }
 
     this.checkOnResume();
     this.markActive();
@@ -1407,7 +1565,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
-  resetBtn.addEventListener('click', resetTimer);
+  resetBtn.addEventListener('click', () => {
+    resetTimer();
+    endGameSession();
+  });
   fullscreenBtn.addEventListener('click', toggleFullscreen);
   settingsBtn.addEventListener('click', openSettings);
   closeSettingsBtn.addEventListener('click', closeSettings);
@@ -2330,6 +2491,16 @@ function loadSettings() {
       }
     });
   }
+
+  initialSettingsApplied = true;
+  const restoredDay = document.querySelector('.day-display');
+  if (
+    restoredDay?.classList.contains('dusk') ||
+    restoredDay?.classList.contains('dawn')
+  ) {
+    gameSessionActive = true;
+  }
+  staleTabUtils.onGameActivityChanged();
 }
 
 // Additional safeguard on globalThis load to ensure change history dialog is closed
@@ -2729,6 +2900,7 @@ function clearNominationsCountdown() {
 
 // Start the nominations countdown display and schedule the sound
 function startNominationsCountdown() {
+  beginGameSession();
   clearNominationsCountdown();
   if (!autoOpenNominations || autoOpenNominationsDelay <= 0) return;
 
@@ -3168,6 +3340,9 @@ document.querySelectorAll('.number-input-group button').forEach((button) => {
 });
 
 function playWakeUpSound() {
+  // Wake-up continues the same session. resetTimer() below only clears the
+  // current countdown, so the session must be marked before that runs.
+  beginGameSession();
   if (isRunning) {
     resetTimer();
   }
@@ -3216,6 +3391,7 @@ function playWakeUpSound() {
 }
 
 function startCountdown() {
+  beginGameSession();
   isRunning = true;
   currentInterval = normalInterval;
   continueCountdownAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
@@ -3260,6 +3436,7 @@ function startNewGame() {
 
   saveSettings();
   closeSettings();
+  endGameSession();
 
   // Stop any playing video and reshuffle playlist. Failure must not undo the new game.
   runYoutube((player) => {
@@ -4098,6 +4275,7 @@ function tryHandleResetShortcut(e, currentKey) {
   }
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
   resetTimer();
+  endGameSession();
 }
 
 // Add keyboard navigation support
