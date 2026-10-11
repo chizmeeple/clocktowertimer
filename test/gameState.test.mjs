@@ -12,6 +12,10 @@ import {
   presetForDay,
   stepNominationsCountdown,
 } from '../gameState.js';
+import {
+  NORMAL_COUNTDOWN_MS_PER_REAL_MS,
+  createTimerEngine,
+} from '../timerEngine.js';
 
 function presetMap(presets) {
   return Object.fromEntries(
@@ -268,6 +272,79 @@ describe('game state transitions', () => {
     game.setPhase('dusk');
     assert.equal(game.isDusk(), true);
     assert.equal(game.getCurrentDay(), 2);
+  });
+});
+
+describe('pace changes leave the countdown alone', () => {
+  function clockedTimer() {
+    let current = 0;
+    const clock = {
+      now: () => current,
+      advance(ms) {
+        current += ms;
+      },
+    };
+    return { clock, timer: createTimerEngine({ now: clock.now }) };
+  }
+
+  it('keeps an active day countdown on its current rate', () => {
+    const { clock, timer } = clockedTimer();
+    const game = createGameState();
+    game.setCurrentDay(1);
+    timer.setTimeLeft(10);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+
+    clock.advance(1500);
+    assert.equal(timer.sample().shown, 9);
+    game.setPace('speedy');
+    assert.equal(game.getPace(), 'speedy');
+    assert.equal(game.getPhase(), '');
+
+    clock.advance(500);
+    assert.equal(timer.sample().shown, 8);
+    assert.equal(timer.getCountdownKind(), 'day');
+    assert.equal(generateDayPresets(10, game.getPace())[0].display, '03:00');
+  });
+
+  it('keeps a paused remainder, an accelerated rate, and a wake-up countdown', () => {
+    const { clock, timer } = clockedTimer();
+    const game = createGameState();
+    timer.setTimeLeft(10);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    clock.advance(2500);
+    timer.pause();
+    const paused = timer.getTimeLeft();
+
+    game.setPace('relaxed');
+    clock.advance(4000);
+    assert.equal(timer.sample().type, 'idle');
+    assert.equal(timer.getTimeLeft(), paused);
+    assert.equal(game.getPace(), 'relaxed');
+
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    timer.accelerate(0);
+    game.setPace('blitz');
+    clock.advance(100);
+    const accelerated = timer.sample();
+    assert.equal(accelerated.type, 'running');
+    assert.equal(accelerated.shown, 6);
+    assert.equal(timer.getCountdownKind(), 'day');
+
+    timer.pause();
+    timer.clearSegment();
+    timer.setRunning(false);
+    timer.setTimeLeft(6);
+    timer.continueAt('wake-up', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    game.setPhase('dawn');
+    game.setPace('normal');
+    clock.advance(1000);
+    assert.equal(timer.sample().shown, 5);
+    assert.equal(timer.getCountdownKind(), 'wake-up');
+    assert.equal(game.getPhase(), 'dawn');
+    assert.equal(game.advanceDayIfDusk(), false);
   });
 });
 

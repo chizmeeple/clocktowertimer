@@ -228,40 +228,6 @@ describe('timer engine', () => {
     assert.equal(timer.getCountdownKind(), null);
   });
 
-  it('scales a running countdown by the supplied multiplier and leaves a pause alone', () => {
-    const { clock, timer } = engineAt();
-    timer.setTimeLeft(10);
-    timer.setRunning(true);
-    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
-
-    assert.equal(timer.scaleIfRunning(2), true);
-    assert.equal(timer.getTimeLeft(), 20);
-    assert.equal(displaySeconds(timer.getTimeLeft()), 20);
-
-    clock.advance(1000);
-    assert.equal(timer.sample().shown, 19);
-
-    timer.pause();
-    timer.setTimeLeft(8);
-    assert.equal(timer.scaleIfRunning(2), false);
-    assert.equal(timer.getTimeLeft(), 8);
-  });
-
-  it('re-anchors a running countdown when the multiplier does not change the duration', () => {
-    const { clock, timer } = engineAt();
-    timer.setTimeLeft(10);
-    timer.setRunning(true);
-    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
-    clock.advance(400);
-
-    assert.equal(timer.scaleIfRunning(1), true);
-    assert.equal(timer.getTimeLeft(), 9.6);
-    assert.equal(displaySeconds(timer.getTimeLeft()), 10);
-
-    clock.advance(600);
-    assert.equal(timer.sample().shown, 9);
-  });
-
   it('can still finish a remainder that rounds below one millisecond', () => {
     const { clock, timer } = engineAt();
     timer.setTimeLeft(0.0004);

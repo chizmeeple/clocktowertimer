@@ -1,7 +1,16 @@
 // Version tracking
-export const APP_VERSION = '1.0.35';
+export const APP_VERSION = '1.1.0';
 
 export const CHANGELOG = {
+  '1.1.0': {
+    date: '2026-10-11',
+    changes: {
+      improvements: [
+        'The countdown and the day rules now sit apart from the screen, sound, and saved settings, without changing how a game plays',
+        'Those rules now have their own checks, including a pace change during a running or paused day',
+      ],
+    },
+  },
   '1.0.35': {
     date: '2026-10-10',
     changes: {
@@ -22,7 +31,6 @@ export const CHANGELOG = {
         'Pause still skips time spent waiting, and Accelerate keeps the same faster rate without jumping the clock',
         'Regression coverage checks Accelerate on a landscape phone, the orientation the timer is designed for',
         'Cypress runs no longer play the wake-up bell or the end-of-day gong',
-        'The countdown and the day rules now sit apart from the screen, sound, and saved settings, without changing how a game plays',
       ],
     },
   },

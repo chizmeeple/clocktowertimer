@@ -1,6 +1,6 @@
 {
   "name": "clocktowertimer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Clock Tower Timer Application",
   "scripts": {
     "test": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress run'",

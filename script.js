@@ -3344,6 +3344,8 @@ function closeInfo() {
 }
 
 // Update game pace
+// Later days use the new pace. A countdown that is already running, paused,
+// accelerated, or in wake-up keeps the time it already has.
 function updateGamePace(newPace) {
   game.setPace(newPace);
   document.body.dataset.pace = newPace;
@@ -3351,20 +3353,7 @@ function updateGamePace(newPace) {
   refreshDayPhase();
   updateEstimatedGameLength();
   saveSettings();
-
-  // Pace is assigned before the ratio is taken, so a running countdown is
-  // re-anchored at the same speed and does not jump.
-  const multiplier =
-    PACE_MULTIPLIERS[newPace] / PACE_MULTIPLIERS[game.getPace()];
-  if (timer.scaleIfRunning(multiplier)) {
-    updateDisplay();
-  }
 }
-
-// Add event listener for game pace changes
-document.getElementById('gamePace').addEventListener('change', (e) => {
-  updateGamePace(e.target.value);
-});
 
 // YouTube player functionality
 let youtubeApiReady = false;

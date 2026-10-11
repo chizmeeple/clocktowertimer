@@ -105,6 +105,36 @@ describe('Timer interactions', () => {
     });
   });
 
+  it('registers the pace change handler once', () => {
+    visitGameplay({
+      onBeforeLoad(win) {
+        let paceListeners = 0;
+        const original = win.EventTarget.prototype.addEventListener;
+        cy.stub(win.EventTarget.prototype, 'addEventListener').callsFake(
+          function (type, listener, options) {
+            if (this?.id === 'gamePace' && type === 'change') {
+              paceListeners += 1;
+            }
+            return original.call(this, type, listener, options);
+          }
+        );
+        win.__paceListenerCount = () => paceListeners;
+      },
+    });
+
+    cy.window().should((win) => {
+      expect(win.__paceListenerCount()).to.eq(1);
+    });
+
+    cy.get('#settingsBtn').click();
+    cy.get('#gamePace').select('speedy');
+    cy.get('#closeSettings').click();
+    cy.get('.pace-indicator').should('contain', 'Speedy');
+    cy.window().should((win) => {
+      expect(win.__paceListenerCount()).to.eq(1);
+    });
+  });
+
   it('does not jump a running countdown when the pace changes', () => {
     visitGameplay();
     startFirstDay();

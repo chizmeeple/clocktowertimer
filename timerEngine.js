@@ -146,22 +146,5 @@ export function createTimerEngine({ now = () => performance.now() } = {}) {
       anchorSegment((timePerTick * 1000) / COUNTDOWN_REFRESH_MS, timestamp);
       return { type: 'running', shown: displaySeconds(timeLeft) };
     },
-
-    // Scale a running countdown. A paused timer is left untouched.
-    // Returns whether the running branch was entered.
-    scaleIfRunning(multiplier, timestamp = now()) {
-      if (!(isRunning && timeLeft > 0)) return false;
-      if (countdownActive) {
-        timeLeft = readRemainingMs(timestamp) / 1000;
-      }
-      const oldTimeLeft = timeLeft;
-      timeLeft = Number.isInteger(oldTimeLeft)
-        ? Math.round(oldTimeLeft * multiplier)
-        : oldTimeLeft * multiplier;
-      if (countdownActive) {
-        anchorSegment(segmentCountdownPerRealMs, timestamp);
-      }
-      return true;
-    },
   };
 }
