@@ -15,6 +15,7 @@ export const CHANGELOG = {
         'Day and wake-up countdowns stay accurate when the browser delays timer updates, including in a background tab',
         'Pause still skips time spent waiting, and Accelerate keeps the same faster rate without jumping the clock',
         'Regression coverage checks Accelerate on a landscape phone, the orientation the timer is designed for',
+        'Cypress runs no longer play the wake-up bell or the end-of-day gong',
       ],
     },
   },

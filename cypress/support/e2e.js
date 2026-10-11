@@ -1,7 +1,17 @@
-// Sound-effect files are stubbed per test via HTMLAudioElement.play.
+// Sound-effect files would otherwise play through the test runner.
+// Resolve play() without starting the media. A test that spies on playback
+// or simulates a failure replaces this in its own onBeforeLoad.
 // A failed effect also falls back to a generated beep, which does not go
-// through that stub. Replace the audio context so the fallback stays silent.
+// through play(). Replace the audio context so the fallback stays silent.
 Cypress.on('window:before:load', (win) => {
+  const audioPrototype = win.HTMLAudioElement?.prototype;
+  const play = audioPrototype?.play;
+  if (typeof play === 'function' && !play.isSinonProxy) {
+    audioPrototype.play = function silentPlay() {
+      return Promise.resolve();
+    };
+  }
+
   function SilentAudioContext() {
     return {
       state: 'running',
