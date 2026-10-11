@@ -205,8 +205,6 @@ describe('Timer interactions', () => {
     cy.get('#startBtn .button-text').should('have.text', '⏰ Wake Up!');
   });
 
-  // Start New Game clears the countdown but leaves the previous digits on screen,
-  // and Reset Day stays enabled.
   it('clears the clock and disables Reset Day when a new game starts', () => {
     visitGameplay();
     startFirstDay();
@@ -219,7 +217,30 @@ describe('Timer interactions', () => {
     cy.get('.day-display > span').first().should('have.text', '1');
   });
 
-  // Closing settings clears the dusk class, so the next wake-up repeats the day.
+  it('cancels a wake-up countdown when a new game starts', () => {
+    visitGameplay();
+    cy.get('#startBtn').click();
+    cy.get('.timer-display').should('have.class', 'wake-up-countdown');
+    advance(1000);
+    tick();
+    expectTimer(5);
+
+    cy.get('#settingsBtn').click();
+    cy.get('#startNewGame').click();
+
+    cy.get('.timer-display').should('not.have.class', 'wake-up-countdown');
+    cy.get('.day-display').should('not.have.class', 'dawn');
+    expectTimer(0);
+    cy.get('#resetBtn').should('be.disabled');
+    cy.get('#startBtn').should('not.be.disabled');
+    cy.get('#startBtn .button-text').should('have.text', '⏰ Wake Up!');
+    cy.get('.day-display > span').first().should('have.text', '1');
+
+    advance(6000);
+    tick();
+    expectTimer(0);
+  });
+
   it('keeps dusk when settings are closed, so the next wake-up advances the day', () => {
     visitGameplay();
     startFirstDay();
@@ -239,7 +260,28 @@ describe('Timer interactions', () => {
     cy.get('#startBtn .button-text').should('have.text', '⏸️ Pause Day');
   });
 
-  // Space calls startTimer() directly, which turns the wake-up segment into a day.
+  it('keeps dusk when the pace changes, so the next wake-up advances the day', () => {
+    visitGameplay();
+    startFirstDay();
+    finishAcceleratedDay();
+
+    cy.get('#settingsBtn').click();
+    cy.get('#gamePace').select('speedy');
+    cy.get('#closeSettings').click();
+
+    cy.get('.day-display').should('have.class', 'dusk');
+    cy.get('.pace-indicator').should('contain', 'Speedy');
+    cy.get('.day-display > span').first().should('have.text', '1');
+
+    cy.get('#startBtn').click();
+    cy.get('.timer-display').should('have.class', 'wake-up-countdown');
+    advance(6000);
+    tick();
+    cy.get('.day-display > span').first().should('have.text', '2');
+    cy.get('.pace-indicator').should('contain', 'Speedy');
+    cy.get('#startBtn .button-text').should('have.text', '⏸️ Pause Day');
+  });
+
   it('keeps the wake-up countdown running when its shortcut is pressed', () => {
     visitGameplay();
     cy.get('#startBtn').click();

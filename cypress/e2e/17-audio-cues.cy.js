@@ -190,15 +190,7 @@ describe('Sound cues', () => {
     cy.get('#nominationsCountdown').should('not.be.visible');
   });
 
-  // The delay handler calls Number.Number.parseInt, so the choice never applies.
-  it('uses a nominations delay chosen while a day is in progress', () => {
-    cy.on('uncaught:exception', (err) => {
-      if (String(err && err.message).includes('parseInt')) {
-        return false;
-      }
-      return undefined;
-    });
-
+  it('uses a nominations delay chosen before a day starts', () => {
     visitClocked({
       settings: { playSoundEffects: false, autoOpenNominations: true },
       onBeforeLoad: stubSteadyAcceleration,
@@ -207,10 +199,37 @@ describe('Sound cues', () => {
     cy.get('#autoOpenNominationsDelay').select('30');
     cy.get('#closeSettings').click();
 
+    cy.window().then((win) => {
+      const settings = JSON.parse(win.localStorage.getItem('towerTimerSettings'));
+      expect(settings.autoOpenNominationsDelay).to.eq(30);
+    });
+
     startFirstDay();
     finishDayOnClock();
 
     cy.get('#nominationsCountdown').should('be.visible');
     cy.get('#nominationsCountdownSeconds').should('have.text', '30');
+  });
+
+  it('uses a nominations delay changed while a day is running', () => {
+    visitClocked({
+      settings: { playSoundEffects: false, autoOpenNominations: true },
+      onBeforeLoad: stubSteadyAcceleration,
+    });
+    startFirstDay();
+
+    cy.get('#settingsBtn').click();
+    cy.get('#autoOpenNominationsDelay').select('90');
+    cy.get('#closeSettings').click();
+
+    cy.window().then((win) => {
+      const settings = JSON.parse(win.localStorage.getItem('towerTimerSettings'));
+      expect(settings.autoOpenNominationsDelay).to.eq(90);
+    });
+
+    finishDayOnClock();
+
+    cy.get('#nominationsCountdown').should('be.visible');
+    cy.get('#nominationsCountdownSeconds').should('have.text', '90');
   });
 });
