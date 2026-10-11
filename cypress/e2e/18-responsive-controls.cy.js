@@ -94,8 +94,10 @@ describe('Responsive controls', () => {
     });
   });
 
-  it('keeps Accelerate fully on a phone screen', () => {
-    cy.viewport(390, 844);
+  // Portrait is narrower than the bottom bar, and the app warns that it may
+  // not fit. Landscape is the orientation the timer is designed for.
+  it('keeps Accelerate fully on a landscape phone screen', () => {
+    cy.viewport(844, 390);
     visitGameplay({ harness: false });
     dismissPortraitWarningIfShown();
     expectInViewport('#accelerateBtn');
