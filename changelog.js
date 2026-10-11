@@ -22,6 +22,7 @@ export const CHANGELOG = {
         'Pause still skips time spent waiting, and Accelerate keeps the same faster rate without jumping the clock',
         'Regression coverage checks Accelerate on a landscape phone, the orientation the timer is designed for',
         'Cypress runs no longer play the wake-up bell or the end-of-day gong',
+        'The countdown and the day rules now sit apart from the screen, sound, and saved settings, without changing how a game plays',
       ],
     },
   },
