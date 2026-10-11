@@ -1473,15 +1473,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Check for portrait mode and show warning if needed
-  // Only show if actually in portrait mode and user hasn't accepted warning
-  if (orientationUtils.isPortrait() && !acceptedPortraitWarning) {
-    portraitWarningDialog.showModal();
-  } else {
-    // Ensure dialog is closed if we're in landscape mode
-    portraitWarningDialog.close();
-  }
-
   // Add orientation change listener
   orientationUtils.addOrientationListener((isPortrait) => {
     if (isPortrait && !acceptedPortraitWarning) {
@@ -1841,14 +1832,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   document
     .getElementById('autoOpenNominationsDelay')
     .addEventListener('change', (e) => {
-      autoOpenNominationsDelay = Number.Number.parseInt(e.target.value, 10);
+      autoOpenNominationsDelay = Number.parseInt(e.target.value, 10);
       saveSettings();
     });
 
-  // Initialize settings and update display
+  // Initialize settings and update display before the portrait check.
+  // The warning uses acceptedPortraitWarning, which loadSettings applies.
   loadSettings();
   updateClocktowerPresets();
   updateDisplay();
+
+  if (orientationUtils.isPortrait() && !acceptedPortraitWarning) {
+    portraitWarningDialog.showModal();
+  } else {
+    portraitWarningDialog.close();
+  }
 
   // Add event listeners for settings tabs
   document.querySelectorAll('.tab-button').forEach((button) => {
@@ -2797,7 +2795,7 @@ function openSettings() {
 
 function closeSettings() {
   saveSettings(); // Always save when closing
-  updateDayDisplay(); // Force update of the day display
+  refreshDayPhase(); // Refresh the pace label without dropping dawn or dusk
   updateClocktowerPresets(); // Update the presets to match current day
 
   // Remove event listeners from tab buttons
@@ -3064,12 +3062,16 @@ function renderCountdownFrame() {
 }
 
 function finishDayCountdown(wasAccelerated) {
-  runYoutube((player) => {
-    player.pauseVideo?.();
-    if (!wasAccelerated) {
-      setYoutubeControlButtonIcon(false);
-    }
-  });
+  // Night music keeps playing when the day ends. The end-of-day sound
+  // pauses it only when Play Music at Night is off.
+  if (!playMusicAtNight) {
+    runYoutube((player) => {
+      player.pauseVideo?.();
+      if (!wasAccelerated) {
+        setYoutubeControlButtonIcon(false);
+      }
+    });
+  }
   if (currentDay !== null) {
     updateDayDisplay('dusk');
     updateClocktowerPresets();
@@ -3414,13 +3416,15 @@ function startCountdown() {
 }
 
 function startNewGame() {
-  // Reset timer state
+  // Reset timer state, including a wake-up countdown still on screen
   clearCountdownSchedule();
   clearNominationsCountdown();
   timeLeft = 0;
   isRunning = false;
   isEndSoundPlaying = false;
+  hasReset = false;
   currentInterval = normalInterval;
+  timerDisplayEl.classList.remove('wake-up-countdown');
 
   // Set to Day 1
   currentDay = 1;
@@ -3433,6 +3437,7 @@ function startNewGame() {
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   resetAccelerateButton();
   accelerateBtn.disabled = true; // Accelerate button should start disabled
+  updateDisplay();
 
   saveSettings();
   closeSettings();
@@ -3451,6 +3456,22 @@ function startNewGame() {
       suggestedQuality: 'small',
     });
   });
+}
+
+function readDayPhase(dayInfo = document.querySelector('.day-display')) {
+  if (dayInfo?.classList.contains('dusk')) return 'dusk';
+  if (dayInfo?.classList.contains('dawn')) return 'dawn';
+  return '';
+}
+
+// Rebuild the day label while keeping the phase already on screen.
+// Entering dusk also resets the day controls, so keep Wake Up disabled
+// when the end-of-day sound is still playing.
+function refreshDayPhase() {
+  updateDayDisplay(readDayPhase());
+  if (isEndSoundPlaying) {
+    startBtn.disabled = true;
+  }
 }
 
 // Update day display
@@ -3548,7 +3569,7 @@ function updateGamePace(newPace) {
   currentPace = newPace;
   document.body.dataset.pace = newPace;
   updateClocktowerPresets();
-  updateDayDisplay();
+  refreshDayPhase();
   updateEstimatedGameLength();
   saveSettings();
 
@@ -4304,7 +4325,11 @@ function setupKeyboardNavigation() {
     if (keyboardShortcuts.wakeUp && currentKey === keyboardShortcuts.wakeUp) {
       if (!settingsDialog.open && !infoDialog.open) {
         e.preventDefault();
-        startTimer();
+        // Match the Wake Up button: it is disabled during the wake-up countdown
+        // and while the end-of-day sound is playing.
+        if (!startBtn.disabled) {
+          startTimer();
+        }
       }
     }
     tryHandleResetShortcut(e, currentKey);

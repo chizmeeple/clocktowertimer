@@ -6,6 +6,12 @@ export const CHANGELOG = {
     date: '2026-10-10',
     changes: {
       fixes: [
+        'Starting a new game shows 00:00, disables Reset Day, and cancels a wake-up countdown',
+        'Closing settings or changing pace keeps dawn and dusk, so the next wake-up still advances the day',
+        'The wake-up keyboard shortcut no longer turns the wake-up countdown into a day',
+        'The nominations delay chosen in settings is saved and used for the countdown',
+        'A portrait warning that was already accepted stays dismissed for a returning player',
+        'Music keeps playing when the day ends if Play Music at Night is on',
         'A stale tab no longer refreshes itself during a game, including while a countdown is running, paused, or between days',
         'Orientation listeners are removed with the same handler that was registered, so they do not keep running after they are unregistered',
         'Malformed or unexpected saved settings no longer stop the timer from starting; valid preferences are kept and invalid values fall back to their defaults',
@@ -14,6 +20,8 @@ export const CHANGELOG = {
       improvements: [
         'Day and wake-up countdowns stay accurate when the browser delays timer updates, including in a background tab',
         'Pause still skips time spent waiting, and Accelerate keeps the same faster rate without jumping the clock',
+        'Regression coverage checks Accelerate on a landscape phone, the orientation the timer is designed for',
+        'Cypress runs no longer play the wake-up bell or the end-of-day gong',
       ],
     },
   },
