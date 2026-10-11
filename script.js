@@ -17,6 +17,7 @@ import {
   presetForDay,
   stepNominationsCountdown,
 } from './gameState.js';
+import { navigateToNewerRelease } from './releaseCheck.js';
 
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
@@ -2452,6 +2453,13 @@ function loadSettings() {
     gameSessionActive = true;
   }
   staleTabUtils.onGameActivityChanged();
+  // A newer release may be on the server while this document is still cached.
+  // Reloading is a separate decision from the stale-tab banner, and it waits
+  // until no game is in progress.
+  void navigateToNewerRelease({
+    appVersion: APP_VERSION,
+    isSafeToReload: () => isSafeToAutoRefresh(),
+  });
 }
 
 // Additional safeguard on globalThis load to ensure change history dialog is closed

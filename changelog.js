@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.1.1';
 
 export const CHANGELOG = {
+  '1.1.1': {
+    date: '2026-10-11',
+    changes: {
+      improvements: [
+        'A new release loads reliably after refreshing, without clearing saved games or settings',
+      ],
+    },
+  },
   '1.1.0': {
     date: '2026-10-11',
     changes: {

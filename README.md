@@ -90,7 +90,8 @@ to use this timer.
 - Error handling for audio and YouTube
 - Device wake lock
 - Local storage for settings
-- No build requirements (pure HTML/CSS/JavaScript)
+- Pure HTML, CSS, and JavaScript, with a small release stamp so cached
+  files from different versions are not mixed
 
 ## Settings Dialog
 
@@ -98,11 +99,32 @@ to use this timer.
 
 ## Development
 
-This is a pure HTML/CSS/JavaScript application with no build requirements. To run
-locally:
+This is a pure HTML, CSS, and JavaScript application. To run locally:
 
 ```bash
 python3 -m http.server
 ```
 
 Then visit `http://localhost:8000` in your browser.
+
+The static server ignores the version query string on CSS and JavaScript, so
+local development does not need a build. While you are editing the current
+version, those URLs stay the same, and a browser may reuse a cached module
+until you hard-refresh or change `APP_VERSION`.
+
+## Releasing
+
+GitHub Pages publishes the `main` branch from the repository root. There is no
+generated site directory. `APP_VERSION` in `changelog.js` is the application
+version.
+
+When it changes, update the entry page and release manifest so the stylesheet
+and every local module use that version:
+
+```bash
+node scripts/release-assets.mjs --write
+```
+
+Commit `index.html` and `release.json` with the version change. The node tests
+check that those files match `APP_VERSION` and that local module imports are
+covered. GitHub Pages does not support custom cache headers.
