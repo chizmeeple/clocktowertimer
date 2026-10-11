@@ -1,7 +1,22 @@
 // Version tracking
-export const APP_VERSION = '1.0.34';
+export const APP_VERSION = '1.0.35';
 
 export const CHANGELOG = {
+  '1.0.35': {
+    date: '2026-10-10',
+    changes: {
+      fixes: [
+        'A stale tab no longer refreshes itself during a game, including while a countdown is running, paused, or between days',
+        'Orientation listeners are removed with the same handler that was registered, so they do not keep running after they are unregistered',
+        'Malformed or unexpected saved settings no longer stop the timer from starting; valid preferences are kept and invalid values fall back to their defaults',
+        'The timer stays usable when browser storage cannot be read or written',
+      ],
+      improvements: [
+        'Day and wake-up countdowns stay accurate when the browser delays timer updates, including in a background tab',
+        'Pause still skips time spent waiting, and Accelerate keeps the same faster rate without jumping the clock',
+      ],
+    },
+  },
   '1.0.34': {
     date: '2026-10-09',
     changes: {

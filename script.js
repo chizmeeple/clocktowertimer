@@ -1,4 +1,4 @@
-import { updateCharacterAmounts } from './helper.js';
+import { orientationUtils, updateCharacterAmounts } from './helper.js';
 
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
@@ -48,16 +48,61 @@ const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 const SESSION_COUNTDOWN_HOUR_THRESHOLD_MS = 90 * ONE_MINUTE_MS;
 const STALE_TAB_MS = 2 * ONE_DAY_MS;
 const STALE_TAB_REFRESH_SECONDS = 10;
+const STALE_TAB_HELD_MESSAGE =
+  'This tab has been inactive for a while. Automatic refresh is paused while a game is in progress.';
 const LAST_ACTIVE_AT_KEY = 'towerTimerLastActiveAt';
 const SETTINGS_STORAGE_KEY = 'towerTimerSettings';
 const LEGACY_SETTINGS_STORAGE_KEY = 'quickTimerSettings';
 
+let hasWarnedAboutStorage = false;
+
+function warnStorageUnavailable() {
+  if (hasWarnedAboutStorage) return;
+  hasWarnedAboutStorage = true;
+  console.warn(
+    'Browser storage is unavailable; continuing with in-memory settings.'
+  );
+}
+
+function readStorageItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    warnStorageUnavailable();
+    return null;
+  }
+}
+
+function writeStorageItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    warnStorageUnavailable();
+    return false;
+  }
+}
+
+function removeStorageItem(key) {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    warnStorageUnavailable();
+    return false;
+  }
+}
+
+function isPlainObject(value) {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
 function migrateLegacySettings() {
-  const legacySettings = localStorage.getItem(LEGACY_SETTINGS_STORAGE_KEY);
+  const legacySettings = readStorageItem(LEGACY_SETTINGS_STORAGE_KEY);
   if (legacySettings === null) return;
 
-  localStorage.setItem(SETTINGS_STORAGE_KEY, legacySettings);
-  localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
+  if (!writeStorageItem(SETTINGS_STORAGE_KEY, legacySettings)) return;
+  removeStorageItem(LEGACY_SETTINGS_STORAGE_KEY);
 }
 
 function getSessionEndDate(now, hour, minute) {
@@ -229,21 +274,58 @@ const connectivityUtils = {
   },
 };
 
-const orientationUtils = {
-  isPortrait: () => globalThis.matchMedia('(orientation: portrait)').matches,
-  addOrientationListener: (callback) => {
-    globalThis
-      .matchMedia('(orientation: portrait)')
-      .addEventListener('change', (e) => {
-        callback(e.matches);
-      });
-  },
-  removeOrientationListener: (callback) => {
-    globalThis
-      .matchMedia('(orientation: portrait)')
-      .removeEventListener('change', callback);
-  },
-};
+// Set when this page starts a countdown or restores a dawn/dusk phase.
+// A finished, paused, or between-days timer does not clear it. Reset Day
+// and Start New Game do. A fresh page with no live session stays idle.
+let gameSessionActive = false;
+// Dawn/dusk in storage is consulted only until saved settings are applied.
+let initialSettingsApplied = false;
+
+function peekSavedDayState() {
+  const raw = readStorageItem(SETTINGS_STORAGE_KEY);
+  if (!raw) return '';
+  const parsed = parseStoredSettings(raw);
+  if (!parsed.ok || !isPlainObject(parsed.value)) return '';
+  return readDayState(parsed.value.dayState);
+}
+
+// Automatic reload is allowed only when this page can positively show that
+// no game is in progress. Anything uncertain stays on the page.
+function isSafeToAutoRefresh() {
+  if (gameSessionActive) return false;
+  if (isRunning || countdownActive || countdownKind) return false;
+  if (wakeUpTimeout) return false;
+  if (isEndSoundPlaying) return false;
+  if (autoOpenNominationsInterval) return false;
+  // A paused countdown still has time left. Reset Day sets hasReset.
+  if (timeLeft > 0 && !hasReset) return false;
+  if (isDuskPresetView) return false;
+
+  const dayInfo = document.querySelector('.day-display');
+  if (
+    dayInfo?.classList.contains('dusk') ||
+    dayInfo?.classList.contains('dawn')
+  ) {
+    return false;
+  }
+
+  if (!initialSettingsApplied) {
+    const savedDayState = peekSavedDayState();
+    if (savedDayState === 'dawn' || savedDayState === 'dusk') return false;
+  }
+
+  return true;
+}
+
+function beginGameSession() {
+  gameSessionActive = true;
+  staleTabUtils.onGameActivityChanged();
+}
+
+function endGameSession() {
+  gameSessionActive = false;
+  staleTabUtils.onGameActivityChanged();
+}
 
 const staleTabUtils = {
   bannerDismissed: false,
@@ -252,10 +334,11 @@ const staleTabUtils = {
   statusEl: null,
   progressEl: null,
   refreshTimerId: null,
+  refreshGeneration: 0,
   secondsLeft: STALE_TAB_REFRESH_SECONDS,
 
   markActive() {
-    localStorage.setItem(LAST_ACTIVE_AT_KEY, String(Date.now()));
+    writeStorageItem(LAST_ACTIVE_AT_KEY, String(Date.now()));
   },
 
   isStale() {
@@ -263,7 +346,7 @@ const staleTabUtils = {
       return true;
     }
 
-    const lastActive = Number(localStorage.getItem(LAST_ACTIVE_AT_KEY));
+    const lastActive = Number(readStorageItem(LAST_ACTIVE_AT_KEY));
     return lastActive > 0 && Date.now() - lastActive >= STALE_TAB_MS;
   },
 
@@ -293,31 +376,94 @@ const staleTabUtils = {
   },
 
   clearRefreshTimer() {
+    // Bump the generation first so a callback that already started, or one
+    // that still runs after clearInterval, cannot reload the page.
+    this.refreshGeneration += 1;
     if (this.refreshTimerId !== null) {
       clearInterval(this.refreshTimerId);
       this.refreshTimerId = null;
     }
   },
 
+  // Explicit Refresh now. This does not consult automatic-refresh safety.
   refreshPage() {
     this.clearRefreshTimer();
     location.reload();
   },
 
+  // Last step of a scheduled refresh. Safety is decided here, not when the
+  // countdown was armed. A stale generation means the callback was cancelled.
+  requestAutomaticRefresh(generation = this.refreshGeneration) {
+    if (generation !== this.refreshGeneration) return;
+    if (!isSafeToAutoRefresh()) {
+      this.holdAutoRefresh();
+      return;
+    }
+    this.refreshPage();
+  },
+
+  renderHeldMessage() {
+    if (!this.messageEl) return;
+    this.messageEl.textContent = STALE_TAB_HELD_MESSAGE;
+  },
+
+  announceCountdown() {
+    if (!this.statusEl) return;
+    this.statusEl.textContent = `This tab has been inactive for a while. Refreshing automatically in ${STALE_TAB_REFRESH_SECONDS} seconds to load the latest version.`;
+  },
+
+  announceHeld() {
+    if (!this.statusEl) return;
+    this.statusEl.textContent = STALE_TAB_HELD_MESSAGE;
+  },
+
+  revealBanner() {
+    this.bannerEl.removeAttribute('hidden');
+    document.body.classList.add('stale-tab-banner-visible');
+    this.syncBannerHeight();
+  },
+
+  holdAutoRefresh() {
+    this.clearRefreshTimer();
+    if (this.progressEl) {
+      this.progressEl.style.animation = 'none';
+      this.progressEl.style.transform = 'scaleX(0)';
+    }
+    if (!this.bannerEl || this.bannerEl.hasAttribute('hidden')) return;
+    this.renderHeldMessage();
+    this.announceHeld();
+    this.syncBannerHeight();
+  },
+
   armCountdown() {
+    if (this.refreshTimerId !== null) return;
+    if (!isSafeToAutoRefresh()) {
+      this.holdAutoRefresh();
+      return;
+    }
+
     const reduceMotion = globalThis.matchMedia(
       '(prefers-reduced-motion: reduce)'
     ).matches;
-    if (this.progressEl && !reduceMotion) {
-      this.progressEl.style.animation = 'none';
-      void this.progressEl.offsetWidth;
-      this.progressEl.style.animation = `stale-tab-refresh-countdown ${STALE_TAB_REFRESH_SECONDS}s linear forwards`;
+    if (this.progressEl) {
+      this.progressEl.style.transform = '';
+      if (!reduceMotion) {
+        this.progressEl.style.animation = 'none';
+        void this.progressEl.offsetWidth;
+        this.progressEl.style.animation = `stale-tab-refresh-countdown ${STALE_TAB_REFRESH_SECONDS}s linear forwards`;
+      }
     }
 
+    const generation = this.refreshGeneration;
     this.refreshTimerId = setInterval(() => {
+      if (generation !== this.refreshGeneration) return;
+      if (!isSafeToAutoRefresh()) {
+        this.holdAutoRefresh();
+        return;
+      }
       this.secondsLeft -= 1;
       if (this.secondsLeft <= 0) {
-        this.refreshPage();
+        this.requestAutomaticRefresh(generation);
         return;
       }
       this.renderCountdown();
@@ -325,8 +471,22 @@ const staleTabUtils = {
     }, 1000);
   },
 
+  resumeCountdown() {
+    if (this.refreshTimerId !== null) return;
+    if (!isSafeToAutoRefresh()) return;
+    this.secondsLeft = STALE_TAB_REFRESH_SECONDS;
+    this.renderCountdown();
+    this.announceCountdown();
+    this.armCountdown();
+  },
+
   showBanner() {
     if (!this.bannerEl) return;
+    if (!isSafeToAutoRefresh()) {
+      this.revealBanner();
+      this.holdAutoRefresh();
+      return;
+    }
     const alreadyCounting =
       !this.bannerEl.hasAttribute('hidden') && this.refreshTimerId !== null;
     if (!alreadyCounting) {
@@ -334,13 +494,9 @@ const staleTabUtils = {
       this.secondsLeft = STALE_TAB_REFRESH_SECONDS;
       this.renderCountdown();
     }
-    this.bannerEl.removeAttribute('hidden');
-    document.body.classList.add('stale-tab-banner-visible');
-    this.syncBannerHeight();
+    this.revealBanner();
     if (!alreadyCounting) {
-      if (this.statusEl) {
-        this.statusEl.textContent = `This tab has been inactive for a while. Refreshing automatically in ${STALE_TAB_REFRESH_SECONDS} seconds to load the latest version.`;
-      }
+      this.announceCountdown();
       this.armCountdown();
     }
   },
@@ -360,6 +516,31 @@ const staleTabUtils = {
     if (this.isStale() && !this.bannerDismissed) {
       this.showBanner();
     }
+  },
+
+  // Cancel a pending refresh when a game becomes active, and arm one
+  // countdown only when a visible banner becomes safe again.
+  onGameActivityChanged() {
+    if (!isSafeToAutoRefresh()) {
+      if (this.bannerEl && !this.bannerEl.hasAttribute('hidden')) {
+        this.holdAutoRefresh();
+      } else {
+        this.clearRefreshTimer();
+      }
+      return;
+    }
+
+    if (
+      this.bannerDismissed ||
+      !this.bannerEl ||
+      this.bannerEl.hasAttribute('hidden')
+    ) {
+      return;
+    }
+
+    // The banner was shown because the tab was already stale. markActive()
+    // updates the stored timestamp, so do not ask isStale() again here.
+    this.resumeCountdown();
   },
 
   onBecameVisible() {
@@ -386,6 +567,10 @@ const staleTabUtils = {
       this.bannerDismissed = true;
       this.hideBanner();
     });
+
+    if (globalThis.Cypress) {
+      globalThis.staleTabUtils = this;
+    }
 
     this.checkOnResume();
     this.markActive();
@@ -535,7 +720,10 @@ function safePlaySound(audio, { onEnded, onError, fallbackBeep = false } = {}) {
 
 const timerUtils = {
   stop: () => {
-    clearInterval(timerId);
+    if (countdownActive) {
+      timeLeft = readRemainingMs() / 1000;
+    }
+    clearCountdownSchedule();
     isRunning = false;
     updateDisplay();
   },
@@ -697,15 +885,19 @@ const keyboardShortcutsUtils = {
   // Nuclear option: completely remove and recreate the keyboardShortcuts key
   forceReset: () => {
     // Get current settings
-    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const savedSettings = readStorageItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-
-      // Remove the keyboardShortcuts key completely
-      delete settings.keyboardShortcuts;
-
-      // Save settings without keyboardShortcuts
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      try {
+        const settings = JSON.parse(savedSettings);
+        if (isPlainObject(settings)) {
+          delete settings.keyboardShortcuts;
+          writeStorageItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        }
+      } catch {
+        console.warn(
+          'Saved settings could not be parsed; keyboard shortcuts were reset in memory.'
+        );
+      }
     }
 
     // Reset to defaults
@@ -789,7 +981,10 @@ let previewSound = null; // New audio element for previews
 // Wake Lock state
 let wakeLock = null;
 
-// Timer state
+// Timer state.
+// Remaining time is a duration anchored to performance.now(), not a count of
+// interval callbacks. Each running segment records the remaining milliseconds
+// and the countdown speed that applies until the next pause or speed change.
 let timeLeft = 0;
 let timerId = null;
 let isRunning = false;
@@ -801,6 +996,14 @@ let wakeUpTimeout = null;
 let isEndSoundPlaying = false; // New state variable
 let hasReset = false; // New state variable to track reset state
 let accelerateConfirmTimeout = null;
+const COUNTDOWN_REFRESH_MS = 50;
+const NORMAL_COUNTDOWN_MS_PER_REAL_MS = 1;
+let countdownActive = false;
+let countdownKind = null; // 'day' or 'wake-up' while a segment is running
+let segmentStartRemainingMs = 0;
+let segmentStartAt = 0;
+let segmentCountdownPerRealMs = 0;
+let lastRenderedSeconds = null;
 
 // Game pace multipliers
 const PACE_MULTIPLIERS = {
@@ -810,9 +1013,76 @@ const PACE_MULTIPLIERS = {
   blitz: 0.33, // 67% faster than relaxed
 };
 
+const MIN_PLAYER_COUNT = 5;
+const MAX_PLAYER_COUNT = 15;
+const DEFAULT_PLAYER_COUNT = 10;
+const MIN_TRAVELLER_COUNT = 0;
+const MAX_TRAVELLER_COUNT = 5;
+const DEFAULT_TRAVELLER_COUNT = 0;
+const DEFAULT_CURRENT_DAY = 1;
+// A corrupt day or preset number must not build an unbounded preset list.
+const MAX_TRACKED_DAY = 100;
+const DEFAULT_PACE = 'normal';
+const MIN_VOLUME = 0;
+const MAX_VOLUME = 100;
+const DEFAULT_YOUTUBE_VOLUME = 15;
+const DEFAULT_SOUND_EFFECTS_VOLUME = 75;
+const DEFAULT_PLAY_MUSIC = false;
+const DEFAULT_PLAY_MUSIC_AT_NIGHT = false;
+const DEFAULT_PLAY_SOUND_EFFECTS = true;
+const DEFAULT_KEEP_DISPLAY_ON = true;
+const DEFAULT_SHOW_PLAYER_COUNT_QR = false;
+const DEFAULT_SHOW_CURRENT_TIME = true;
+const DEFAULT_SHOW_SESSION_COUNTDOWN = false;
+const CLOCK_FORMATS = ['12', '24'];
+const DEFAULT_CLOCK_FORMAT = '24';
+const DEFAULT_SESSION_END_HOUR = 23;
+const DEFAULT_SESSION_END_MINUTE = 0;
+const BACKGROUND_THEMES = [
+  'none',
+  'gothic-city',
+  'medieval-cartoon',
+  'tower-in-forest',
+  'infested-city',
+  'circle-of-people',
+  'large-clock-face',
+];
+const DEFAULT_BACKGROUND_THEME = 'medieval-cartoon';
+const END_OF_DAY_SOUNDS = [
+  'cathedral-bell-v2.mp3',
+  'bell-and-crows-v2.mp3',
+  'single-church-bell-v2.mp3',
+  'alarm-siren-fast-v2.mp3',
+];
+const DEFAULT_END_OF_DAY_SOUND = END_OF_DAY_SOUNDS[0];
+const WAKE_UP_SOUNDS = [
+  'chisel-bell-01-loud-v2.mp3',
+  'rooster-v2.mp3',
+  'quick-bell-v2.mp3',
+];
+const DEFAULT_WAKE_UP_SOUND = WAKE_UP_SOUNDS[0];
+const NOMINATIONS_OPEN_SOUNDS = [
+  'nominations-open-laura.mp3',
+  'nominations-open-russell.mp3',
+  'nominations-open-serafina.mp3',
+];
+const DEFAULT_NOMINATIONS_OPEN_SOUND = NOMINATIONS_OPEN_SOUNDS[0];
+const NOMINATION_OPEN_DELAYS = [30, 60, 90];
+const DEFAULT_NOMINATION_OPEN_DELAY = 60;
+const DEFAULT_AUTO_OPEN_NOMINATIONS = false;
+const DEFAULT_ACCEPTED_PORTRAIT_WARNING = false;
+const DAY_STATES = ['dawn', 'dusk'];
+const MAX_SHORTCUT_LENGTH = 32;
+const MAX_PLAYLIST_URL_LENGTH = 2048;
+const BLOCKED_SETTING_KEYS = new Set([
+  '__proto__',
+  'constructor',
+  'prototype',
+]);
+
 // Settings state
-let playerCount = 10; // Default to 10 players
-let travellerCount = 0; // Default to 0 travellers
+let playerCount = DEFAULT_PLAYER_COUNT;
+let travellerCount = DEFAULT_TRAVELLER_COUNT;
 let isFirstLoad = false;
 let currentDay = null;
 /** Day number → preset index used for that day. Only presets we skipped get 💀; used presets keep "Day N"; rest renumbered from current. */
@@ -821,28 +1091,28 @@ let usedPresetByDay = {};
 let hiddenPresetDays = [];
 /** True only when the timer has run out this day (dusk); used so we show compact preset list only then, not when e.g. clicking a preset. */
 let isDuskPresetView = false;
-let currentPace = 'normal'; // Default pace
-let playMusic = false; // Default to false for new users
-let playMusicAtNight = false; // Default to false for new users
-let playSoundEffects = true; // Default to true for sound effects
-let youtubeVolume = 15; // Default to 15%
-let soundEffectsVolume = 75; // Default to 75%
-let backgroundTheme = 'medieval-cartoon'; // Default background theme
-let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST; // Default playlist
-let keepDisplayOn = true; // Default to true for wake lock
-let showPlayerCountQr = false; // Optional QR linking to count.arcane-scripts.net
-let showCurrentTime = true; // Show wall clock under day display
-let clockFormat = '24'; // '12' or '24'
-let showSessionCountdown = false;
-let sessionEndHour = 23;
-let sessionEndMinute = 0;
+let currentPace = DEFAULT_PACE;
+let playMusic = DEFAULT_PLAY_MUSIC;
+let playMusicAtNight = DEFAULT_PLAY_MUSIC_AT_NIGHT;
+let playSoundEffects = DEFAULT_PLAY_SOUND_EFFECTS;
+let youtubeVolume = DEFAULT_YOUTUBE_VOLUME;
+let soundEffectsVolume = DEFAULT_SOUND_EFFECTS_VOLUME;
+let backgroundTheme = DEFAULT_BACKGROUND_THEME;
+let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST;
+let keepDisplayOn = DEFAULT_KEEP_DISPLAY_ON;
+let showPlayerCountQr = DEFAULT_SHOW_PLAYER_COUNT_QR;
+let showCurrentTime = DEFAULT_SHOW_CURRENT_TIME;
+let clockFormat = DEFAULT_CLOCK_FORMAT;
+let showSessionCountdown = DEFAULT_SHOW_SESSION_COUNTDOWN;
+let sessionEndHour = DEFAULT_SESSION_END_HOUR;
+let sessionEndMinute = DEFAULT_SESSION_END_MINUTE;
 let youtubePlayer = null;
-let endOfDaySound = 'cathedral-bell-v2.mp3'; // Default end of day sound
-let wakeUpSoundFile = 'chisel-bell-01-loud-v2.mp3'; // Default wake up sound
-let nominationsOpenSoundFile = 'nominations-open-laura.mp3'; // Default nominations open sound
-let acceptedPortraitWarning = false; // Default to false for portrait warning
-let autoOpenNominations = false;
-let autoOpenNominationsDelay = 60; // seconds
+let endOfDaySound = DEFAULT_END_OF_DAY_SOUND;
+let wakeUpSoundFile = DEFAULT_WAKE_UP_SOUND;
+let nominationsOpenSoundFile = DEFAULT_NOMINATIONS_OPEN_SOUND;
+let acceptedPortraitWarning = DEFAULT_ACCEPTED_PORTRAIT_WARNING;
+let autoOpenNominations = DEFAULT_AUTO_OPEN_NOMINATIONS;
+let autoOpenNominationsDelay = DEFAULT_NOMINATION_OPEN_DELAY; // seconds
 let autoOpenNominationsInterval = null;
 let nominationsCountdownRemaining = 0;
 /** Reused for fallback beep to avoid allocating a new AudioContext each time */
@@ -1079,6 +1349,11 @@ async function releaseWakeLock() {
 // Event listeners for wake lock and stale-tab banner
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
+    // A throttled interval may not have run while the tab was hidden.
+    // Catch the display and completion up to monotonic time immediately.
+    if (countdownActive) {
+      renderCountdownFrame();
+    }
     staleTabUtils.onBecameVisible();
     await requestWakeLock();
   } else {
@@ -1290,7 +1565,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
-  resetBtn.addEventListener('click', resetTimer);
+  resetBtn.addEventListener('click', () => {
+    resetTimer();
+    endGameSession();
+  });
   fullscreenBtn.addEventListener('click', toggleFullscreen);
   settingsBtn.addEventListener('click', openSettings);
   closeSettingsBtn.addEventListener('click', closeSettings);
@@ -1610,105 +1888,415 @@ function roundToNearestQuarter(n) {
   return Math.round(n * 4) / 4;
 }
 
-function resolveUsedPresetByDay(settings, currentDay) {
-  if (
-    settings.usedPresetByDay &&
-    typeof settings.usedPresetByDay === 'object'
-  ) {
-    return settings.usedPresetByDay;
+const KNOWN_SETTINGS_KEYS = new Set([
+  'playerCount',
+  'travellerCount',
+  'currentDay',
+  'usedPresetByDay',
+  'hiddenPresetDays',
+  'currentPace',
+  'playMusic',
+  'playMusicAtNight',
+  'playSoundEffects',
+  'soundEffectsVolume',
+  'keepDisplayOn',
+  'showPlayerCountQr',
+  'showCurrentTime',
+  'clockFormat',
+  'showSessionCountdown',
+  'sessionEndHour',
+  'sessionEndMinute',
+  'youtubeVolume',
+  'youtubePlaylistUrl',
+  'backgroundTheme',
+  'dayState',
+  'lastSeenVersion',
+  'endOfDaySound',
+  'wakeUpSoundFile',
+  'nominationsOpenSoundFile',
+  'autoOpenNominations',
+  'autoOpenNominationsDelay',
+  'acceptedPortraitWarning',
+  'keyboardShortcuts',
+]);
+
+// Fields from a future version, kept so a later save does not drop them.
+let preservedUnknownSettings = {};
+
+function readBoundedInteger(
+  value,
+  minimum,
+  maximum,
+  fallback,
+  clampOutOfRange
+) {
+  if (typeof value !== 'number' || !Number.isInteger(value)) return fallback;
+  if (value < minimum || value > maximum) {
+    return clampOutOfRange
+      ? Math.min(maximum, Math.max(minimum, value))
+      : fallback;
   }
-  if (settings.dayOnePresetIndex == null) {
+  return value;
+}
+
+function readBooleanSetting(value, fallback) {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function readEnum(value, allowed, fallback) {
+  return typeof value === 'string' && allowed.includes(value) ? value : fallback;
+}
+
+function readSoundFile(value, allowed, fallback) {
+  if (typeof value !== 'string') return fallback;
+  if (allowed.includes(value)) return value;
+  // Older saves used names such as cathedral-bell.mp3.
+  if (value.endsWith('.mp3')) {
+    const migrated = `${value.slice(0, -4)}-v2.mp3`;
+    if (allowed.includes(migrated)) return migrated;
+  }
+  return fallback;
+}
+
+function readPlaylistUrl(value) {
+  if (
+    typeof value !== 'string' ||
+    value.length === 0 ||
+    value.length > MAX_PLAYLIST_URL_LENGTH
+  ) {
+    return DEFAULT_YOUTUBE_PLAYLIST;
+  }
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return DEFAULT_YOUTUBE_PLAYLIST;
+    }
+  } catch {
+    return DEFAULT_YOUTUBE_PLAYLIST;
+  }
+  return value;
+}
+
+function readDayState(value) {
+  return DAY_STATES.includes(value) ? value : '';
+}
+
+function readHiddenPresetDays(value) {
+  if (!Array.isArray(value)) return [];
+  const hidden = [];
+  for (const entry of value) {
+    if (!Number.isInteger(entry) || entry < 1 || entry > MAX_TRACKED_DAY) {
+      continue;
+    }
+    if (!hidden.includes(entry)) hidden.push(entry);
+  }
+  return hidden;
+}
+
+function readUsedPresetByDay(settings, day) {
+  if (Object.hasOwn(settings, 'usedPresetByDay')) {
+    if (!isPlainObject(settings.usedPresetByDay)) return {};
+    const result = {};
+    for (const [key, value] of Object.entries(settings.usedPresetByDay)) {
+      if (BLOCKED_SETTING_KEYS.has(key)) continue;
+      const dayNumber = Number(key);
+      if (String(dayNumber) !== key) continue;
+      if (
+        dayNumber < 1 ||
+        dayNumber > MAX_TRACKED_DAY ||
+        !Number.isInteger(value) ||
+        value < 1 ||
+        value > MAX_TRACKED_DAY
+      ) {
+        continue;
+      }
+      result[dayNumber] = value;
+    }
+    return result;
+  }
+
+  const start = settings.dayOnePresetIndex;
+  if (!Number.isInteger(start) || start < 1 || start > MAX_TRACKED_DAY) {
     return {};
   }
-  // Migrate: assume sequential use from dayOnePresetIndex
+  // Older saves recorded only the day-one preset and assumed the rest were sequential.
   const result = {};
-  for (let d = 1; d <= currentDay; d++)
-    result[d] = settings.dayOnePresetIndex + d - 1;
+  const lastDay = Math.min(day, MAX_TRACKED_DAY);
+  for (let index = 1; index <= lastDay; index += 1) {
+    const preset = start + index - 1;
+    if (preset > MAX_TRACKED_DAY) break;
+    result[index] = preset;
+  }
   return result;
 }
 
-// Apply parsed settings object to globals and persist; runs migration and version check
-function applyParsedSettings(settings) {
-  const normaliseSoundFile = (value, defaultVal) => {
-    const v = value || defaultVal;
-    return v.endsWith('-v2.mp3') ? v : v.slice(0, -4) + '-v2.mp3';
-  };
+function isStoredShortcut(value) {
+  return typeof value === 'string' && value.length <= MAX_SHORTCUT_LENGTH;
+}
 
-  playerCount = settings.playerCount || 10;
-  travellerCount = settings.travellerCount || 0;
-  currentDay = settings.currentDay || 1;
-  usedPresetByDay = resolveUsedPresetByDay(settings, currentDay);
-  hiddenPresetDays = Array.isArray(settings.hiddenPresetDays)
-    ? settings.hiddenPresetDays
-    : [];
-  currentPace = settings.currentPace || 'normal';
-  playMusic = settings.playMusic === undefined ? false : settings.playMusic;
-  playMusicAtNight =
-    settings.playMusicAtNight === undefined ? false : settings.playMusicAtNight;
-  playSoundEffects =
-    settings.playSoundEffects === undefined ? true : settings.playSoundEffects;
-  soundEffectsVolume = settings.soundEffectsVolume || 75;
-  keepDisplayOn =
-    settings.keepDisplayOn === undefined ? true : settings.keepDisplayOn;
-  showPlayerCountQr = settings.showPlayerCountQr === true;
-  showCurrentTime =
-    settings.showCurrentTime === undefined ? true : settings.showCurrentTime;
-  clockFormat = settings.clockFormat === '12' ? '12' : '24';
-  showSessionCountdown = settings.showSessionCountdown === true;
-  sessionEndHour =
-    Number.isInteger(settings.sessionEndHour) &&
-    settings.sessionEndHour >= 0 &&
-    settings.sessionEndHour <= 23
-      ? settings.sessionEndHour
-      : 23;
-  sessionEndMinute =
-    Number.isInteger(settings.sessionEndMinute) &&
-    settings.sessionEndMinute >= 0 &&
-    settings.sessionEndMinute <= 59
-      ? settings.sessionEndMinute
-      : 0;
-  youtubeVolume = settings.youtubeVolume || 15;
-  backgroundTheme = settings.backgroundTheme || 'medieval-cartoon';
-  youtubePlaylistUrl = settings.youtubePlaylistUrl || DEFAULT_YOUTUBE_PLAYLIST;
-  endOfDaySound = normaliseSoundFile(
+function readKeyboardShortcuts(raw) {
+  if (!isPlainObject(raw)) {
+    return { shortcuts: { ...DEFAULT_KEYBOARD_SHORTCUTS }, migrated: false };
+  }
+
+  const source = {};
+  for (const key of Object.keys(raw)) {
+    if (BLOCKED_SETTING_KEYS.has(key)) continue;
+    source[key] = raw[key];
+  }
+
+  let migrated = false;
+  if (source.wakeup && !source.wakeUp && isStoredShortcut(source.wakeup)) {
+    source.wakeUp = source.wakeup;
+    delete source.wakeup;
+    migrated = true;
+  }
+  if (source.accelerate === undefined) {
+    source.accelerate = DEFAULT_KEYBOARD_SHORTCUTS.accelerate;
+    migrated = true;
+  }
+
+  const shortcuts = {};
+  for (const action of Object.keys(DEFAULT_KEYBOARD_SHORTCUTS)) {
+    shortcuts[action] = isStoredShortcut(source[action])
+      ? source[action]
+      : DEFAULT_KEYBOARD_SHORTCUTS[action];
+  }
+
+  for (const [key, shortcut] of Object.entries(source)) {
+    if (
+      Object.hasOwn(DEFAULT_KEYBOARD_SHORTCUTS, key) ||
+      BLOCKED_SETTING_KEYS.has(key) ||
+      key.length > MAX_SHORTCUT_LENGTH
+    ) {
+      continue;
+    }
+    if (isStoredShortcut(shortcut)) shortcuts[key] = shortcut;
+  }
+
+  return { shortcuts, migrated };
+}
+
+function isJsonValue(value, depth = 0) {
+  if (depth > 20) return false;
+  if (value === null) return true;
+  const type = typeof value;
+  if (type === 'boolean' || type === 'string') return true;
+  if (type === 'number') return Number.isFinite(value);
+  if (Array.isArray(value)) {
+    return value.every((entry) => isJsonValue(entry, depth + 1));
+  }
+  if (!isPlainObject(value)) return false;
+  return Object.keys(value).every(
+    (key) => !BLOCKED_SETTING_KEYS.has(key) && isJsonValue(value[key], depth + 1)
+  );
+}
+
+function rememberUnknownSettings(settings) {
+  preservedUnknownSettings = {};
+  for (const key of Object.keys(settings)) {
+    if (KNOWN_SETTINGS_KEYS.has(key) || BLOCKED_SETTING_KEYS.has(key)) continue;
+    const value = settings[key];
+    if (isJsonValue(value)) preservedUnknownSettings[key] = value;
+  }
+}
+
+function applyInMemoryDefaultSettings() {
+  preservedUnknownSettings = {};
+  playerCount = DEFAULT_PLAYER_COUNT;
+  travellerCount = DEFAULT_TRAVELLER_COUNT;
+  currentDay = DEFAULT_CURRENT_DAY;
+  usedPresetByDay = {};
+  hiddenPresetDays = [];
+  currentPace = DEFAULT_PACE;
+  playMusic = DEFAULT_PLAY_MUSIC;
+  playMusicAtNight = DEFAULT_PLAY_MUSIC_AT_NIGHT;
+  playSoundEffects = DEFAULT_PLAY_SOUND_EFFECTS;
+  soundEffectsVolume = DEFAULT_SOUND_EFFECTS_VOLUME;
+  keepDisplayOn = DEFAULT_KEEP_DISPLAY_ON;
+  showPlayerCountQr = DEFAULT_SHOW_PLAYER_COUNT_QR;
+  showCurrentTime = DEFAULT_SHOW_CURRENT_TIME;
+  clockFormat = DEFAULT_CLOCK_FORMAT;
+  showSessionCountdown = DEFAULT_SHOW_SESSION_COUNTDOWN;
+  sessionEndHour = DEFAULT_SESSION_END_HOUR;
+  sessionEndMinute = DEFAULT_SESSION_END_MINUTE;
+  youtubeVolume = DEFAULT_YOUTUBE_VOLUME;
+  backgroundTheme = DEFAULT_BACKGROUND_THEME;
+  youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST;
+  endOfDaySound = DEFAULT_END_OF_DAY_SOUND;
+  wakeUpSoundFile = DEFAULT_WAKE_UP_SOUND;
+  nominationsOpenSoundFile = DEFAULT_NOMINATIONS_OPEN_SOUND;
+  autoOpenNominations = DEFAULT_AUTO_OPEN_NOMINATIONS;
+  autoOpenNominationsDelay = DEFAULT_NOMINATION_OPEN_DELAY;
+  acceptedPortraitWarning = DEFAULT_ACCEPTED_PORTRAIT_WARNING;
+  keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
+  updateDayDisplay('', { persist: false });
+}
+
+function parseStoredSettings(raw) {
+  try {
+    return { ok: true, value: JSON.parse(raw) };
+  } catch {
+    return { ok: false, value: null };
+  }
+}
+
+// Apply a parsed settings object. Invalid fields fall back individually.
+function applyParsedSettings(settings) {
+  rememberUnknownSettings(settings);
+
+  playerCount = readBoundedInteger(
+    settings.playerCount,
+    MIN_PLAYER_COUNT,
+    MAX_PLAYER_COUNT,
+    DEFAULT_PLAYER_COUNT,
+    true
+  );
+  travellerCount = readBoundedInteger(
+    settings.travellerCount,
+    MIN_TRAVELLER_COUNT,
+    MAX_TRAVELLER_COUNT,
+    DEFAULT_TRAVELLER_COUNT,
+    true
+  );
+  currentDay = readBoundedInteger(
+    settings.currentDay,
+    1,
+    MAX_TRACKED_DAY,
+    DEFAULT_CURRENT_DAY,
+    false
+  );
+  usedPresetByDay = readUsedPresetByDay(settings, currentDay);
+  hiddenPresetDays = readHiddenPresetDays(settings.hiddenPresetDays);
+  currentPace = readEnum(
+    settings.currentPace,
+    Object.keys(PACE_MULTIPLIERS),
+    DEFAULT_PACE
+  );
+  playMusic = readBooleanSetting(settings.playMusic, DEFAULT_PLAY_MUSIC);
+  playMusicAtNight = readBooleanSetting(
+    settings.playMusicAtNight,
+    DEFAULT_PLAY_MUSIC_AT_NIGHT
+  );
+  playSoundEffects = readBooleanSetting(
+    settings.playSoundEffects,
+    DEFAULT_PLAY_SOUND_EFFECTS
+  );
+  soundEffectsVolume = readBoundedInteger(
+    settings.soundEffectsVolume,
+    MIN_VOLUME,
+    MAX_VOLUME,
+    DEFAULT_SOUND_EFFECTS_VOLUME,
+    true
+  );
+  keepDisplayOn = readBooleanSetting(
+    settings.keepDisplayOn,
+    DEFAULT_KEEP_DISPLAY_ON
+  );
+  showPlayerCountQr = readBooleanSetting(
+    settings.showPlayerCountQr,
+    DEFAULT_SHOW_PLAYER_COUNT_QR
+  );
+  showCurrentTime = readBooleanSetting(
+    settings.showCurrentTime,
+    DEFAULT_SHOW_CURRENT_TIME
+  );
+  clockFormat = readEnum(
+    settings.clockFormat,
+    CLOCK_FORMATS,
+    DEFAULT_CLOCK_FORMAT
+  );
+  showSessionCountdown = readBooleanSetting(
+    settings.showSessionCountdown,
+    DEFAULT_SHOW_SESSION_COUNTDOWN
+  );
+  sessionEndHour = readBoundedInteger(
+    settings.sessionEndHour,
+    0,
+    23,
+    DEFAULT_SESSION_END_HOUR,
+    false
+  );
+  sessionEndMinute = readBoundedInteger(
+    settings.sessionEndMinute,
+    0,
+    59,
+    DEFAULT_SESSION_END_MINUTE,
+    false
+  );
+  youtubeVolume = readBoundedInteger(
+    settings.youtubeVolume,
+    MIN_VOLUME,
+    MAX_VOLUME,
+    DEFAULT_YOUTUBE_VOLUME,
+    true
+  );
+  backgroundTheme = readEnum(
+    settings.backgroundTheme,
+    BACKGROUND_THEMES,
+    DEFAULT_BACKGROUND_THEME
+  );
+  youtubePlaylistUrl = readPlaylistUrl(settings.youtubePlaylistUrl);
+  endOfDaySound = readSoundFile(
     settings.endOfDaySound,
-    'cathedral-bell-v2.mp3'
+    END_OF_DAY_SOUNDS,
+    DEFAULT_END_OF_DAY_SOUND
   );
-  wakeUpSoundFile = normaliseSoundFile(
+  wakeUpSoundFile = readSoundFile(
     settings.wakeUpSoundFile,
-    'chisel-bell-01-loud-v2.mp3'
+    WAKE_UP_SOUNDS,
+    DEFAULT_WAKE_UP_SOUND
   );
-  nominationsOpenSoundFile =
-    settings.nominationsOpenSoundFile || 'nominations-open-laura.mp3';
+  nominationsOpenSoundFile = readSoundFile(
+    settings.nominationsOpenSoundFile,
+    NOMINATIONS_OPEN_SOUNDS,
+    DEFAULT_NOMINATIONS_OPEN_SOUND
+  );
+  autoOpenNominations = readBooleanSetting(
+    settings.autoOpenNominations,
+    DEFAULT_AUTO_OPEN_NOMINATIONS
+  );
+  autoOpenNominationsDelay = NOMINATION_OPEN_DELAYS.includes(
+    settings.autoOpenNominationsDelay
+  )
+    ? settings.autoOpenNominationsDelay
+    : DEFAULT_NOMINATION_OPEN_DELAY;
+  acceptedPortraitWarning = readBooleanSetting(
+    settings.acceptedPortraitWarning,
+    DEFAULT_ACCEPTED_PORTRAIT_WARNING
+  );
+
+  const shortcutResult = readKeyboardShortcuts(settings.keyboardShortcuts);
+  keyboardShortcuts = shortcutResult.shortcuts;
+  if (shortcutResult.migrated) {
+    saveSettings();
+  }
+
+  if (
+    typeof settings.lastSeenVersion === 'string' &&
+    settings.lastSeenVersion !== APP_VERSION
+  ) {
+    try {
+      showWhatsNew(settings.lastSeenVersion);
+    } catch {
+      console.warn(
+        'The saved version could not be shown; continuing with the loaded settings.'
+      );
+    }
+  }
+
+  settings.lastSeenVersion = APP_VERSION;
   settings.endOfDaySound = endOfDaySound;
   settings.wakeUpSoundFile = wakeUpSoundFile;
-  autoOpenNominations = settings.autoOpenNominations || false;
-  autoOpenNominationsDelay =
-    settings.autoOpenNominationsDelay === undefined
-      ? 60
-      : settings.autoOpenNominationsDelay;
-  acceptedPortraitWarning = settings.acceptedPortraitWarning || false;
-  keyboardShortcuts = settings.keyboardShortcuts || {
-    ...DEFAULT_KEYBOARD_SHORTCUTS,
-  };
-
-  if (keyboardShortcuts.wakeup && !keyboardShortcuts.wakeUp) {
-    keyboardShortcuts.wakeUp = keyboardShortcuts.wakeup;
-    delete keyboardShortcuts.wakeup;
-    saveSettings();
+  settings.keyboardShortcuts = keyboardShortcuts;
+  try {
+    writeStorageItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    console.warn(
+      'Saved settings could not be updated; continuing with the loaded settings.'
+    );
   }
-  if (keyboardShortcuts.accelerate === undefined) {
-    keyboardShortcuts.accelerate = DEFAULT_KEYBOARD_SHORTCUTS.accelerate;
-    saveSettings();
-  }
-
-  const lastSeenVersion = settings.lastSeenVersion;
-  if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
-    showWhatsNew(lastSeenVersion);
-  }
-  settings.lastSeenVersion = APP_VERSION;
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-  updateDayDisplay(settings.dayState || '');
+  updateDayDisplay(readDayState(settings.dayState));
 }
 
 function initSoundsFirstLoad() {
@@ -1827,9 +2415,27 @@ function applySettingsToForm() {
 // Load settings from localStorage
 function loadSettings() {
   migrateLegacySettings();
-  const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+  const savedSettings = readStorageItem(SETTINGS_STORAGE_KEY);
   if (savedSettings) {
-    applyParsedSettings(JSON.parse(savedSettings));
+    const parsed = parseStoredSettings(savedSettings);
+    let applied = false;
+    if (!parsed.ok) {
+      console.warn('Saved settings are not valid JSON; using defaults.');
+    } else if (!isPlainObject(parsed.value)) {
+      console.warn(
+        'Saved settings have an unexpected format; using defaults.'
+      );
+    } else {
+      try {
+        applyParsedSettings(parsed.value);
+        applied = true;
+      } catch {
+        console.warn('Saved settings could not be applied; using defaults.');
+      }
+    }
+    if (!applied) {
+      applyInMemoryDefaultSettings();
+    }
     // Recreate Audio objects so they use the loaded sound files (they were
     // initially created with defaults in DOMContentLoaded).
     endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
@@ -1885,6 +2491,16 @@ function loadSettings() {
       }
     });
   }
+
+  initialSettingsApplied = true;
+  const restoredDay = document.querySelector('.day-display');
+  if (
+    restoredDay?.classList.contains('dusk') ||
+    restoredDay?.classList.contains('dawn')
+  ) {
+    gameSessionActive = true;
+  }
+  staleTabUtils.onGameActivityChanged();
 }
 
 // Additional safeguard on globalThis load to ensure change history dialog is closed
@@ -1907,6 +2523,7 @@ function saveSettings() {
   }
 
   const settings = {
+    ...preservedUnknownSettings,
     playerCount,
     travellerCount,
     currentDay,
@@ -1937,7 +2554,13 @@ function saveSettings() {
     acceptedPortraitWarning,
     keyboardShortcuts,
   };
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  try {
+    writeStorageItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    console.warn(
+      'Settings could not be saved; continuing with in-memory settings.'
+    );
+  }
 }
 
 // Returns { label, effectiveDay } for a preset. effectiveDay is null for skipped (💀).
@@ -2081,7 +2704,7 @@ function updateClocktowerPresets() {
       selectedSeconds = preset.seconds;
 
       // Reset any existing timer and cancel nominations countdown when starting a new day
-      clearInterval(timerId);
+      clearCountdownSchedule();
       clearNominationsCountdown();
 
       // Set and display the new time
@@ -2127,8 +2750,11 @@ function updatePlayerCountQr() {
 // Update player count
 function updatePlayerCount() {
   playerCount = Math.min(
-    Math.max(Number.parseInt(playerCountInput.value) || 5, 5),
-    15
+    Math.max(
+      Number.parseInt(playerCountInput.value) || MIN_PLAYER_COUNT,
+      MIN_PLAYER_COUNT
+    ),
+    MAX_PLAYER_COUNT
   );
   playerCountInput.value = playerCount;
   updateCharacterAmounts(playerCount);
@@ -2141,8 +2767,11 @@ function updatePlayerCount() {
 // Update traveller count
 function updateTravellerCount() {
   travellerCount = Math.min(
-    Math.max(Number.parseInt(travellerCountInput.value) || 0, 0),
-    5
+    Math.max(
+      Number.parseInt(travellerCountInput.value) || MIN_TRAVELLER_COUNT,
+      MIN_TRAVELLER_COUNT
+    ),
+    MAX_TRAVELLER_COUNT
   );
   travellerCountInput.value = travellerCount;
   document
@@ -2271,6 +2900,7 @@ function clearNominationsCountdown() {
 
 // Start the nominations countdown display and schedule the sound
 function startNominationsCountdown() {
+  beginGameSession();
   clearNominationsCountdown();
   if (!autoOpenNominations || autoOpenNominationsDelay <= 0) return;
 
@@ -2331,12 +2961,176 @@ function createBeep() {
   }, 500);
 }
 
+function monotonicNow() {
+  return performance.now();
+}
+
+// Whole seconds shown on the clock. The current second stays up until it has
+// fully elapsed, matching the previous once-per-second decrement.
+function displaySeconds(secondsRemaining) {
+  if (!(secondsRemaining > 0)) return 0;
+  const millis = Math.round(secondsRemaining * 1000);
+  if (millis <= 0) return 0;
+  return Math.ceil(millis / 1000);
+}
+
+function readRemainingMs(now = monotonicNow()) {
+  if (!countdownActive) return Math.max(0, Math.round(timeLeft * 1000));
+  const elapsed = now - segmentStartAt;
+  if (!(elapsed > 0)) return segmentStartRemainingMs;
+  const remaining =
+    segmentStartRemainingMs - elapsed * segmentCountdownPerRealMs;
+  if (remaining <= 0.001) return 0;
+  return remaining;
+}
+
+function settleCountdown(now = monotonicNow()) {
+  if (countdownActive) {
+    timeLeft = readRemainingMs(now) / 1000;
+  }
+  return now;
+}
+
+function anchorSegment(countdownPerRealMs, now = monotonicNow()) {
+  segmentStartRemainingMs = Math.max(0, Math.round(timeLeft * 1000));
+  // Keep a sub-millisecond remainder counting so it can still reach zero.
+  if (segmentStartRemainingMs === 0 && timeLeft > 0) {
+    segmentStartRemainingMs = 1;
+  }
+  segmentStartAt = now;
+  segmentCountdownPerRealMs = countdownPerRealMs;
+  countdownActive = segmentStartRemainingMs > 0;
+}
+
+function clearCountdownSchedule() {
+  if (timerId !== null) {
+    clearInterval(timerId);
+    timerId = null;
+  }
+  countdownActive = false;
+  countdownKind = null;
+  segmentCountdownPerRealMs = 0;
+  wakeUpTimeout = null;
+}
+
+function ensureCountdownLoop() {
+  if (timerId !== null) return;
+  timerId = setInterval(renderCountdownFrame, COUNTDOWN_REFRESH_MS);
+  if (countdownKind === 'wake-up') {
+    wakeUpTimeout = timerId;
+  }
+}
+
+// Apply time already elapsed at the current speed, then run at `countdownPerRealMs`.
+function continueCountdownAt(kind, countdownPerRealMs) {
+  const now = monotonicNow();
+  if (countdownActive) {
+    timeLeft = readRemainingMs(now) / 1000;
+    if (timeLeft <= 0) {
+      renderCountdownFrame();
+      return;
+    }
+  }
+  if (!(timeLeft > 0)) return;
+  countdownKind = kind;
+  anchorSegment(countdownPerRealMs, now);
+  ensureCountdownLoop();
+}
+
+function renderCountdownFrame() {
+  if (!countdownActive) return;
+  const remainingMs = readRemainingMs();
+  if (remainingMs <= 0) {
+    const kind = countdownKind;
+    const wasAccelerated =
+      segmentCountdownPerRealMs !== NORMAL_COUNTDOWN_MS_PER_REAL_MS;
+    timeLeft = 0;
+    clearCountdownSchedule();
+    isRunning = false;
+    currentInterval = normalInterval;
+    if (kind === 'wake-up') {
+      finishWakeUpCountdown();
+    } else {
+      finishDayCountdown(wasAccelerated);
+    }
+    return;
+  }
+
+  timeLeft = remainingMs / 1000;
+  const shown = displaySeconds(timeLeft);
+  if (shown !== lastRenderedSeconds) {
+    updateDisplay();
+  }
+}
+
+function finishDayCountdown(wasAccelerated) {
+  runYoutube((player) => {
+    player.pauseVideo?.();
+    if (!wasAccelerated) {
+      setYoutubeControlButtonIcon(false);
+    }
+  });
+  if (currentDay !== null) {
+    updateDayDisplay('dusk');
+    updateClocktowerPresets();
+  }
+  playEndSound();
+  updateDisplay();
+
+  if (autoOpenNominations && autoOpenNominationsDelay > 0) {
+    startNominationsCountdown();
+  }
+}
+
+function finishWakeUpCountdown() {
+  timerDisplayEl.classList.remove('wake-up-countdown');
+  updateDayDisplay();
+
+  let currentPresetDay = usedPresetByDay[currentDay];
+  if (currentPresetDay === undefined) {
+    const used = Object.values(usedPresetByDay);
+    currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
+    usedPresetByDay[currentDay] = currentPresetDay;
+    saveSettings();
+    updateClocktowerPresets();
+  }
+  const dayPreset = document.querySelector(
+    `.clocktower-btn[data-day="${currentPresetDay}"]`
+  );
+  if (!dayPreset) return;
+
+  document
+    .querySelectorAll('.clocktower-btn')
+    .forEach((btn) => btn.classList.remove('active'));
+  dayPreset.classList.add('active');
+
+  selectedMinutes = Number.parseInt(dayPreset.dataset.minutes);
+  selectedSeconds = Number.parseInt(dayPreset.dataset.seconds);
+  timeLeft = selectedMinutes * 60 + selectedSeconds;
+  updateDisplay();
+
+  startCountdown();
+  startBtn.disabled = false;
+  updateStartButtonText(BUTTON_LABELS.PAUSE);
+  resetAccelerateButton();
+  accelerateBtn.disabled = false;
+  resetBtn.disabled = false;
+}
+
 // Update display
 function updateDisplay() {
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  minutesDisplay.textContent = minutes.toString().padStart(2, '0');
-  secondsDisplay.textContent = seconds.toString().padStart(2, '0');
+  const totalSeconds = displaySeconds(timeLeft);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const minuteText = minutes.toString().padStart(2, '0');
+  const secondText = seconds.toString().padStart(2, '0');
+  if (minutesDisplay.textContent !== minuteText) {
+    minutesDisplay.textContent = minuteText;
+  }
+  if (secondsDisplay.textContent !== secondText) {
+    secondsDisplay.textContent = secondText;
+  }
+  lastRenderedSeconds = totalSeconds;
 
   const isWakeUpCountdown =
     timerDisplayEl.classList.contains('wake-up-countdown');
@@ -2388,45 +3182,33 @@ function resetAccelerateButton() {
   accelerateBtn.style.setProperty('--progress-width', '0%');
 }
 
-// Acceleration functionality
+// Acceleration functionality.
+// The multiplier is unchanged: `timePerTick` countdown seconds per 50ms of
+// monotonic time. Elapsed time is applied at the speed that was already
+// running, then the new speed starts, so the switch does not skip or
+// double-count. Completion is the moment remaining time reaches zero, rather
+// than the previous final tick subtracting a full `timePerTick` early.
 function accelerateTime() {
   if (!isRunning || timeLeft <= 0) return;
+
+  const now = settleCountdown();
+  if (timeLeft <= 0) {
+    renderCountdownFrame();
+    return;
+  }
 
   // Calculate a random completion time between 3-10 seconds
   const completionTime = Math.floor(Math.random() * 8000) + 3000; // 3000-10000ms
 
   // Calculate how many intervals we need
   const intervals = Math.min(timeLeft, Math.floor(completionTime / 50)); // Use 50ms intervals
+  if (!(intervals > 0)) return;
   const timePerTick = Math.ceil(timeLeft / intervals);
 
-  // Clear existing timer
-  clearInterval(timerId);
-
-  // Start accelerated timer
   currentInterval = 50; // 50ms intervals for smooth countdown
-  timerId = setInterval(() => {
-    timeLeft = Math.max(0, timeLeft - timePerTick);
-    updateDisplay();
-
-    if (timeLeft === 0) {
-      clearInterval(timerId);
-      isRunning = false;
-      currentInterval = normalInterval;
-      runYoutube((player) => {
-        player.pauseVideo?.();
-      });
-      if (currentDay !== null) {
-        updateDayDisplay('dusk');
-        updateClocktowerPresets();
-      }
-      playEndSound();
-      updateDisplay(); // Make sure to update display one final time
-
-      if (autoOpenNominations && autoOpenNominationsDelay > 0) {
-        startNominationsCountdown();
-      }
-    }
-  }, currentInterval);
+  countdownKind = 'day';
+  anchorSegment((timePerTick * 1000) / 50, now);
+  ensureCountdownLoop();
 
   // Disable accelerate button after use (do not reset label during accelerated countdown)
   accelerateBtn.disabled = true;
@@ -2558,14 +3340,20 @@ document.querySelectorAll('.number-input-group button').forEach((button) => {
 });
 
 function playWakeUpSound() {
+  // Wake-up continues the same session. resetTimer() below only clears the
+  // current countdown, so the session must be marked before that runs.
+  beginGameSession();
   if (isRunning) {
     resetTimer();
   }
 
-  // Clear any existing wake-up timeout
+  // Clear any existing wake-up timeout and countdown segment before
+  // assigning the six-second wake-up duration.
   if (wakeUpTimeout) {
     clearTimeout(wakeUpTimeout);
+    wakeUpTimeout = null;
   }
+  clearCountdownSchedule();
   clearNominationsCountdown();
 
   // Stop music if playing and not set to play at night
@@ -2595,89 +3383,19 @@ function playWakeUpSound() {
   timeLeft = countdownSeconds;
   updateDisplay();
 
-  // Update countdown every second
-  timerId = setInterval(() => {
-    timeLeft--;
-    updateDisplay();
-
-    if (timeLeft === 0) {
-      clearInterval(timerId);
-      timerDisplayEl.classList.remove('wake-up-countdown');
-
-      // Remove dawn state and show regular day display
-      updateDayDisplay();
-
-      // Find and start the current day's timer (honour skip-ahead numbering)
-      let currentPresetDay = usedPresetByDay[currentDay];
-      if (currentPresetDay === undefined) {
-        const used = Object.values(usedPresetByDay);
-        currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
-        usedPresetByDay[currentDay] = currentPresetDay;
-        saveSettings();
-        updateClocktowerPresets();
-      }
-      const dayPreset = document.querySelector(
-        `.clocktower-btn[data-day="${currentPresetDay}"]`
-      );
-      if (dayPreset) {
-        // Update active state
-        document
-          .querySelectorAll('.clocktower-btn')
-          .forEach((btn) => btn.classList.remove('active'));
-        dayPreset.classList.add('active');
-
-        // Update selected time
-        selectedMinutes = Number.parseInt(dayPreset.dataset.minutes);
-        selectedSeconds = Number.parseInt(dayPreset.dataset.seconds);
-
-        // Set and display the new time
-        timeLeft = selectedMinutes * 60 + selectedSeconds;
-        updateDisplay();
-
-        // Start the timer
-        startCountdown();
-        startBtn.disabled = false;
-        updateStartButtonText(BUTTON_LABELS.PAUSE);
-        resetAccelerateButton();
-        accelerateBtn.disabled = false;
-        resetBtn.disabled = false;
-      }
-    }
-  }, 1000);
-
-  // Store the countdown interval ID
-  wakeUpTimeout = timerId;
+  currentInterval = normalInterval;
+  continueCountdownAt('wake-up', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
 
   // Sound comes last so a failed or stalled file cannot skip the countdown
   safePlaySound(wakeUpSound, { fallbackBeep: true });
 }
 
 function startCountdown() {
+  beginGameSession();
   isRunning = true;
-
-  timerId = setInterval(() => {
-    timeLeft--;
-    updateDisplay();
-
-    if (timeLeft === 0) {
-      clearInterval(timerId);
-      isRunning = false;
-      runYoutube((player) => {
-        player.pauseVideo?.();
-        setYoutubeControlButtonIcon(false);
-      });
-      if (currentDay !== null) {
-        updateDayDisplay('dusk');
-        updateClocktowerPresets();
-      }
-      playEndSound();
-      updateDisplay();
-
-      if (autoOpenNominations && autoOpenNominationsDelay > 0) {
-        startNominationsCountdown();
-      }
-    }
-  }, normalInterval);
+  currentInterval = normalInterval;
+  continueCountdownAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+  updateDisplay();
 
   // Music is best-effort and must not prevent the countdown from starting
   const dayInfo = document.querySelector('.day-display');
@@ -2697,7 +3415,7 @@ function startCountdown() {
 
 function startNewGame() {
   // Reset timer state
-  clearInterval(timerId);
+  clearCountdownSchedule();
   clearNominationsCountdown();
   timeLeft = 0;
   isRunning = false;
@@ -2718,6 +3436,7 @@ function startNewGame() {
 
   saveSettings();
   closeSettings();
+  endGameSession();
 
   // Stop any playing video and reshuffle playlist. Failure must not undo the new game.
   runYoutube((player) => {
@@ -2735,7 +3454,8 @@ function startNewGame() {
 }
 
 // Update day display
-function updateDayDisplay(state = '') {
+function updateDayDisplay(state = '', options = {}) {
+  const shouldPersist = options.persist !== false;
   const dayInfo = document.querySelector('.day-display');
   if (!dayInfo) return;
 
@@ -2789,8 +3509,10 @@ function updateDayDisplay(state = '') {
     btn.classList.toggle('past-day', eff !== null && eff < currentDay);
   });
 
-  // Save the current state
-  saveSettings();
+  if (shouldPersist) {
+    // Save the current state
+    saveSettings();
+  }
 }
 
 // Generate QR code for the website
@@ -2832,10 +3554,18 @@ function updateGamePace(newPace) {
 
   // If timer is running, adjust current time
   if (isRunning && timeLeft > 0) {
+    const now = settleCountdown();
     const oldTimeLeft = timeLeft;
     const multiplier =
       PACE_MULTIPLIERS[newPace] / PACE_MULTIPLIERS[currentPace];
-    timeLeft = Math.round(oldTimeLeft * multiplier);
+    // Whole-second rounding matches the previous integer countdown. A running
+    // segment may hold a fractional second; keep it when the pace does not scale.
+    timeLeft = Number.isInteger(oldTimeLeft)
+      ? Math.round(oldTimeLeft * multiplier)
+      : oldTimeLeft * multiplier;
+    if (countdownActive) {
+      anchorSegment(segmentCountdownPerRealMs, now);
+    }
     updateDisplay();
   }
 }
@@ -3545,6 +4275,7 @@ function tryHandleResetShortcut(e, currentKey) {
   }
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
   resetTimer();
+  endGameSession();
 }
 
 // Add keyboard navigation support

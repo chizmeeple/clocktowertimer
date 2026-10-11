@@ -26,3 +26,35 @@ export function updateCharacterAmounts(playerCount) {
   document.getElementById('minionAmount').textContent = numbersArray[2];
   document.getElementById('demonAmount').textContent = numbersArray[3];
 }
+
+const PORTRAIT_QUERY = '(orientation: portrait)';
+
+// matchMedia() returns a new MediaQueryList on every call, and
+// removeEventListener only removes the exact function that was added.
+// Keep both so each callback can be removed without affecting the others.
+const orientationListeners = new Map();
+
+export const orientationUtils = {
+  isPortrait: () => globalThis.matchMedia(PORTRAIT_QUERY).matches,
+  addOrientationListener: (callback) => {
+    if (orientationListeners.has(callback)) {
+      return;
+    }
+
+    const mediaQuery = globalThis.matchMedia(PORTRAIT_QUERY);
+    const listener = (event) => {
+      callback(event.matches);
+    };
+    mediaQuery.addEventListener('change', listener);
+    orientationListeners.set(callback, { mediaQuery, listener });
+  },
+  removeOrientationListener: (callback) => {
+    const registered = orientationListeners.get(callback);
+    if (!registered) {
+      return;
+    }
+
+    registered.mediaQuery.removeEventListener('change', registered.listener);
+    orientationListeners.delete(callback);
+  },
+};
