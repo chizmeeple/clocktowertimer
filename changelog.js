@@ -11,6 +11,7 @@ export const CHANGELOG = {
         'The wake-up keyboard shortcut no longer turns the wake-up countdown into a day',
         'The nominations delay chosen in settings is saved and used for the countdown',
         'A portrait warning that was already accepted stays dismissed for a returning player',
+        'Music keeps playing when the day ends if Play Music at Night is on',
         'A stale tab no longer refreshes itself during a game, including while a countdown is running, paused, or between days',
         'Orientation listeners are removed with the same handler that was registered, so they do not keep running after they are unregistered',
         'Malformed or unexpected saved settings no longer stop the timer from starting; valid preferences are kept and invalid values fall back to their defaults',

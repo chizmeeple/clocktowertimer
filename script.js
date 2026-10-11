@@ -3062,12 +3062,16 @@ function renderCountdownFrame() {
 }
 
 function finishDayCountdown(wasAccelerated) {
-  runYoutube((player) => {
-    player.pauseVideo?.();
-    if (!wasAccelerated) {
-      setYoutubeControlButtonIcon(false);
-    }
-  });
+  // Night music keeps playing when the day ends. The end-of-day sound
+  // pauses it only when Play Music at Night is off.
+  if (!playMusicAtNight) {
+    runYoutube((player) => {
+      player.pauseVideo?.();
+      if (!wasAccelerated) {
+        setYoutubeControlButtonIcon(false);
+      }
+    });
+  }
   if (currentDay !== null) {
     updateDayDisplay('dusk');
     updateClocktowerPresets();
