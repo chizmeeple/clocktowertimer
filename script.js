@@ -1,4 +1,22 @@
 import { orientationUtils, updateCharacterAmounts } from './helper.js';
+import {
+  COUNTDOWN_REFRESH_MS,
+  NORMAL_COUNTDOWN_MS_PER_REAL_MS,
+  createTimerEngine,
+  displaySeconds,
+} from './timerEngine.js';
+import {
+  DEFAULT_PACE,
+  PACE_MULTIPLIERS,
+  WAKE_UP_COUNTDOWN_SECONDS,
+  createGameState,
+  estimateGameLengthMinutes,
+  getPresetDayLabel,
+  listVisiblePresets,
+  nominationsDelaySeconds,
+  presetForDay,
+  stepNominationsCountdown,
+} from './gameState.js';
 
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
@@ -293,21 +311,15 @@ function peekSavedDayState() {
 // no game is in progress. Anything uncertain stays on the page.
 function isSafeToAutoRefresh() {
   if (gameSessionActive) return false;
-  if (isRunning || countdownActive || countdownKind) return false;
+  if (timer.isRunning() || timer.isCountdownActive() || timer.getCountdownKind()) {
+    return false;
+  }
   if (wakeUpTimeout) return false;
   if (isEndSoundPlaying) return false;
   if (autoOpenNominationsInterval) return false;
   // A paused countdown still has time left. Reset Day sets hasReset.
-  if (timeLeft > 0 && !hasReset) return false;
-  if (isDuskPresetView) return false;
-
-  const dayInfo = document.querySelector('.day-display');
-  if (
-    dayInfo?.classList.contains('dusk') ||
-    dayInfo?.classList.contains('dawn')
-  ) {
-    return false;
-  }
+  if (timer.getTimeLeft() > 0 && !timer.hasReset()) return false;
+  if (game.getPhase() === 'dawn' || game.getPhase() === 'dusk') return false;
 
   if (!initialSettingsApplied) {
     const savedDayState = peekSavedDayState();
@@ -720,11 +732,12 @@ function safePlaySound(audio, { onEnded, onError, fallbackBeep = false } = {}) {
 
 const timerUtils = {
   stop: () => {
-    if (countdownActive) {
-      timeLeft = readRemainingMs() / 1000;
+    timer.pause();
+    if (timerId !== null) {
+      clearInterval(timerId);
+      timerId = null;
     }
-    clearCountdownSchedule();
-    isRunning = false;
+    wakeUpTimeout = null;
     updateDisplay();
   },
   updateButtonStates: (buttons, activeButton) => {
@@ -981,37 +994,16 @@ let previewSound = null; // New audio element for previews
 // Wake Lock state
 let wakeLock = null;
 
-// Timer state.
-// Remaining time is a duration anchored to performance.now(), not a count of
-// interval callbacks. Each running segment records the remaining milliseconds
-// and the countdown speed that applies until the next pause or speed change.
-let timeLeft = 0;
+// Scheduling and the last painted second stay here. Remaining time, pace, and
+// the running segment live in the timer engine.
 let timerId = null;
-let isRunning = false;
 let selectedSeconds = 0;
 let selectedMinutes = 0;
-let normalInterval = 1000; // Normal 1 second interval
-let currentInterval = normalInterval;
 let wakeUpTimeout = null;
 let isEndSoundPlaying = false; // New state variable
-let hasReset = false; // New state variable to track reset state
 let accelerateConfirmTimeout = null;
-const COUNTDOWN_REFRESH_MS = 50;
-const NORMAL_COUNTDOWN_MS_PER_REAL_MS = 1;
-let countdownActive = false;
-let countdownKind = null; // 'day' or 'wake-up' while a segment is running
-let segmentStartRemainingMs = 0;
-let segmentStartAt = 0;
-let segmentCountdownPerRealMs = 0;
 let lastRenderedSeconds = null;
-
-// Game pace multipliers
-const PACE_MULTIPLIERS = {
-  relaxed: 1,
-  normal: 0.8, // 20% faster than relaxed
-  speedy: 0.5, // 50% faster than relaxed
-  blitz: 0.33, // 67% faster than relaxed
-};
+const timer = createTimerEngine();
 
 const MIN_PLAYER_COUNT = 5;
 const MAX_PLAYER_COUNT = 15;
@@ -1022,7 +1014,6 @@ const DEFAULT_TRAVELLER_COUNT = 0;
 const DEFAULT_CURRENT_DAY = 1;
 // A corrupt day or preset number must not build an unbounded preset list.
 const MAX_TRACKED_DAY = 100;
-const DEFAULT_PACE = 'normal';
 const MIN_VOLUME = 0;
 const MAX_VOLUME = 100;
 const DEFAULT_YOUTUBE_VOLUME = 15;
@@ -1084,14 +1075,7 @@ const BLOCKED_SETTING_KEYS = new Set([
 let playerCount = DEFAULT_PLAYER_COUNT;
 let travellerCount = DEFAULT_TRAVELLER_COUNT;
 let isFirstLoad = false;
-let currentDay = null;
-/** Day number → preset index used for that day. Only presets we skipped get 💀; used presets keep "Day N"; rest renumbered from current. */
-let usedPresetByDay = {};
-/** Preset day indices permanently hidden when their day ended (countdown reached zero). Never shown again until new game. */
-let hiddenPresetDays = [];
-/** True only when the timer has run out this day (dusk); used so we show compact preset list only then, not when e.g. clicking a preset. */
-let isDuskPresetView = false;
-let currentPace = DEFAULT_PACE;
+const game = createGameState();
 let playMusic = DEFAULT_PLAY_MUSIC;
 let playMusicAtNight = DEFAULT_PLAY_MUSIC_AT_NIGHT;
 let playSoundEffects = DEFAULT_PLAY_SOUND_EFFECTS;
@@ -1295,25 +1279,8 @@ function updateStartButtonText(text) {
   }
 }
 
-const MIN_NOMINATION_SECONDS = 3 * 60;
-const NIGHT_PHASE_SECONDS = 4 * 60;
-
-// Estimated length is a night before each day, that day's timer, and nominations.
-// Each night is assumed to take 4 minutes.
-// Nominations are assumed to take as long as that day, and never less than 3 minutes.
 function updateEstimatedGameLength() {
-  const presets = generateDayPresets(playerCount);
-  let totalSeconds = 0;
-
-  presets.forEach((preset) => {
-    const daySeconds = preset.minutes * 60 + preset.seconds;
-    const nominationSeconds = Math.max(daySeconds, MIN_NOMINATION_SECONDS);
-    totalSeconds += NIGHT_PHASE_SECONDS + daySeconds + nominationSeconds;
-  });
-
-  // Round up to the nearest minute
-  const totalMinutes = Math.ceil(totalSeconds / 60);
-
+  const totalMinutes = estimateGameLengthMinutes(playerCount, game.getPace());
   const estimatedGameLengthElement = document.getElementById(
     'estimatedGameLength'
   );
@@ -1351,7 +1318,7 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
     // A throttled interval may not have run while the tab was hidden.
     // Catch the display and completion up to monotonic time immediately.
-    if (countdownActive) {
+    if (timer.isCountdownActive()) {
       renderCountdownFrame();
     }
     staleTabUtils.onBecameVisible();
@@ -1392,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (playMusic) {
         initYoutubePlayer();
         // If timer is running, resume music after a short delay to allow player initialization
-        if (isRunning && timeLeft > 0) {
+        if (timer.isRunning() && timer.getTimeLeft() > 0) {
           setTimeout(() => {
             youtubeUtils.play();
           }, 2000); // 2 second delay to allow player to initialize
@@ -1871,21 +1838,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupKeyboardNavigation();
 });
 
-// Helper functions for timer calculations
-function calcTimerStartEndValues(startingPlayerCount) {
-  return {
-    totalNumbers: startingPlayerCount - startingPlayerCount / 5,
-    dayStartValue: startingPlayerCount * 0.4 + 2,
-    dayEndValue: 2,
-    nightStartValue: startingPlayerCount * 0.1 + 1,
-    nightEndValue: 1,
-  };
-}
-
-function roundToNearestQuarter(n) {
-  return Math.round(n * 4) / 4;
-}
-
 const KNOWN_SETTINGS_KEYS = new Set([
   'playerCount',
   'travellerCount',
@@ -2103,10 +2055,12 @@ function applyInMemoryDefaultSettings() {
   preservedUnknownSettings = {};
   playerCount = DEFAULT_PLAYER_COUNT;
   travellerCount = DEFAULT_TRAVELLER_COUNT;
-  currentDay = DEFAULT_CURRENT_DAY;
-  usedPresetByDay = {};
-  hiddenPresetDays = [];
-  currentPace = DEFAULT_PACE;
+  game.replaceProgress({
+    currentDay: DEFAULT_CURRENT_DAY,
+    usedPresetByDay: {},
+    hiddenPresetDays: [],
+    pace: DEFAULT_PACE,
+  });
   playMusic = DEFAULT_PLAY_MUSIC;
   playMusicAtNight = DEFAULT_PLAY_MUSIC_AT_NIGHT;
   playSoundEffects = DEFAULT_PLAY_SOUND_EFFECTS;
@@ -2157,20 +2111,23 @@ function applyParsedSettings(settings) {
     DEFAULT_TRAVELLER_COUNT,
     true
   );
-  currentDay = readBoundedInteger(
+  const restoredDay = readBoundedInteger(
     settings.currentDay,
     1,
     MAX_TRACKED_DAY,
     DEFAULT_CURRENT_DAY,
     false
   );
-  usedPresetByDay = readUsedPresetByDay(settings, currentDay);
-  hiddenPresetDays = readHiddenPresetDays(settings.hiddenPresetDays);
-  currentPace = readEnum(
-    settings.currentPace,
-    Object.keys(PACE_MULTIPLIERS),
-    DEFAULT_PACE
-  );
+  game.replaceProgress({
+    currentDay: restoredDay,
+    usedPresetByDay: readUsedPresetByDay(settings, restoredDay),
+    hiddenPresetDays: readHiddenPresetDays(settings.hiddenPresetDays),
+    pace: readEnum(
+      settings.currentPace,
+      Object.keys(PACE_MULTIPLIERS),
+      DEFAULT_PACE
+    ),
+  });
   playMusic = readBooleanSetting(settings.playMusic, DEFAULT_PLAY_MUSIC);
   playMusicAtNight = readBooleanSetting(
     settings.playMusicAtNight,
@@ -2299,7 +2256,7 @@ function applyParsedSettings(settings) {
 
 function initSoundsFirstLoad() {
   isFirstLoad = true;
-  currentDay = 1;
+  game.setCurrentDay(1);
   endSound = new Audio(`sounds/end-of-day/${endOfDaySound}`);
   wakeUpSound = new Audio(`sounds/wake-up/${wakeUpSoundFile}`);
   nominationsOpenSound = new Audio(
@@ -2310,7 +2267,7 @@ function initSoundsFirstLoad() {
 function applySettingsToForm() {
   playerCountInput.value = playerCount;
   travellerCountInput.value = travellerCount;
-  document.getElementById('gamePace').value = currentPace;
+  document.getElementById('gamePace').value = game.getPace();
   document.getElementById('playSoundEffects').checked = playSoundEffects;
   document.getElementById('keepDisplayOn').checked = keepDisplayOn;
   document.getElementById('showPlayerCountQr').checked = showPlayerCountQr;
@@ -2453,7 +2410,7 @@ function loadSettings() {
   document.getElementById('travellerAmount').textContent = travellerCount;
   updateYoutubeLink();
   document.body.dataset.theme = backgroundTheme;
-  document.body.dataset.pace = currentPace;
+  document.body.dataset.pace = game.getPace();
 
   if (playMusic) {
     initYoutubePlayer();
@@ -2491,11 +2448,7 @@ function loadSettings() {
   }
 
   initialSettingsApplied = true;
-  const restoredDay = document.querySelector('.day-display');
-  if (
-    restoredDay?.classList.contains('dusk') ||
-    restoredDay?.classList.contains('dawn')
-  ) {
+  if (game.getPhase() === 'dusk' || game.getPhase() === 'dawn') {
     gameSessionActive = true;
   }
   staleTabUtils.onGameActivityChanged();
@@ -2512,22 +2465,15 @@ globalThis.addEventListener('load', () => {
 
 // Save settings to localStorage
 function saveSettings() {
-  const dayInfo = document.querySelector('.day-display');
-  let dayState = '';
-  if (dayInfo?.classList?.contains('dusk')) {
-    dayState = 'dusk';
-  } else if (dayInfo?.classList?.contains('dawn')) {
-    dayState = 'dawn';
-  }
-
+  const progress = game.snapshot();
   const settings = {
     ...preservedUnknownSettings,
     playerCount,
     travellerCount,
-    currentDay,
-    usedPresetByDay,
-    hiddenPresetDays,
-    currentPace,
+    currentDay: progress.currentDay,
+    usedPresetByDay: progress.usedPresetByDay,
+    hiddenPresetDays: progress.hiddenPresetDays,
+    currentPace: progress.pace,
     playMusic,
     playMusicAtNight,
     playSoundEffects,
@@ -2542,7 +2488,7 @@ function saveSettings() {
     youtubeVolume,
     youtubePlaylistUrl,
     backgroundTheme,
-    dayState,
+    dayState: progress.phase,
     lastSeenVersion: APP_VERSION,
     endOfDaySound,
     wakeUpSoundFile,
@@ -2561,135 +2507,58 @@ function saveSettings() {
   }
 }
 
-// Returns { label, effectiveDay } for a preset. effectiveDay is null for skipped (💀).
-function getPresetDayLabel(presetDay, numberOfDays) {
-  const used = Object.values(usedPresetByDay).filter((p) => p >= 1);
-  if (used.length === 0) {
-    return { label: `Day ${presetDay}`, effectiveDay: presetDay };
-  }
-  const usedSorted = [...used].sort((a, b) => a - b);
-  const minUsed = usedSorted[0];
-  const maxUsed = usedSorted.at(-1);
-  // Used for a specific day → show that day
-  for (const [d, p] of Object.entries(usedPresetByDay)) {
-    if (Number(p) === presetDay) {
-      return { label: `Day ${d}`, effectiveDay: Number(d) };
-    }
-  }
-  if (presetDay < minUsed) return { label: '💀', effectiveDay: null };
-  // Between two used presets → skipped
-  for (let i = 0; i < usedSorted.length - 1; i++) {
-    if (presetDay > usedSorted[i] && presetDay < usedSorted[i + 1])
-      return { label: '💀', effectiveDay: null };
-  }
-  // From current day's preset onward (or from first future if in dusk)
-  const anchor =
-    usedPresetByDay[currentDay] === undefined
-      ? maxUsed + 1
-      : usedPresetByDay[currentDay];
-  const baseDay =
-    usedPresetByDay[currentDay] === undefined ? currentDay + 1 : currentDay;
-  if (presetDay >= anchor) {
-    const eff = baseDay + (presetDay - anchor);
-    return { label: `Day ${eff}`, effectiveDay: eff };
-  }
-  return { label: '💀', effectiveDay: null };
-}
-
-// Settings functionality
 function updateClocktowerPresets() {
   const clocktowerPresetsDiv = document.getElementById('clocktowerPresets');
-  clocktowerPresetsDiv.innerHTML = ''; // Clear existing presets
+  clocktowerPresetsDiv.innerHTML = '';
 
-  const presets = generateDayPresets(playerCount);
-  const numberOfDays = presets.length;
+  const progress = game.snapshot();
+  const presets = listVisiblePresets({
+    playerCount,
+    pace: progress.pace,
+    currentDay: progress.currentDay,
+    usedPresetByDay: progress.usedPresetByDay,
+    isDusk: progress.phase === 'dusk',
+  });
 
-  // Count skipped presets and ensure we have enough extras so we never run out of preset slots.
-  // We need at least one preset per day; if user skips ahead (e.g. Day 8 for Day 1, then Day 8 for Day 2),
-  // the max preset index used can exceed the base count, so add extras to cover that.
-  let skippedCount = 0;
-  for (const preset of presets) {
-    if (getPresetDayLabel(preset.day, numberOfDays).effectiveDay === null)
-      skippedCount++;
-  }
-  const maxUsed =
-    currentDay !== null && Object.keys(usedPresetByDay).length > 0
-      ? Math.max(...Object.values(usedPresetByDay))
-      : 0;
-  const curDay = currentDay ?? 1;
-  const extrasNeeded = Math.max(skippedCount, Math.max(0, maxUsed - curDay));
-  const lastBasePreset = presets[numberOfDays - 1];
-  for (let i = 1; i <= extrasNeeded; i++) {
-    presets.push({
-      minutes: lastBasePreset.minutes,
-      seconds: lastBasePreset.seconds,
-      display: lastBasePreset.display,
-      day: numberOfDays + i,
-    });
-  }
-
-  // Preset visibility: ONLY about hiding skipped (💀) presets. Never hide "Day N" presets.
-  // Dusk: hide all skips (compact next-day picker). Day 2+: hide only 💀 before Day N-1's preset.
-  let presetsToShow = presets;
-  if (isDuskPresetView) {
-    presetsToShow = presetsToShow.filter(
-      (p) => getPresetDayLabel(p.day, numberOfDays).effectiveDay !== null
-    );
-  } else if (currentDay >= 2) {
-    const skipCutoff = usedPresetByDay[currentDay - 1];
-    if (skipCutoff !== undefined) {
-      presetsToShow = presets.filter((p) => {
-        const { effectiveDay } = getPresetDayLabel(p.day, numberOfDays);
-        if (effectiveDay !== null) return true; // always show every Day preset
-        return p.day >= skipCutoff; // hide only 💀 before Day N-1's preset
-      });
-    }
-  }
-
-  presetsToShow.forEach((preset) => {
-    const { label: dayLabel, effectiveDay: eff } = getPresetDayLabel(
-      preset.day,
-      numberOfDays
-    );
+  presets.forEach((preset) => {
     const button = document.createElement('button');
     button.className = 'preset-btn clocktower-btn';
-    if (eff === null) {
+    if (preset.effectiveDay === null) {
       button.classList.add('skipped-day');
     }
-    if (eff !== null && eff === currentDay) {
+    if (
+      preset.effectiveDay !== null &&
+      preset.effectiveDay === progress.currentDay
+    ) {
       button.classList.add('current-day');
     }
-    if (eff !== null && eff < currentDay) {
+    if (
+      preset.effectiveDay !== null &&
+      preset.effectiveDay < progress.currentDay
+    ) {
       button.classList.add('past-day');
     }
     button.innerHTML = `
       <span class="time">${preset.display}</span>
-      <span class="day">${dayLabel}</span>
+      <span class="day">${preset.label}</span>
     `;
     button.dataset.minutes = preset.minutes;
     button.dataset.seconds = preset.seconds;
     button.dataset.day = preset.day;
 
-    button.addEventListener('click', (e) => {
-      const { effectiveDay: eff } = getPresetDayLabel(preset.day, numberOfDays);
-      const isAhead = eff !== null && eff > currentDay;
+    button.addEventListener('click', () => {
+      const choice = game.choosePreset(preset.day);
 
-      if (isAhead && !isDuskPresetView) {
-        // Not in dusk: use this preset for current day (keeps full preset row including skipped)
-        usedPresetByDay[currentDay] = preset.day;
+      if (choice === 'current') {
         saveSettings();
         updateClocktowerPresets();
-      } else if (isDuskPresetView && currentDay !== null) {
-        // In dusk: use this preset for the next day
-        usedPresetByDay[currentDay + 1] = preset.day;
-        currentDay++;
+      } else if (choice === 'next') {
         saveSettings();
-        // Clear dusk so new day shows full preset row until its countdown ends
+        // Clear dusk so the new day shows the full preset row until its countdown ends
         updateDayDisplay();
         updateClocktowerPresets();
       }
 
-      // Update active state (use selector in case presets were just rebuilt)
       document
         .querySelectorAll('.clocktower-btn')
         .forEach((btn) => btn.classList.remove('active'));
@@ -2697,28 +2566,23 @@ function updateClocktowerPresets() {
         .querySelector(`.clocktower-btn[data-day="${preset.day}"]`)
         ?.classList.add('active');
 
-      // Update selected time
       selectedMinutes = preset.minutes;
       selectedSeconds = preset.seconds;
 
-      // Reset any existing timer and cancel nominations countdown when starting a new day
       clearCountdownSchedule();
       clearNominationsCountdown();
 
-      // Set and display the new time
-      timeLeft = selectedMinutes * 60 + selectedSeconds;
+      timer.setTimeLeft(selectedMinutes * 60 + selectedSeconds);
       updateDisplay();
 
-      // Clear dusk state before starting countdown
       updateDayDisplay();
 
-      // Start the timer before sound, so a missing file cannot block the day
       startCountdown();
       startBtn.disabled = false;
       updateStartButtonText(BUTTON_LABELS.PAUSE);
       resetAccelerateButton();
       accelerateBtn.disabled = false;
-      resetBtn.disabled = false; // Enable reset button when starting timer
+      resetBtn.disabled = false;
 
       if (
         playSoundEffects &&
@@ -2900,13 +2764,17 @@ function clearNominationsCountdown() {
 function startNominationsCountdown() {
   beginGameSession();
   clearNominationsCountdown();
-  if (!autoOpenNominations || autoOpenNominationsDelay <= 0) return;
+  const delay = nominationsDelaySeconds(
+    autoOpenNominations,
+    autoOpenNominationsDelay
+  );
+  if (!delay) return;
 
   const countdownEl = document.getElementById('nominationsCountdown');
   const secondsEl = document.getElementById('nominationsCountdownSeconds');
   if (!countdownEl || !secondsEl) return;
 
-  nominationsCountdownRemaining = autoOpenNominationsDelay;
+  nominationsCountdownRemaining = delay;
   secondsEl.textContent = nominationsCountdownRemaining;
   countdownEl.hidden = false;
   countdownEl.setAttribute(
@@ -2915,14 +2783,15 @@ function startNominationsCountdown() {
   );
 
   autoOpenNominationsInterval = setInterval(() => {
-    nominationsCountdownRemaining--;
+    const step = stepNominationsCountdown(nominationsCountdownRemaining);
+    nominationsCountdownRemaining = step.remaining;
     secondsEl.textContent = nominationsCountdownRemaining;
     countdownEl.setAttribute(
       'aria-label',
       `Nominations open in ${nominationsCountdownRemaining} seconds`
     );
 
-    if (nominationsCountdownRemaining <= 0) {
+    if (step.open) {
       clearNominationsCountdown();
       playNominationsOpenSound();
     }
@@ -2959,104 +2828,51 @@ function createBeep() {
   }, 500);
 }
 
-function monotonicNow() {
-  return performance.now();
-}
-
-// Whole seconds shown on the clock. The current second stays up until it has
-// fully elapsed, matching the previous once-per-second decrement.
-function displaySeconds(secondsRemaining) {
-  if (!(secondsRemaining > 0)) return 0;
-  const millis = Math.round(secondsRemaining * 1000);
-  if (millis <= 0) return 0;
-  return Math.ceil(millis / 1000);
-}
-
-function readRemainingMs(now = monotonicNow()) {
-  if (!countdownActive) return Math.max(0, Math.round(timeLeft * 1000));
-  const elapsed = now - segmentStartAt;
-  if (!(elapsed > 0)) return segmentStartRemainingMs;
-  const remaining =
-    segmentStartRemainingMs - elapsed * segmentCountdownPerRealMs;
-  if (remaining <= 0.001) return 0;
-  return remaining;
-}
-
-function settleCountdown(now = monotonicNow()) {
-  if (countdownActive) {
-    timeLeft = readRemainingMs(now) / 1000;
-  }
-  return now;
-}
-
-function anchorSegment(countdownPerRealMs, now = monotonicNow()) {
-  segmentStartRemainingMs = Math.max(0, Math.round(timeLeft * 1000));
-  // Keep a sub-millisecond remainder counting so it can still reach zero.
-  if (segmentStartRemainingMs === 0 && timeLeft > 0) {
-    segmentStartRemainingMs = 1;
-  }
-  segmentStartAt = now;
-  segmentCountdownPerRealMs = countdownPerRealMs;
-  countdownActive = segmentStartRemainingMs > 0;
-}
-
 function clearCountdownSchedule() {
   if (timerId !== null) {
     clearInterval(timerId);
     timerId = null;
   }
-  countdownActive = false;
-  countdownKind = null;
-  segmentCountdownPerRealMs = 0;
+  timer.clearSegment();
   wakeUpTimeout = null;
 }
 
 function ensureCountdownLoop() {
   if (timerId !== null) return;
   timerId = setInterval(renderCountdownFrame, COUNTDOWN_REFRESH_MS);
-  if (countdownKind === 'wake-up') {
+  if (timer.getCountdownKind() === 'wake-up') {
     wakeUpTimeout = timerId;
   }
 }
 
+function publishCountdownFrame(frame) {
+  if (frame.type !== 'complete') return false;
+  if (timerId !== null) {
+    clearInterval(timerId);
+    timerId = null;
+  }
+  wakeUpTimeout = null;
+  if (frame.kind === 'wake-up') {
+    finishWakeUpCountdown();
+  } else {
+    finishDayCountdown(frame.wasAccelerated);
+  }
+  return true;
+}
+
 // Apply time already elapsed at the current speed, then run at `countdownPerRealMs`.
 function continueCountdownAt(kind, countdownPerRealMs) {
-  const now = monotonicNow();
-  if (countdownActive) {
-    timeLeft = readRemainingMs(now) / 1000;
-    if (timeLeft <= 0) {
-      renderCountdownFrame();
-      return;
-    }
+  const frame = timer.continueAt(kind, countdownPerRealMs);
+  if (publishCountdownFrame(frame)) return;
+  if (frame.type === 'running') {
+    ensureCountdownLoop();
   }
-  if (!(timeLeft > 0)) return;
-  countdownKind = kind;
-  anchorSegment(countdownPerRealMs, now);
-  ensureCountdownLoop();
 }
 
 function renderCountdownFrame() {
-  if (!countdownActive) return;
-  const remainingMs = readRemainingMs();
-  if (remainingMs <= 0) {
-    const kind = countdownKind;
-    const wasAccelerated =
-      segmentCountdownPerRealMs !== NORMAL_COUNTDOWN_MS_PER_REAL_MS;
-    timeLeft = 0;
-    clearCountdownSchedule();
-    isRunning = false;
-    currentInterval = normalInterval;
-    if (kind === 'wake-up') {
-      finishWakeUpCountdown();
-    } else {
-      finishDayCountdown(wasAccelerated);
-    }
-    return;
-  }
-
-  timeLeft = remainingMs / 1000;
-  const shown = displaySeconds(timeLeft);
-  if (shown !== lastRenderedSeconds) {
+  const frame = timer.sample();
+  if (publishCountdownFrame(frame)) return;
+  if (frame.type === 'running' && frame.shown !== lastRenderedSeconds) {
     updateDisplay();
   }
 }
@@ -3072,7 +2888,7 @@ function finishDayCountdown(wasAccelerated) {
       }
     });
   }
-  if (currentDay !== null) {
+  if (game.getCurrentDay() !== null) {
     updateDayDisplay('dusk');
     updateClocktowerPresets();
   }
@@ -3088,11 +2904,9 @@ function finishWakeUpCountdown() {
   timerDisplayEl.classList.remove('wake-up-countdown');
   updateDayDisplay();
 
-  let currentPresetDay = usedPresetByDay[currentDay];
-  if (currentPresetDay === undefined) {
-    const used = Object.values(usedPresetByDay);
-    currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
-    usedPresetByDay[currentDay] = currentPresetDay;
+  const claimed = game.claimPresetForCurrentDay();
+  const currentPresetDay = claimed.presetDay;
+  if (claimed.assigned) {
     saveSettings();
     updateClocktowerPresets();
   }
@@ -3108,7 +2922,7 @@ function finishWakeUpCountdown() {
 
   selectedMinutes = Number.parseInt(dayPreset.dataset.minutes);
   selectedSeconds = Number.parseInt(dayPreset.dataset.seconds);
-  timeLeft = selectedMinutes * 60 + selectedSeconds;
+  timer.setTimeLeft(selectedMinutes * 60 + selectedSeconds);
   updateDisplay();
 
   startCountdown();
@@ -3121,7 +2935,7 @@ function finishWakeUpCountdown() {
 
 // Update display
 function updateDisplay() {
-  const totalSeconds = displaySeconds(timeLeft);
+  const totalSeconds = displaySeconds(timer.getTimeLeft());
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   const minuteText = minutes.toString().padStart(2, '0');
@@ -3143,14 +2957,14 @@ function updateDisplay() {
     startBtn.disabled = true;
     accelerateBtn.disabled = true;
     resetBtn.disabled = true; // Disable reset during wake-up countdown
-  } else if (isRunning) {
+  } else if (timer.isRunning()) {
     updateStartButtonText(BUTTON_LABELS.PAUSE);
     startBtn.disabled = false;
     // Keep accelerate disabled during accelerated countdown ("time flies")
     accelerateBtn.disabled =
       getAccelerateButtonLabel() === BUTTON_LABELS.ACCELERATE_TIME_FLIES;
     resetBtn.disabled = false; // Enable reset while running
-  } else if (timeLeft > 0 && !hasReset) {
+  } else if (timer.getTimeLeft() > 0 && !timer.hasReset()) {
     updateStartButtonText(BUTTON_LABELS.RESUME);
     startBtn.disabled = false;
     accelerateBtn.disabled = true;
@@ -3184,41 +2998,21 @@ function resetAccelerateButton() {
   accelerateBtn.style.setProperty('--progress-width', '0%');
 }
 
-// Acceleration functionality.
-// The multiplier is unchanged: `timePerTick` countdown seconds per 50ms of
-// monotonic time. Elapsed time is applied at the speed that was already
-// running, then the new speed starts, so the switch does not skip or
-// double-count. Completion is the moment remaining time reaches zero, rather
-// than the previous final tick subtracting a full `timePerTick` early.
+// Acceleration keeps the previous rate: countdown seconds per 50ms of monotonic
+// time. Elapsed time is applied at the speed already running, then the new
+// speed starts. Completion is the moment remaining time reaches zero.
 function accelerateTime() {
-  if (!isRunning || timeLeft <= 0) return;
-
-  const now = settleCountdown();
-  if (timeLeft <= 0) {
-    renderCountdownFrame();
-    return;
-  }
-
-  // Calculate a random completion time between 3-10 seconds
-  const completionTime = Math.floor(Math.random() * 8000) + 3000; // 3000-10000ms
-
-  // Calculate how many intervals we need
-  const intervals = Math.min(timeLeft, Math.floor(completionTime / 50)); // Use 50ms intervals
-  if (!(intervals > 0)) return;
-  const timePerTick = Math.ceil(timeLeft / intervals);
-
-  currentInterval = 50; // 50ms intervals for smooth countdown
-  countdownKind = 'day';
-  anchorSegment((timePerTick * 1000) / 50, now);
+  const frame = timer.accelerate(Math.random());
+  if (frame.type === 'ignored') return;
+  if (publishCountdownFrame(frame)) return;
   ensureCountdownLoop();
-
   // Disable accelerate button after use (do not reset label during accelerated countdown)
   accelerateBtn.disabled = true;
 }
 
 // Start timer
 function startTimer() {
-  if (isRunning) {
+  if (timer.isRunning()) {
     // Pause timer before touching music, so a dead player cannot block the click
     timerUtils.stop();
     runYoutube((player) => {
@@ -3229,9 +3023,9 @@ function startTimer() {
   }
 
   // If we have remaining time, resume the timer
-  if (timeLeft > 0) {
-    isRunning = true;
-    hasReset = false; // Clear the reset state when starting timer
+  if (timer.getTimeLeft() > 0) {
+    timer.setRunning(true);
+    timer.setHasReset(false); // Clear the reset state when starting timer
     startCountdown();
     return;
   }
@@ -3250,15 +3044,17 @@ function resetTimer() {
   clearNominationsCountdown();
 
   // Reset to the full day countdown time (use current day's preset, which includes pace)
-  const day = currentDay ?? 1;
-  const presets = generateDayPresets(playerCount);
-  const preset = presets.find((p) => p.day === day) ?? presets[0];
-  timeLeft = preset.minutes * 60 + preset.seconds;
+  const preset = presetForDay(
+    playerCount,
+    game.getPace(),
+    game.getCurrentDay()
+  );
+  timer.setTimeLeft(preset.minutes * 60 + preset.seconds);
   selectedMinutes = preset.minutes;
   selectedSeconds = preset.seconds;
-  currentInterval = normalInterval;
-  isRunning = false; // Ensure timer is marked as not running
-  hasReset = true; // Set the reset state
+  timer.setCurrentInterval(timer.getNormalInterval());
+  timer.setRunning(false);
+  timer.setHasReset(true);
   isEndSoundPlaying = false;
 
   // Reset button states
@@ -3296,8 +3092,8 @@ function handleMinuteClick(e) {
   timerUtils.updateButtonStates(minuteButtons, e.target);
 
   // If timer is not running, update display
-  if (!isRunning) {
-    timeLeft = selectedMinutes * 60 + selectedSeconds;
+  if (!timer.isRunning()) {
+    timer.setTimeLeft(selectedMinutes * 60 + selectedSeconds);
     updateDisplay();
     startBtn.disabled = false;
   }
@@ -3312,8 +3108,8 @@ function handleSecondClick(e) {
   timerUtils.updateButtonStates(secondButtons, e.target);
 
   // If timer is not running, update display
-  if (!isRunning) {
-    timeLeft = selectedMinutes * 60 + selectedSeconds;
+  if (!timer.isRunning()) {
+    timer.setTimeLeft(selectedMinutes * 60 + selectedSeconds);
     updateDisplay();
     startBtn.disabled = false;
   }
@@ -3345,7 +3141,7 @@ function playWakeUpSound() {
   // Wake-up continues the same session. resetTimer() below only clears the
   // current countdown, so the session must be marked before that runs.
   beginGameSession();
-  if (isRunning) {
+  if (timer.isRunning()) {
     resetTimer();
   }
 
@@ -3364,9 +3160,7 @@ function playWakeUpSound() {
   }
 
   // Only increment day if we're in dusk state
-  const dayInfo = document.querySelector('.day-display');
-  if (currentDay !== null && dayInfo.classList.contains('dusk')) {
-    currentDay++;
+  if (game.advanceDayIfDusk()) {
     saveSettings();
   }
 
@@ -3381,11 +3175,10 @@ function playWakeUpSound() {
   updateStartButtonText(BUTTON_LABELS.WAKE_UP);
   accelerateBtn.disabled = true;
 
-  let countdownSeconds = 6;
-  timeLeft = countdownSeconds;
+  timer.setTimeLeft(WAKE_UP_COUNTDOWN_SECONDS);
   updateDisplay();
 
-  currentInterval = normalInterval;
+  timer.setCurrentInterval(timer.getNormalInterval());
   continueCountdownAt('wake-up', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
 
   // Sound comes last so a failed or stalled file cannot skip the countdown
@@ -3394,15 +3187,13 @@ function playWakeUpSound() {
 
 function startCountdown() {
   beginGameSession();
-  isRunning = true;
-  currentInterval = normalInterval;
+  timer.setRunning(true);
+  timer.setCurrentInterval(timer.getNormalInterval());
   continueCountdownAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
   updateDisplay();
 
   // Music is best-effort and must not prevent the countdown from starting
-  const dayInfo = document.querySelector('.day-display');
-  const isDusk = dayInfo?.classList?.contains('dusk');
-  if (!isDusk) {
+  if (!game.isDusk()) {
     runYoutube((player) => {
       const playing =
         globalThis.YT &&
@@ -3419,17 +3210,14 @@ function startNewGame() {
   // Reset timer state, including a wake-up countdown still on screen
   clearCountdownSchedule();
   clearNominationsCountdown();
-  timeLeft = 0;
-  isRunning = false;
+  timer.setTimeLeft(0);
+  timer.setRunning(false);
   isEndSoundPlaying = false;
-  hasReset = false;
-  currentInterval = normalInterval;
+  timer.setHasReset(false);
+  timer.setCurrentInterval(timer.getNormalInterval());
   timerDisplayEl.classList.remove('wake-up-countdown');
 
-  // Set to Day 1
-  currentDay = 1;
-  usedPresetByDay = {};
-  hiddenPresetDays = [];
+  game.startNewGame();
   updateDayDisplay();
 
   // Set button to Wake Up state
@@ -3458,10 +3246,8 @@ function startNewGame() {
   });
 }
 
-function readDayPhase(dayInfo = document.querySelector('.day-display')) {
-  if (dayInfo?.classList.contains('dusk')) return 'dusk';
-  if (dayInfo?.classList.contains('dawn')) return 'dawn';
-  return '';
+function readDayPhase() {
+  return game.getPhase();
 }
 
 // Rebuild the day label while keeping the phase already on screen.
@@ -3483,13 +3269,9 @@ function updateDayDisplay(state = '', options = {}) {
   // Remove existing state classes
   dayInfo.classList.remove('dawn', 'dusk');
 
-  // Single source of truth: compact preset list only when timer has run out (dusk), not when e.g. clicking a preset
-  isDuskPresetView = state === 'dusk';
-
-  // Ensure currentDay is at least 1
-  if (currentDay === null || currentDay === undefined) {
-    currentDay = 1;
-  }
+  game.setPhase(state);
+  game.ensureCurrentDay();
+  const progress = game.snapshot();
 
   const paceEmojis = {
     relaxed: '🐌',
@@ -3497,15 +3279,17 @@ function updateDayDisplay(state = '', options = {}) {
     speedy: '⚡',
     blitz: '🚀',
   };
-  const paceEmoji = paceEmojis[currentPace];
-  const paceText = currentPace.charAt(0).toUpperCase() + currentPace.slice(1);
+  const paceEmoji = paceEmojis[progress.pace];
+  const paceText =
+    progress.pace.charAt(0).toUpperCase() + progress.pace.slice(1);
+  const dayMarkup = `<span>${progress.currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
 
-  if (state === 'dawn') {
+  if (progress.phase === 'dawn') {
     dayInfo.classList.add('dawn');
-    dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
-  } else if (state === 'dusk') {
+    dayInfo.innerHTML = dayMarkup;
+  } else if (progress.phase === 'dusk') {
     dayInfo.classList.add('dusk');
-    dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+    dayInfo.innerHTML = dayMarkup;
     // Ensure button states are correct for dusk
     startBtn.disabled = false;
     updateStartButtonText(BUTTON_LABELS.WAKE_UP);
@@ -3513,21 +3297,16 @@ function updateDayDisplay(state = '', options = {}) {
     accelerateBtn.disabled = true;
     resetBtn.disabled = true;
   } else {
-    dayInfo.innerHTML = `<span>${currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+    dayInfo.innerHTML = dayMarkup;
   }
 
   // Update preset button highlighting (honour skip-ahead: use next preset if current day not yet chosen)
-  const numberOfDays = document.querySelectorAll('.clocktower-btn').length;
-  let currentPresetDay = usedPresetByDay[currentDay];
-  if (currentPresetDay === undefined) {
-    const used = Object.values(usedPresetByDay);
-    currentPresetDay = used.length > 0 ? Math.max(...used) + 1 : currentDay;
-  }
+  const currentPresetDay = game.peekPresetDay();
   document.querySelectorAll('.clocktower-btn').forEach((btn) => {
     const btnDay = Number.parseInt(btn.dataset.day);
-    const { effectiveDay: eff } = getPresetDayLabel(btnDay, numberOfDays);
+    const { effectiveDay: eff } = getPresetDayLabel(btnDay, progress);
     btn.classList.toggle('current-day', btnDay === currentPresetDay);
-    btn.classList.toggle('past-day', eff !== null && eff < currentDay);
+    btn.classList.toggle('past-day', eff !== null && eff < progress.currentDay);
   });
 
   if (shouldPersist) {
@@ -3565,73 +3344,16 @@ function closeInfo() {
 }
 
 // Update game pace
+// Later days use the new pace. A countdown that is already running, paused,
+// accelerated, or in wake-up keeps the time it already has.
 function updateGamePace(newPace) {
-  currentPace = newPace;
+  game.setPace(newPace);
   document.body.dataset.pace = newPace;
   updateClocktowerPresets();
   refreshDayPhase();
   updateEstimatedGameLength();
   saveSettings();
-
-  // If timer is running, adjust current time
-  if (isRunning && timeLeft > 0) {
-    const now = settleCountdown();
-    const oldTimeLeft = timeLeft;
-    const multiplier =
-      PACE_MULTIPLIERS[newPace] / PACE_MULTIPLIERS[currentPace];
-    // Whole-second rounding matches the previous integer countdown. A running
-    // segment may hold a fractional second; keep it when the pace does not scale.
-    timeLeft = Number.isInteger(oldTimeLeft)
-      ? Math.round(oldTimeLeft * multiplier)
-      : oldTimeLeft * multiplier;
-    if (countdownActive) {
-      anchorSegment(segmentCountdownPerRealMs, now);
-    }
-    updateDisplay();
-  }
 }
-
-// Function to generate day presets with pace adjustment
-function generateDayPresets(playerCount) {
-  const { totalNumbers, dayStartValue, dayEndValue } =
-    calcTimerStartEndValues(playerCount);
-  const numberOfDays = Math.floor(totalNumbers);
-  const presets = [];
-  const paceMultiplier = PACE_MULTIPLIERS[currentPace];
-
-  for (let day = 1; day <= numberOfDays; day++) {
-    // Linear interpolation between start and end values
-    const progress = (day - 1) / (numberOfDays - 1);
-    let minutes = roundToNearestQuarter(
-      (dayStartValue - progress * (dayStartValue - dayEndValue)) *
-        paceMultiplier
-    );
-
-    // Blitz mode: enforce minimum of 2 minutes for days 1 and 2
-    if (currentPace === 'blitz' && (day === 1 || day === 2) && minutes < 2) {
-      minutes = 2;
-    }
-
-    // Convert to MM:SS format
-    const wholeMinutes = Math.floor(minutes);
-    const seconds = Math.round((minutes % 1) * 60);
-    presets.push({
-      minutes: wholeMinutes,
-      seconds: seconds,
-      display: `${String(wholeMinutes).padStart(2, '0')}:${String(
-        seconds
-      ).padStart(2, '0')}`,
-      day: day,
-    });
-  }
-
-  return presets;
-}
-
-// Add event listener for game pace changes
-document.getElementById('gamePace').addEventListener('change', (e) => {
-  updateGamePace(e.target.value);
-});
 
 // YouTube player functionality
 let youtubeApiReady = false;
@@ -3797,12 +3519,8 @@ function onPlayerReady(event) {
     }
 
     // If timer is already running, start playing
-    if (isRunning && timeLeft > 0) {
-      const dayInfo = document.querySelector('.day-display');
-      const isDusk = dayInfo?.classList?.contains('dusk');
-      if (!isDusk) {
-        event.target.playVideo();
-      }
+    if (timer.isRunning() && timer.getTimeLeft() > 0 && !game.isDusk()) {
+      event.target.playVideo();
     }
   } catch (error) {
     console.log('YouTube player ready handler failed:', error);

@@ -1,7 +1,16 @@
 // Version tracking
-export const APP_VERSION = '1.0.35';
+export const APP_VERSION = '1.1.0';
 
 export const CHANGELOG = {
+  '1.1.0': {
+    date: '2026-10-11',
+    changes: {
+      improvements: [
+        'The countdown and the day rules now sit apart from the screen, sound, and saved settings, without changing how a game plays',
+        'Those rules now have their own checks, including a pace change during a running or paused day',
+      ],
+    },
+  },
   '1.0.35': {
     date: '2026-10-10',
     changes: {
