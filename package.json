@@ -5,7 +5,8 @@
   "scripts": {
     "stamp-release": "node scripts/release-assets.mjs --write",
     "test": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress run'",
-    "test:open": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress open'"
+    "test:open": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress open'",
+    "test:unit": "node --test test/*.test.mjs"
   },
   "devDependencies": {
     "cypress": "^16.1.0",
