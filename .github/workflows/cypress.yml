@@ -21,8 +21,5 @@ jobs:
       - name: Check release assets
         run: node --test test/*.test.mjs
 
-      - name: Start server
-        run: npx serve -l 8006 &
-
       - name: Run Cypress tests
         run: npm test

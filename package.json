@@ -12,6 +12,9 @@
     "serve": "^14.2.6",
     "start-server-and-test": "^3.0.0"
   },
+  "overrides": {
+    "compression": "^1.8.2"
+  },
   "allowScripts": {
     "cypress@16.1.0": true
   }
