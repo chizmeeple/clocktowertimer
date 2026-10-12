@@ -747,60 +747,6 @@ const timerUtils = {
       activeButton.classList.add('active');
     }
   },
-  holdToActivate: (button, holdDuration, onProgress, onComplete) => {
-    let startTime;
-    let animationFrame;
-    let holdTimer;
-
-    const start = (e) => {
-      // Prevent text selection during hold
-      e.preventDefault();
-      startTime = Date.now();
-
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / holdDuration, 1);
-
-        if (onProgress) {
-          button.style.setProperty('--progress-width', `${progress * 100}%`);
-          onProgress(progress);
-        }
-
-        if (progress < 1) {
-          animationFrame = requestAnimationFrame(animate);
-        }
-      };
-
-      animate();
-
-      holdTimer = setTimeout(() => {
-        if (onComplete) {
-          onComplete();
-        }
-      }, holdDuration);
-    };
-
-    const cancel = () => {
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
-      }
-      if (holdTimer) {
-        clearTimeout(holdTimer);
-      }
-      if (onProgress) {
-        button.style.setProperty('--progress-width', '0%');
-        onProgress(0);
-      }
-    };
-
-    // Add event listeners with passive option where appropriate
-    button.addEventListener('mousedown', start);
-    button.addEventListener('touchstart', start, { passive: false }); // We need preventDefault, so can't be passive
-    button.addEventListener('mouseup', cancel, { passive: true });
-    button.addEventListener('mouseleave', cancel, { passive: true });
-    button.addEventListener('touchend', cancel, { passive: true });
-    button.addEventListener('touchcancel', cancel, { passive: true });
-  },
 };
 
 // Keyboard shortcuts utilities
@@ -3003,7 +2949,6 @@ function resetAccelerateButton() {
     'aria-label',
     'Accelerate time (click then confirm)'
   );
-  accelerateBtn.style.setProperty('--progress-width', '0%');
 }
 
 // Acceleration keeps the previous rate: countdown seconds per 50ms of monotonic

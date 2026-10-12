@@ -251,10 +251,6 @@ body[data-pace='blitz'] #startBtn:active {
   background-color: #d32f2f;
 }
 
-body[data-pace='blitz'] #accelerateBtn::before {
-  background-color: rgba(244, 67, 54, 0.3);
-}
-
 body[data-pace='blitz'] .pace-indicator {
   background: rgba(244, 67, 54, 0.3);
 }
@@ -672,11 +668,8 @@ html.fonts-ready .timer-display .time {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  /* Static so the progress fill stays anchored to the fixed bar, as before. */
   position: static;
-  overflow: hidden;
   transition: all 0.2s;
-  --progress-width: 0%;
 }
 
 #accelerateBtn .button-content {
@@ -691,18 +684,6 @@ html.fonts-ready .timer-display .time {
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.2),
     0 0 0 3px rgba(76, 175, 80, 0.4);
-}
-
-#accelerateBtn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: var(--progress-width);
-  height: 100%;
-  background-color: rgba(76, 175, 80, 0.3);
-  transition: width 0.1s linear;
-  z-index: 0;
 }
 
 #accelerateBtn:hover {
@@ -720,12 +701,6 @@ html.fonts-ready .timer-display .time {
 
 #accelerateBtn:active {
   transform: scale(0.98);
-}
-
-/* Ensure the text stays on top of the progress bar */
-#accelerateBtn span {
-  position: relative;
-  z-index: 1;
 }
 
 #fullscreenBtn {

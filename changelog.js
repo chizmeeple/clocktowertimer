@@ -6,7 +6,8 @@ export const CHANGELOG = {
     date: '2026-10-11',
     changes: {
       improvements: [
-        'The timer, controls, and dialogs keep their layout on phones, tablets, and short screens',
+        'Tidied up the layout styles and removed redundant rules, making the timer easier to maintain while preserving its existing appearance across screen sizes',
+        'Removed the unused Accelerate progress fill left over from press-and-hold',
       ],
     },
   },

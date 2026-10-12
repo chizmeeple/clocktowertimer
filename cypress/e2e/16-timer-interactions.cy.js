@@ -9,6 +9,14 @@ import {
   visitGameplay,
 } from '../support/gameplay.js';
 
+function expectNoAccelerateProgressFill() {
+  cy.get('#accelerateBtn').should(($btn) => {
+    const button = $btn[0];
+    const view = button.ownerDocument.defaultView;
+    expect(view.getComputedStyle(button, '::before').content).to.equal('none');
+  });
+}
+
 describe('Timer interactions', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
@@ -213,8 +221,11 @@ describe('Timer interactions', () => {
     visitClocked();
     startFirstDay();
 
+    expectNoAccelerateProgressFill();
+
     cy.get('#accelerateBtn').click();
     cy.get('#accelerateBtn .button-text').should('have.text', 'Confirm…');
+    expectNoAccelerateProgressFill();
     cy.tick(4999);
     cy.get('#accelerateBtn .button-text').should('have.text', 'Confirm…');
     cy.get('#startBtn .button-text').should('have.text', '⏸️ Pause Day');
@@ -230,6 +241,7 @@ describe('Timer interactions', () => {
     cy.get('#accelerateBtn').click();
     cy.get('#accelerateBtn').click();
     cy.get('#accelerateBtn .button-text').should('have.text', 'Time flies…');
+    expectNoAccelerateProgressFill();
     cy.tick(12000);
     cy.get('.day-display').should('have.class', 'dusk');
     cy.get('#startBtn .button-text').should('have.text', '⏰ Wake Up!');
