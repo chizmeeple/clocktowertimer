@@ -13,6 +13,7 @@ export const CHANGELOG = {
         'Player count, traveller count, and the nominations delay are labelled for the right control. Music settings that are switched off can no longer be reached from the keyboard',
         'The Change History dialog has a heading, and the selected settings tab is identified',
         'Pulsing animations stay still when reduced motion is requested',
+        'Settings headings, the selected day, the dawn pace, traveller names, and the team labels are easier to read. Wake Up stays bright green, with heavier type so its lettering meets the large-text contrast requirement, and Blitz red stays recognisable, including the pace label at dusk',
       ],
     },
   },
