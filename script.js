@@ -2548,7 +2548,9 @@ function updateClocktowerPresets() {
   });
 }
 
-// Update QR code and link for player count (count.arcane-scripts.net)
+// Update QR code and link for player count (count.arcane-scripts.net).
+// The image stays black on white. Day and night colours are a CSS filter,
+// so a theme change does not rebuild the code or its destination.
 function updatePlayerCountQr() {
   const url = `https://count.arcane-scripts.net/?p=${playerCount}`;
   const link = document.getElementById('playerCountQrLink');
@@ -2556,7 +2558,7 @@ function updatePlayerCountQr() {
   if (link) link.href = url;
   if (img) {
     img.src =
-      'https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=' +
+      'https://api.qrserver.com/v1/create-qr-code/?size=512x512&format=svg&qzone=0&color=000000&bgcolor=ffffff&data=' +
       encodeURIComponent(url);
   }
 }

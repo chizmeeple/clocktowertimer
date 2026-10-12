@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.0';
+export const APP_VERSION = '1.2.1';
 
 export const CHANGELOG = {
+  '1.2.1': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'The player count QR code sits in a simpler card. Day uses dark brown on warm cream, night uses deep navy on pale blue-grey, and a quiet zone stays around the code. The link it encodes is unchanged',
+      ],
+    },
+  },
   '1.2.0': {
     date: '2026-10-12',
     changes: {
