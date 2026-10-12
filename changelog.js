@@ -7,6 +7,7 @@ export const CHANGELOG = {
     changes: {
       improvements: [
         'Before the first day, after a day ends, and during the wake-up countdown, the timer panel, day card, countdown, and day presets shift to a cooler, darker night appearance. A running or paused day keeps the usual warm colours. Wake Up and the player counts stay bright',
+        'Night uses a fixed night-sky wallpaper. Daytime keeps the selected wallpaper, and opening Settings previews that choice even while the town is asleep',
       ],
     },
   },

@@ -198,7 +198,6 @@ body::before {
   background-repeat: no-repeat;
   opacity: 0.15;
   z-index: -1;
-  transition: background-image 0.5s ease-in-out;
 }
 
 /* Background theme classes */
@@ -219,6 +218,13 @@ body[data-theme='circle-of-people']::before {
 }
 body[data-theme='large-clock-face']::before {
   background-image: url('images/backgrounds/large-clock-face.png');
+}
+
+/* Night uses a fixed sky. An open Settings dialog keeps the saved wallpaper
+   so the preview matches the choice being edited. The game--night class on
+   the timer is unchanged, and the saved theme is not replaced. */
+body.game--night:not(:has(#settingsDialog[open]))::before {
+  background-image: url('images/backgrounds/night-sky.jpg');
 }
 
 /* Blitz mode red theme overrides.
