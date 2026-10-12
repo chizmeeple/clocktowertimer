@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.1';
+export const APP_VERSION = '1.2.2';
 
 export const CHANGELOG = {
+  '1.2.2': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'The timer can describe the current day, the five character counts including travellers, and the countdown for a companion display. The countdown on this page is unchanged',
+      ],
+    },
+  },
   '1.2.1': {
     date: '2026-10-12',
     changes: {

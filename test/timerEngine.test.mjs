@@ -268,3 +268,241 @@ describe('timer engine', () => {
     assert.equal(timer.isCountdownActive(), false);
   });
 });
+
+function engineFacts(timer) {
+  return {
+    timeLeft: timer.getTimeLeft(),
+    running: timer.isRunning(),
+    reset: timer.hasReset(),
+    active: timer.isCountdownActive(),
+    kind: timer.getCountdownKind(),
+    interval: timer.getCurrentInterval(),
+  };
+}
+
+describe('timer snapshot', () => {
+  it('describes an idle timer without a countdown', () => {
+    const { timer } = engineAt();
+    assert.deepEqual(timer.snapshot(), {
+      remainingMs: 0,
+      running: false,
+      reset: false,
+      active: false,
+      kind: null,
+      rate: 0,
+    });
+  });
+
+  it('reads a running day from the injected clock', () => {
+    const { clock, timer } = engineAt();
+    timer.setTimeLeft(10);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+
+    assert.deepEqual(timer.snapshot(), {
+      remainingMs: 10000,
+      running: true,
+      reset: false,
+      active: true,
+      kind: 'day',
+      rate: 1,
+    });
+
+    clock.advance(2500);
+    const before = engineFacts(timer);
+    assert.deepEqual(timer.snapshot(), {
+      remainingMs: 7500,
+      running: true,
+      reset: false,
+      active: true,
+      kind: 'day',
+      rate: 1,
+    });
+    assert.deepEqual(engineFacts(timer), before);
+    assert.equal(timer.getTimeLeft(), 10);
+
+    clock.advance(500);
+    assert.equal(timer.snapshot().remainingMs, 7000);
+    assert.equal(timer.sample().type, 'running');
+    assert.equal(timer.sample().shown, 7);
+  });
+
+  it('keeps a paused remainder and a resumed segment distinct', () => {
+    const { clock, timer } = engineAt();
+    timer.setTimeLeft(10);
+    timer.setRunning(true);
+    timer.setHasReset(false);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    clock.advance(2500);
+    timer.pause();
+
+    assert.deepEqual(timer.snapshot(), {
+      remainingMs: 7500,
+      running: false,
+      reset: false,
+      active: false,
+      kind: null,
+      rate: 0,
+    });
+
+    clock.advance(10000);
+    assert.equal(timer.snapshot().remainingMs, 7500);
+
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    clock.advance(500);
+    const shot = timer.snapshot();
+    assert.equal(shot.remainingMs, 7000);
+    assert.equal(shot.running, true);
+    assert.equal(shot.active, true);
+    assert.equal(shot.kind, 'day');
+    assert.equal(shot.rate, 1);
+    assert.equal(shot.reset, false);
+  });
+
+  it('records a reset day as time remaining with the reset flag set', () => {
+    const { timer } = engineAt();
+    timer.setTimeLeft(285);
+    timer.setRunning(false);
+    timer.setHasReset(true);
+    assert.deepEqual(timer.snapshot(), {
+      remainingMs: 285000,
+      running: false,
+      reset: true,
+      active: false,
+      kind: null,
+      rate: 0,
+    });
+  });
+
+  it('reads the accelerated rate without settling the segment', () => {
+    const { clock, timer } = engineAt();
+    timer.setTimeLeft(100);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    const started = timer.accelerate(0);
+    assert.equal(started.type, 'running');
+
+    const before = engineFacts(timer);
+    const shot = timer.snapshot();
+    // random 0 finishes across 60 ticks of 2 countdown seconds, so the
+    // segment rate is 40 countdown milliseconds per real millisecond.
+    assert.equal(shot.rate, 40);
+    assert.equal(shot.kind, 'day');
+    assert.equal(shot.running, true);
+    assert.equal(shot.active, true);
+    assert.equal(shot.remainingMs, 100000);
+    assert.deepEqual(engineFacts(timer), before);
+
+    clock.advance(1000);
+    assert.equal(timer.snapshot().remainingMs, 60000);
+    assert.equal(timer.getCurrentInterval(), COUNTDOWN_REFRESH_MS);
+    assert.equal(engineFacts(timer).interval, COUNTDOWN_REFRESH_MS);
+  });
+
+  it('shows a completed countdown as idle once the segment has finished', () => {
+    const { clock, timer } = engineAt();
+    timer.setTimeLeft(2);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    clock.advance(2000);
+    assert.equal(timer.sample().type, 'complete');
+
+    assert.deepEqual(timer.snapshot(), {
+      remainingMs: 0,
+      running: false,
+      reset: false,
+      active: false,
+      kind: null,
+      rate: 0,
+    });
+    assert.equal(timer.sample().type, 'idle');
+  });
+
+  it('keeps a wake-up countdown on its own kind and leaves the running flag unset', () => {
+    const { clock, timer } = engineAt();
+    timer.setTimeLeft(6);
+    timer.continueAt('wake-up', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+
+    const shot = timer.snapshot();
+    assert.equal(shot.kind, 'wake-up');
+    assert.equal(shot.active, true);
+    assert.equal(shot.running, false);
+    assert.equal(shot.rate, 1);
+    assert.equal(shot.remainingMs, 6000);
+
+    clock.advance(1000);
+    assert.equal(timer.snapshot().remainingMs, 5000);
+    assert.equal(timer.snapshot().kind, 'wake-up');
+    assert.equal(timer.getCountdownKind(), 'wake-up');
+  });
+
+  it('returns the same snapshot from repeated reads', () => {
+    const { clock, timer } = engineAt();
+    timer.setTimeLeft(8);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    clock.advance(1500);
+    const first = timer.snapshot();
+    const second = timer.snapshot();
+    assert.deepEqual(second, first);
+    assert.notEqual(second, first);
+    second.remainingMs = 0;
+    assert.equal(timer.snapshot().remainingMs, 6500);
+  });
+
+  it('reads the remainder beside a displayed-second boundary without completing', () => {
+    const { clock, timer } = engineAt();
+    timer.setTimeLeft(2);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    clock.advance(1000.4);
+
+    const before = engineFacts(timer);
+    const shot = timer.snapshot();
+    assert.equal(shot.remainingMs, 999.6);
+    assert.equal(shot.active, true);
+    assert.equal(displaySeconds(shot.remainingMs / 1000), 1);
+    assert.deepEqual(engineFacts(timer), before);
+    assert.equal(timer.sample().type, 'running');
+  });
+
+  it('does not complete a countdown that has already run out', () => {
+    const { clock, timer } = engineAt();
+    timer.setTimeLeft(2);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+    clock.advance(5000);
+
+    const shot = timer.snapshot();
+    assert.equal(shot.remainingMs, 0);
+    assert.equal(shot.active, true);
+    assert.equal(shot.kind, 'day');
+    assert.equal(shot.running, true);
+    assert.equal(timer.getTimeLeft(), 2);
+    assert.equal(timer.isCountdownActive(), true);
+
+    assert.equal(timer.sample().type, 'complete');
+    assert.equal(timer.snapshot().active, false);
+    assert.equal(timer.snapshot().remainingMs, 0);
+  });
+
+  it('uses a supplied timestamp and does not ask the clock again', () => {
+    let calls = 0;
+    const timer = createTimerEngine({
+      now() {
+        calls += 1;
+        return 0;
+      },
+    });
+    timer.setTimeLeft(5);
+    timer.setRunning(true);
+    timer.continueAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS, 0);
+    const callsAfterStart = calls;
+
+    assert.equal(timer.snapshot(2500).remainingMs, 2500);
+    assert.equal(calls, callsAfterStart);
+    assert.equal(timer.getTimeLeft(), 5);
+    assert.equal(timer.sample(2500).type, 'running');
+  });
+});
