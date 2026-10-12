@@ -1,7 +1,21 @@
 // Version tracking
-export const APP_VERSION = '1.1.2';
+export const APP_VERSION = '1.1.3';
 
 export const CHANGELOG = {
+  '1.1.3': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'Keyboard shortcuts stay on the main timer. They no longer fire while a dialog is open or while typing in a field, and Escape no longer leaves fullscreen when it is closing a dialog',
+        'Settings, About, Fullscreen, and the sound controls have names that match what they do. Wake Up, Pause, and Resume are read as they appear',
+        'The running countdown stays quiet for screen readers. Dawn, dusk, the Accelerate confirmation, and nominations opening are announced once',
+        'Keyboard focus is visible on dialog buttons and settings fields, including a clearer ring on Reset',
+        'Player count, traveller count, and the nominations delay are labelled for the right control. Music settings that are switched off can no longer be reached from the keyboard',
+        'The Change History dialog has a heading, and the selected settings tab is identified',
+        'Pulsing animations stay still when reduced motion is requested',
+      ],
+    },
+  },
   '1.1.2': {
     date: '2026-10-11',
     changes: {

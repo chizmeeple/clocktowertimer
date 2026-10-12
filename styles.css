@@ -36,11 +36,16 @@
   box-sizing: border-box;
 }
 
-/* Fire TV / keyboard: clear focus indication */
-button:focus-visible,
-select:focus-visible,
-input:focus-visible {
-  outline: none;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 body {
@@ -651,7 +656,7 @@ html.fonts-ready .timer-display .time {
 
 #resetBtn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.5);
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.5);
 }
 
 #resetBtn:hover {
@@ -892,7 +897,9 @@ html.fonts-ready .timer-display .time {
   font-weight: 500;
 }
 
-.setting-group label {
+.setting-group label,
+.setting-group .setting-field,
+.setting-group .auto-nominations-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -902,7 +909,14 @@ html.fonts-ready .timer-display .time {
   font-size: 0.95rem;
 }
 
-.setting-group label:hover {
+.setting-group .setting-field > label,
+.setting-group .auto-nominations-row > label {
+  padding: 0;
+}
+
+.setting-group label:hover,
+.setting-group .setting-field:hover,
+.setting-group .auto-nominations-row:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
@@ -947,7 +961,7 @@ html.fonts-ready .timer-display .time {
   font-weight: normal;
 }
 
-.setting-group label.auto-nominations-row .auto-nominations-label {
+.setting-group .auto-nominations-row .auto-nominations-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1011,6 +1025,11 @@ html.fonts-ready .timer-display .time {
 
 .volume-slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
+}
+
+.volume-slider:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.5);
 }
 
 .volume-value {
@@ -2180,7 +2199,7 @@ button:disabled {
   filter: grayscale(100%);
 }
 
-.youtube-playlist-input[aria-hidden='true'] {
+.youtube-playlist-input:disabled {
   background: rgba(0, 0, 0, 0.3);
   border-color: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.5);
@@ -2539,6 +2558,15 @@ button:disabled {
   }
   75% {
     transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-display.wake-up-countdown .time,
+  .clocktower-presets button.current-day,
+  .shortcut-input.recording,
+  .shortcut-input.shortcut-conflict {
+    animation: none;
   }
 }
 

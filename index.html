@@ -30,7 +30,7 @@
     />
 
     <!-- Preload critical resources -->
-    <link rel="preload" href="styles.css?v=1.1.2" as="style" />
+    <link rel="preload" href="styles.css?v=1.1.3" as="style" />
     <link
       rel="preload"
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Azeret+Mono:wght@600&display=swap"
@@ -82,7 +82,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Azeret+Mono:wght@600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=1.1.2" />
+    <link rel="stylesheet" href="styles.css?v=1.1.3" />
 
     <!-- Content Security Policy -->
     <meta
@@ -156,32 +156,29 @@
     </div>
 
     <div class="container">
-      <div class="timer-display" role="timer" aria-live="polite">
+      <p id="gameStatus" class="visually-hidden" role="status"></p>
+      <div class="timer-display" role="timer" aria-live="off">
         <div class="day-info">
-          <output class="day-display" aria-label="Current game day">
+          <output class="day-display" aria-live="off">
             <span id="currentDay">-</span>
             <div class="pace-indicator">Normal</div>
           </output>
-          <time id="currentTime" class="current-time" aria-label="Current time"></time>
+          <time id="currentTime" class="current-time"></time>
         </div>
-        <div class="time" aria-label="Timer display">
-          <span id="minutes" aria-label="minutes">00</span>:<span
-            id="seconds"
-            aria-label="seconds"
-            >00</span
-          >
+        <div class="time">
+          <span id="minutes">00</span>:<span id="seconds">00</span>
+          <span class="visually-hidden"> remaining</span>
         </div>
         <output
           id="nominationsCountdown"
           class="nominations-countdown"
-          aria-live="polite"
-          aria-label="Time until nominations open"
+          aria-live="off"
           hidden
         >
           Nominations open in <span id="nominationsCountdownSeconds">0</span>s
         </output>
         <div class="timer-actions">
-          <button id="startBtn" aria-label="Start or pause timer">
+          <button id="startBtn">
             <span class="button-content">
               <span class="button-text">⏰ Wake Up!</span>
               <span id="wakeUpShortcutHint" class="shortcut-hint"></span>
@@ -190,8 +187,7 @@
           <output
             id="sessionCountdown"
             class="session-countdown"
-            aria-live="polite"
-            aria-label="Time until session end"
+            aria-live="off"
             hidden
           ></output>
         </div>
@@ -335,16 +331,28 @@
     <!-- Bottom Controls Container -->
     <div class="bottom-container">
       <div class="left-buttons">
-        <button id="settingsBtn">
-          <svg viewBox="0 0 24 24" width="24" height="24" class="settings-icon">
+        <button id="settingsBtn" aria-label="Settings">
+          <svg
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            class="settings-icon"
+            aria-hidden="true"
+          >
             <path
               fill="currentColor"
               d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
             />
           </svg>
         </button>
-        <button id="infoBtn">
-          <svg viewBox="0 0 24 24" width="24" height="24" class="info-icon">
+        <button id="infoBtn" aria-label="About">
+          <svg
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            class="info-icon"
+            aria-hidden="true"
+          >
             <path
               fill="currentColor"
               d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
@@ -369,12 +377,13 @@
       <div class="youtube-player-container"></div>
 
       <div class="right-buttons">
-        <button id="fullscreenBtn">
+        <button id="fullscreenBtn" aria-label="Enter fullscreen">
           <svg
             viewBox="0 0 24 24"
             width="24"
             height="24"
             class="fullscreen-icon"
+            aria-hidden="true"
           >
             <path
               fill="currentColor"
@@ -391,12 +400,24 @@
         <h2>Settings</h2>
 
         <div class="settings-tabs">
-          <button class="tab-button active" data-tab="game">Game</button>
-          <button class="tab-button" data-tab="display">Display</button>
-          <button class="tab-button" data-tab="time">Time</button>
-          <button class="tab-button" data-tab="effects">Effects</button>
-          <button class="tab-button" data-tab="music">Music</button>
-          <button class="tab-button" data-tab="shortcuts">Shortcuts</button>
+          <button class="tab-button active" data-tab="game" aria-pressed="true">
+            Game
+          </button>
+          <button class="tab-button" data-tab="display" aria-pressed="false">
+            Display
+          </button>
+          <button class="tab-button" data-tab="time" aria-pressed="false">
+            Time
+          </button>
+          <button class="tab-button" data-tab="effects" aria-pressed="false">
+            Effects
+          </button>
+          <button class="tab-button" data-tab="music" aria-pressed="false">
+            Music
+          </button>
+          <button class="tab-button" data-tab="shortcuts" aria-pressed="false">
+            Shortcuts
+          </button>
         </div>
 
         <div class="settings-panels">
@@ -404,10 +425,17 @@
           <div class="settings-panel active" data-panel="game">
             <div class="setting-group">
               <h3>Game Setup</h3>
-              <label>
-                <span>Number of Players</span>
+              <div class="setting-field">
+                <label for="playerCount"><span>Number of Players</span></label>
                 <div class="number-input-group">
-                  <button class="decrement" data-input="playerCount">−</button>
+                  <button
+                    type="button"
+                    class="decrement"
+                    data-input="playerCount"
+                    aria-label="Decrease number of players"
+                  >
+                    −
+                  </button>
                   <input
                     type="number"
                     id="playerCount"
@@ -417,13 +445,27 @@
                     inputmode="numeric"
                     pattern="[0-9]*"
                   />
-                  <button class="increment" data-input="playerCount">+</button>
+                  <button
+                    type="button"
+                    class="increment"
+                    data-input="playerCount"
+                    aria-label="Increase number of players"
+                  >
+                    +
+                  </button>
                 </div>
-              </label>
-              <label>
-                <span>Number of Travellers</span>
+              </div>
+              <div class="setting-field">
+                <label for="travellerCount">
+                  <span>Number of Travellers</span>
+                </label>
                 <div class="number-input-group">
-                  <button class="decrement" data-input="travellerCount">
+                  <button
+                    type="button"
+                    class="decrement"
+                    data-input="travellerCount"
+                    aria-label="Decrease number of travellers"
+                  >
                     −
                   </button>
                   <input
@@ -435,11 +477,16 @@
                     inputmode="numeric"
                     pattern="[0-9]*"
                   />
-                  <button class="increment" data-input="travellerCount">
+                  <button
+                    type="button"
+                    class="increment"
+                    data-input="travellerCount"
+                    aria-label="Increase number of travellers"
+                  >
                     +
                   </button>
                 </div>
-              </label>
+              </div>
               <label>
                 <span>Game Pace</span>
                 <select id="gamePace" class="game-pace-select">
@@ -458,11 +505,14 @@
                   <span class="info-value-note">(including nights and nominations)</span>
                 </span>
               </div>
-              <label class="auto-nominations-row">
-                <span class="auto-nominations-label">
+              <div class="auto-nominations-row">
+                <label class="auto-nominations-label" for="autoOpenNominations">
                   <input type="checkbox" id="autoOpenNominations" />
                   Automatically open nominations after
-                </span>
+                </label>
+                <label for="autoOpenNominationsDelay" class="visually-hidden">
+                  Nominations delay
+                </label>
                 <select
                   id="autoOpenNominationsDelay"
                   class="auto-nominations-delay-select"
@@ -471,7 +521,7 @@
                   <option value="60" selected>60s</option>
                   <option value="90">90s</option>
                 </select>
-              </label>
+              </div>
             </div>
           </div>
 
@@ -589,8 +639,17 @@
                     </option>
                     <option value="alarm-siren-fast-v2.mp3">Alarm Siren</option>
                   </select>
-                  <button class="preview-sound" data-type="end-of-day">
-                    <svg viewBox="0 0 24 24" width="16" height="16">
+                  <button
+                    class="preview-sound"
+                    data-type="end-of-day"
+                    aria-label="Preview end of day sound"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      aria-hidden="true"
+                    >
                       <path fill="currentColor" d="M8 5v14l11-7z" />
                     </svg>
                   </button>
@@ -606,8 +665,17 @@
                     <option value="rooster-v2.mp3">Rooster</option>
                     <option value="quick-bell-v2.mp3">Quick Bell</option>
                   </select>
-                  <button class="preview-sound" data-type="wake-up">
-                    <svg viewBox="0 0 24 24" width="16" height="16">
+                  <button
+                    class="preview-sound"
+                    data-type="wake-up"
+                    aria-label="Preview wake up sound"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      aria-hidden="true"
+                    >
                       <path fill="currentColor" d="M8 5v14l11-7z" />
                     </svg>
                   </button>
@@ -625,8 +693,17 @@
                       Serafina
                     </option>
                   </select>
-                  <button class="preview-sound" data-type="nominations-open">
-                    <svg viewBox="0 0 24 24" width="16" height="16">
+                  <button
+                    class="preview-sound"
+                    data-type="nominations-open"
+                    aria-label="Preview nominations open sound"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      aria-hidden="true"
+                    >
                       <path fill="currentColor" d="M8 5v14l11-7z" />
                     </svg>
                   </button>
@@ -906,6 +983,7 @@
     <!-- Change History Dialog -->
     <dialog id="changeHistoryDialog" class="change-history-dialog">
       <div class="dialog-content">
+        <h2>Change History</h2>
         <div id="changeHistoryContent"></div>
         <div class="dialog-footer">
           <button id="closeChangeHistory">Close</button>
@@ -930,14 +1008,14 @@
     <script type="importmap">
       {
         "imports": {
-          "./changelog.js": "./changelog.js?v=1.1.2",
-          "./gameState.js": "./gameState.js?v=1.1.2",
-          "./helper.js": "./helper.js?v=1.1.2",
-          "./releaseCheck.js": "./releaseCheck.js?v=1.1.2",
-          "./timerEngine.js": "./timerEngine.js?v=1.1.2"
+          "./changelog.js": "./changelog.js?v=1.1.3",
+          "./gameState.js": "./gameState.js?v=1.1.3",
+          "./helper.js": "./helper.js?v=1.1.3",
+          "./releaseCheck.js": "./releaseCheck.js?v=1.1.3",
+          "./timerEngine.js": "./timerEngine.js?v=1.1.3"
         }
       }
     </script>
-    <script src="script.js?v=1.1.2" type="module"></script>
+    <script src="script.js?v=1.1.3" type="module"></script>
   </body>
 </html>
