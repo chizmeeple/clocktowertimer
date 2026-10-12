@@ -220,11 +220,36 @@ body[data-theme='large-clock-face']::before {
   background-image: url('images/backgrounds/large-clock-face.png');
 }
 
-/* Night uses a fixed sky. An open Settings dialog keeps the saved wallpaper
-   so the preview matches the choice being edited. The game--night class on
-   the timer is unchanged, and the saved theme is not replaced. */
-body.game--night:not(:has(#settingsDialog[open]))::before {
-  background-image: url('images/backgrounds/night-sky.jpg');
+/* The day image stays on ::before. This plate covers it with the same
+   15% night sky, and only its opacity crossfades. Settings drops the plate
+   so the saved wallpaper shows. The game--night class is unchanged. */
+.night-wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--colour-bg);
+  background-image:
+    linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.85)),
+    url('images/backgrounds/night-sky.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+}
+
+body.wallpaper-ready .night-wallpaper {
+  transition: opacity 600ms ease-in-out;
+}
+
+body.game--night:not(:has(#settingsDialog[open])) .night-wallpaper {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.wallpaper-ready .night-wallpaper {
+    transition: none;
+  }
 }
 
 /* Blitz mode red theme overrides.

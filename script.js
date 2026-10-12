@@ -2387,6 +2387,11 @@ function loadSettings() {
     });
   }
 
+  // The night plate is already at its initial opacity. Flush that style
+  // before the crossfade is allowed, so the first paint does not fade.
+  document.querySelector('.night-wallpaper')?.getBoundingClientRect();
+  document.body.classList.add('wallpaper-ready');
+
   initialSettingsApplied = true;
   if (game.getPhase() === 'dusk' || game.getPhase() === 'dawn') {
     gameSessionActive = true;

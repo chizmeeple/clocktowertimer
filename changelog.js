@@ -8,6 +8,7 @@ export const CHANGELOG = {
       improvements: [
         'Before the first day, after a day ends, and during the wake-up countdown, the timer panel, day card, countdown, and day presets shift to a cooler, darker night appearance. A running or paused day keeps the usual warm colours. Wake Up and the player counts stay bright',
         'Night uses a fixed night-sky wallpaper. Daytime keeps the selected wallpaper, and opening Settings previews that choice even while the town is asleep',
+        'The night sky crossfades with the selected wallpaper over 600ms. Reduced motion keeps the change immediate, and choosing a wallpaper in Settings still updates the preview straight away',
       ],
     },
   },
