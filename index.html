@@ -30,7 +30,7 @@
     />
 
     <!-- Preload critical resources -->
-    <link rel="preload" href="styles.css?v=1.2.0" as="style" />
+    <link rel="preload" href="styles.css?v=1.2.1" as="style" />
     <link
       rel="preload"
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Azeret+Mono:wght@600&display=swap"
@@ -82,7 +82,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Azeret+Mono:wght@600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=1.2.0" />
+    <link rel="stylesheet" href="styles.css?v=1.2.1" />
 
     <!-- Content Security Policy -->
     <meta
@@ -125,6 +125,21 @@
         aria-hidden="true"
       ></div>
     </div>
+
+    <svg class="player-count-qr-filters" aria-hidden="true" focusable="false">
+      <filter id="player-count-qr-day" color-interpolation-filters="sRGB">
+        <feColorMatrix
+          type="matrix"
+          values="0.725490 0 0 0 0.235294  0 0.780392 0 0 0.164706  0 0 0.792157 0 0.109804  0 0 0 1 0"
+        />
+      </filter>
+      <filter id="player-count-qr-night" color-interpolation-filters="sRGB">
+        <feColorMatrix
+          type="matrix"
+          values="0.831373 0 0 0 0.070588  0 0.788235 0 0 0.145098  0 0 0.749020 0 0.211765  0 0 0 1 0"
+        />
+      </filter>
+    </svg>
 
     <div class="character-counts-wrapper">
       <div id="characterCounts" class="character-counts">
@@ -1009,14 +1024,14 @@
     <script type="importmap">
       {
         "imports": {
-          "./changelog.js": "./changelog.js?v=1.2.0",
-          "./gameState.js": "./gameState.js?v=1.2.0",
-          "./helper.js": "./helper.js?v=1.2.0",
-          "./releaseCheck.js": "./releaseCheck.js?v=1.2.0",
-          "./timerEngine.js": "./timerEngine.js?v=1.2.0"
+          "./changelog.js": "./changelog.js?v=1.2.1",
+          "./gameState.js": "./gameState.js?v=1.2.1",
+          "./helper.js": "./helper.js?v=1.2.1",
+          "./releaseCheck.js": "./releaseCheck.js?v=1.2.1",
+          "./timerEngine.js": "./timerEngine.js?v=1.2.1"
         }
       }
     </script>
-    <script src="script.js?v=1.2.0" type="module"></script>
+    <script src="script.js?v=1.2.1" type="module"></script>
   </body>
 </html>

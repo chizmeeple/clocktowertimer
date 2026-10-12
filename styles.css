@@ -1329,16 +1329,38 @@ html.fonts-ready .timer-display .time {
   background: var(--colour-evil);
 }
 
+/* Off-screen colour filters for the player-count QR. Not displayed. */
+.player-count-qr-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Paper card beside the player counts. Padding is the quiet zone, in the
+   same colour as the code background, so the rounded border does not cut
+   the modules. Module colours come from the SVG filters in the page. */
 .character-type.player-count-qr {
+  --qr-paper: #f5f1e6;
+  --qr-border: rgba(60, 42, 28, 0.4);
   display: none;
   flex: 0 0 auto;
   align-self: stretch;
   width: 4.75rem;
-  min-width: auto;
+  min-width: 0;
+  min-height: 0;
   padding: 0.25rem;
   box-sizing: border-box;
   justify-content: center;
-  background: var(--colour-surface-elevated);
+  background: var(--qr-paper);
+  border: 1px solid var(--qr-border);
+  box-shadow: none;
+  transition: none;
+}
+
+body.game--night .character-type.player-count-qr {
+  --qr-paper: #e6eef5;
+  --qr-border: rgba(18, 37, 54, 0.45);
 }
 
 .character-type.player-count-qr.visible {
@@ -1353,17 +1375,23 @@ html.fonts-ready .timer-display .time {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+  background: var(--qr-paper);
+  overflow: visible;
 }
 
 .character-type.player-count-qr img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
+  display: block;
+  width: 100%;
   height: auto;
+  aspect-ratio: 1;
+  max-height: 100%;
   object-fit: contain;
-  border-radius: var(--radius-sm);
+  border-radius: 0;
+  filter: url(#player-count-qr-day);
+}
+
+body.game--night .character-type.player-count-qr img {
+  filter: url(#player-count-qr-night);
 }
 
 .character-type.traveller {
