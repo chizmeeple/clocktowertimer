@@ -11,6 +11,11 @@
   --colour-accent: #45a049;
   --colour-accent-hover: #3d8b40;
   --colour-accent-muted: rgba(76, 175, 80, 0.25);
+  /* Green text on dark surfaces. The button green is too dark for small text. */
+  --colour-accent-text: #5cbf61;
+  /* White lettering on a filled control needs a deeper green than Wake Up. */
+  --colour-accent-button: #3c7f40;
+  --colour-accent-button-hover: #38773c;
   --colour-gold: #d4af37;
   --colour-gold-bright: #e6c547;
   --colour-good: rgba(25, 118, 210, 0.7);
@@ -19,6 +24,11 @@
   --colour-button-secondary-hover: #3c513c;
   --colour-blitz: #f44336;
   --colour-blitz-hover: #e53935;
+  /* Red text on dark surfaces. The button red is too dark for small text. */
+  --colour-blitz-text: #ff7d76;
+  /* White lettering on a filled control needs a deeper red than Wake Up. */
+  --colour-blitz-button: #d32f2f;
+  --colour-blitz-button-hover: #c62828;
   /* Spacing and radius */
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -36,11 +46,16 @@
   box-sizing: border-box;
 }
 
-/* Fire TV / keyboard: clear focus indication */
-button:focus-visible,
-select:focus-visible,
-input:focus-visible {
-  outline: none;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 body {
@@ -162,12 +177,12 @@ body.stale-tab-banner-visible {
 }
 
 .stale-tab-banner-actions button.primary-btn {
-  background: var(--colour-accent);
+  background: var(--colour-accent-button);
   border-color: transparent;
 }
 
 .stale-tab-banner-actions button.primary-btn:hover {
-  background: var(--colour-accent-hover);
+  background: var(--colour-accent-button-hover);
 }
 
 /* Background theme styles */
@@ -260,33 +275,40 @@ body[data-pace='blitz'] .day-display .pace-indicator {
   color: #8b2c2c;
 }
 
+body[data-pace='blitz'] .day-display.dusk .pace-indicator {
+  color: #e6e1d6;
+}
+
 body[data-pace='blitz'] .dialog-content h3,
 body[data-pace='blitz'] .setting-group h3,
-body[data-pace='blitz'] .version-number,
 body[data-pace='blitz'] .changes-section h3,
 body[data-pace='blitz'] .changes-section li::before,
 body[data-pace='blitz'] .playlist-link,
+body[data-pace='blitz'] .playlist-link::before,
 body[data-pace='blitz'] .changelog-link,
 body[data-pace='blitz'] .disclaimer a,
-body[data-pace='blitz'] .main-site-link a,
-body[data-pace='blitz'] .portrait-warning-dialog h2,
-body[data-pace='blitz'] .info-value {
+body[data-pace='blitz'] .main-site-link a {
+  color: var(--colour-blitz-text);
+}
+
+body[data-pace='blitz'] .version-number,
+body[data-pace='blitz'] .portrait-warning-dialog h2 {
   color: var(--colour-blitz);
 }
 
 body[data-pace='blitz'] .playlist-link:hover {
-  color: #ff6659;
+  color: #ffb0aa;
 }
 
 body[data-pace='blitz'] .dialog-buttons button.primary-btn,
 body[data-pace='blitz'] .tab-button.active,
 body[data-pace='blitz'] .portrait-warning-dialog button {
-  background: var(--colour-blitz);
+  background: var(--colour-blitz-button);
 }
 
 body[data-pace='blitz'] .dialog-buttons button.primary-btn:hover,
 body[data-pace='blitz'] .portrait-warning-dialog button:hover {
-  background: var(--colour-blitz-hover);
+  background: var(--colour-blitz-button-hover);
 }
 
 body[data-pace='blitz'] .setting-group input[type='checkbox'] {
@@ -578,7 +600,7 @@ html.fonts-ready .timer-display .time {
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 700;
   transition:
     transform var(--transition-fast),
     box-shadow var(--transition-fast),
@@ -651,7 +673,7 @@ html.fonts-ready .timer-display .time {
 
 #resetBtn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.5);
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.5);
 }
 
 #resetBtn:hover {
@@ -869,7 +891,7 @@ html.fonts-ready .timer-display .time {
 .dialog-content h3 {
   font-size: 1rem;
   margin: 0 0 0.75rem 0;
-  color: var(--colour-accent);
+  color: var(--colour-accent-text);
   font-weight: 500;
 }
 
@@ -888,11 +910,13 @@ html.fonts-ready .timer-display .time {
 .setting-group h3 {
   font-size: 0.95rem;
   margin: 0 0 0.35rem 0;
-  color: var(--colour-accent);
+  color: var(--colour-accent-text);
   font-weight: 500;
 }
 
-.setting-group label {
+.setting-group label,
+.setting-group .setting-field,
+.setting-group .auto-nominations-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -902,7 +926,14 @@ html.fonts-ready .timer-display .time {
   font-size: 0.95rem;
 }
 
-.setting-group label:hover {
+.setting-group .setting-field > label,
+.setting-group .auto-nominations-row > label {
+  padding: 0;
+}
+
+.setting-group label:hover,
+.setting-group .setting-field:hover,
+.setting-group .auto-nominations-row:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
@@ -947,7 +978,7 @@ html.fonts-ready .timer-display .time {
   font-weight: normal;
 }
 
-.setting-group label.auto-nominations-row .auto-nominations-label {
+.setting-group .auto-nominations-row .auto-nominations-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1011,6 +1042,11 @@ html.fonts-ready .timer-display .time {
 
 .volume-slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
+}
+
+.volume-slider:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.5);
 }
 
 .volume-value {
@@ -1133,7 +1169,7 @@ html.fonts-ready .timer-display .time {
 
 .day-display.dawn .pace-indicator {
   background: rgba(184, 125, 59, 0.15);
-  color: #b87d3b;
+  color: #885c2c;
 }
 
 .day-display.dusk {
@@ -1170,7 +1206,7 @@ html.fonts-ready .timer-display .time {
 }
 
 .dialog-buttons button.primary-btn {
-  background-color: #4caf50;
+  background-color: var(--colour-accent-button);
   color: white;
 }
 
@@ -1186,7 +1222,7 @@ html.fonts-ready .timer-display .time {
 }
 
 .dialog-buttons button.primary-btn:hover {
-  background: var(--colour-accent-hover);
+  background: var(--colour-accent-button-hover);
 }
 
 .dialog-buttons button:not(.primary-btn):hover {
@@ -1238,7 +1274,7 @@ html.fonts-ready .timer-display .time {
 
 .character-type .label {
   font-size: 1rem;
-  color: var(--colour-text-muted);
+  color: rgba(255, 255, 255, 0.88);
   margin-bottom: 0.25rem;
   font-weight: 500;
 }
@@ -1301,9 +1337,13 @@ html.fonts-ready .timer-display .time {
 
 .character-type.traveller {
   display: none;
-  background: rgba(255, 140, 0, 0.7);
+  background: rgba(198, 93, 0, 0.9);
   border: 2px solid rgba(255, 215, 0, 0.7);
   box-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
+}
+
+.character-type.traveller .label {
+  color: #ffffff;
 }
 
 .character-type.traveller.visible {
@@ -1353,6 +1393,11 @@ html.fonts-ready .timer-display .time {
 .clocktower-presets button.active {
   background-color: var(--colour-accent);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+  color: #101010;
+}
+
+.clocktower-presets button.active .day {
+  opacity: 1;
 }
 
 .clocktower-presets button .time {
@@ -1867,7 +1912,7 @@ button:disabled {
 
 .playlist-link {
   font-size: 0.8rem;
-  color: var(--colour-accent);
+  color: var(--colour-accent-text);
   text-decoration: none;
   transition:
     color var(--transition-fast),
@@ -1884,7 +1929,7 @@ button:disabled {
 
 .playlist-link::before {
   content: '→';
-  color: var(--colour-accent);
+  color: var(--colour-accent-text);
 }
 
 /* YouTube playlist input styling */
@@ -1975,7 +2020,7 @@ button:disabled {
 }
 
 .changes-section h3 {
-  color: var(--colour-accent);
+  color: var(--colour-accent-text);
   margin-bottom: 0.25rem;
   font-size: 1rem;
 }
@@ -1995,7 +2040,7 @@ button:disabled {
 
 .changes-section li::before {
   content: '•';
-  color: var(--colour-accent);
+  color: var(--colour-accent-text);
   position: absolute;
   left: 0;
 }
@@ -2180,7 +2225,7 @@ button:disabled {
   filter: grayscale(100%);
 }
 
-.youtube-playlist-input[aria-hidden='true'] {
+.youtube-playlist-input:disabled {
   background: rgba(0, 0, 0, 0.3);
   border-color: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.5);
@@ -2322,7 +2367,7 @@ button:disabled {
 }
 
 .portrait-warning-dialog button {
-  background-color: var(--colour-accent);
+  background-color: var(--colour-accent-button);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -2333,7 +2378,7 @@ button:disabled {
 }
 
 .portrait-warning-dialog button:hover {
-  background-color: var(--colour-accent-hover);
+  background-color: var(--colour-accent-button-hover);
 }
 
 /* Settings Tabs */
@@ -2369,7 +2414,7 @@ button:disabled {
 }
 
 .tab-button.active {
-  background: var(--colour-accent);
+  background: var(--colour-accent-button);
   color: white;
 }
 
@@ -2539,6 +2584,15 @@ button:disabled {
   }
   75% {
     transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-display.wake-up-countdown .time,
+  .clocktower-presets button.current-day,
+  .shortcut-input.recording,
+  .shortcut-input.shortcut-conflict {
+    animation: none;
   }
 }
 

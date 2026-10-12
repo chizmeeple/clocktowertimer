@@ -262,7 +262,6 @@ function initTimeDisplays() {
     const { text, phase } = formatSessionCountdownText(remainingMs);
 
     sessionCountdownEl.textContent = text;
-    sessionCountdownEl.setAttribute('aria-label', text);
     sessionCountdownEl.classList.toggle('final-hour', phase === 'minutes');
     sessionCountdownEl.classList.toggle('times-up', phase === 'times-up');
   };
@@ -609,13 +608,27 @@ const youtubeUtils = {
 };
 
 /** Inline SVG for the in-page YouTube play/pause control (`playing` → show pause icon). */
-const YOUTUBE_CONTROL_SVG_PLAY = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-const YOUTUBE_CONTROL_SVG_PAUSE = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+const YOUTUBE_CONTROL_SVG_PLAY = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>`;
+const YOUTUBE_CONTROL_SVG_PAUSE = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
 
 function setYoutubeControlButtonIcon(playing) {
   const btn = document.querySelector('.youtube-control');
   if (!btn) return;
   btn.innerHTML = playing ? YOUTUBE_CONTROL_SVG_PAUSE : YOUTUBE_CONTROL_SVG_PLAY;
+  btn.setAttribute('aria-label', playing ? 'Pause music' : 'Play music');
+}
+
+function keepYoutubeIframesOutOfTabOrder() {
+  const conceal = () => {
+    document
+      .querySelectorAll('.youtube-player-container iframe')
+      .forEach((iframe) => {
+        if (iframe.tabIndex !== -1) iframe.tabIndex = -1;
+      });
+  };
+  conceal();
+  const observer = new MutationObserver(conceal);
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 const YOUTUBE_PLAYER_CONTAINER_CLASS = 'youtube-player-container';
@@ -914,8 +927,8 @@ const BUTTON_LABELS = {
   START_DAY: (day) => `▶ Start Day ${day}`,
   FULLSCREEN: {
     ENTER:
-      '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
-    EXIT: '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>',
+      '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon" aria-hidden="true"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
+    EXIT: '<svg viewBox="0 0 24 24" width="24" height="24" class="fullscreen-icon" aria-hidden="true"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>',
   },
 };
 
@@ -1182,7 +1195,7 @@ function updateWakeUpShortcutHint() {
   // Special handling for MediaPlayPause
   if (shortcutKey === 'MediaPlayPause') {
     hintElement.innerHTML =
-      '<svg viewBox="0 0 24 24" width="16" height="12" style="vertical-align: middle;"><path fill="currentColor" d="M3 5v14l8-7z"/><path fill="currentColor" d="M14 5h2v14h-2zm4 0h2v14h-2z"/></svg>';
+      '<svg viewBox="0 0 24 24" width="16" height="12" style="vertical-align: middle;" aria-hidden="true"><path fill="currentColor" d="M3 5v14l8-7z"/><path fill="currentColor" d="M14 5h2v14h-2zm4 0h2v14h-2z"/></svg>';
   } else if (shortcutKey === ' ') {
     hintElement.textContent = 'Space';
   } else {
@@ -1285,6 +1298,7 @@ window.addEventListener('pageshow', (event) => {
 // Request wake lock and initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
   staleTabUtils.init();
+  keepYoutubeIframesOutOfTabOrder();
 
   try {
     await requestWakeLock();
@@ -1448,12 +1462,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_CONFIRM);
       accelerateBtn.setAttribute(
         'aria-label',
-        'Click again to accelerate time'
+        'Press again to accelerate time'
       );
+      announceGameStatus('Press again to accelerate time');
       if (accelerateConfirmTimeout) clearTimeout(accelerateConfirmTimeout);
       accelerateConfirmTimeout = setTimeout(() => {
         accelerateConfirmTimeout = null;
         resetAccelerateButton();
+        const status = document.getElementById('gameStatus');
+        if (status?.textContent === 'Press again to accelerate time') {
+          status.textContent = '';
+        }
       }, ACCELERATE_CONFIRM_SECONDS * 1000);
     } else {
       // Confirm: clear timeout, show "time flies", disable, then accelerate
@@ -1463,6 +1482,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       setAccelerateButtonLabel(BUTTON_LABELS.ACCELERATE_TIME_FLIES);
       accelerateBtn.setAttribute('aria-label', 'Time is accelerating');
+      announceGameStatus('Time is accelerating');
       accelerateBtn.disabled = true;
       accelerateTime();
     }
@@ -1732,7 +1752,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         'label:has(#nominationsOpenSound)'
       );
       if (nominationsOpenSelect) {
-        nominationsOpenSelect.disabled = !autoOpenNominations;
+        nominationsOpenSelect.disabled =
+          !autoOpenNominations || !playSoundEffects;
+      }
+      const nominationsPreview =
+        nominationsOpenLabelEl?.querySelector('.preview-sound');
+      if (nominationsPreview) {
+        nominationsPreview.disabled = nominationsOpenSelect
+          ? nominationsOpenSelect.disabled
+          : !autoOpenNominations || !playSoundEffects;
       }
       if (nominationsOpenLabelEl) {
         nominationsOpenLabelEl.classList.toggle(
@@ -2268,9 +2296,7 @@ function applySettingsToForm() {
     `sounds/nominations-open/${nominationsOpenSoundFile}`
   );
 
-  const musicVolumeInput = document.getElementById('musicVolume');
-  musicVolumeInput.disabled = !playMusic;
-  musicVolumeInput.closest('label').classList.toggle('inactive', !playMusic);
+  syncMusicControlAvailability();
 
   const soundEffectsVolumeInput = document.getElementById('soundEffectsVolume');
   soundEffectsVolumeInput.disabled = !playSoundEffects;
@@ -2278,40 +2304,6 @@ function applySettingsToForm() {
     .closest('label')
     .classList.toggle('inactive', !playSoundEffects);
 
-  const musicDependentElements = [
-    {
-      element: document.getElementById('playMusicAtNight').closest('label'),
-      type: 'label',
-    },
-    {
-      element: document.getElementById('youtubePlaylist').closest('label'),
-      type: 'label',
-    },
-    {
-      element: document.getElementById('useBardcorePlaylist'),
-      type: 'link',
-    },
-    {
-      element: document.getElementById('useAtmosphericPlaylist'),
-      type: 'link',
-    },
-    {
-      element: document.getElementById('openYoutubePlaylist'),
-      type: 'link',
-    },
-  ];
-
-  musicDependentElements.forEach(({ element, type }) => {
-    if (element) {
-      element.classList.toggle('inactive', !playMusic);
-      if (type === 'label') {
-        const input = element.querySelector('input, select');
-        if (input) {
-          input.setAttribute('aria-hidden', !playMusic);
-        }
-      }
-    }
-  });
 }
 
 // Load settings from localStorage
@@ -2630,6 +2622,7 @@ function switchSettingsTab(tabName) {
   document.querySelectorAll('.tab-button').forEach((button) => {
     const isActive = button.dataset.tab === tabName;
     button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
 
   // Update panels
@@ -2658,6 +2651,10 @@ function updateFullscreenButton() {
   fullscreenBtn.innerHTML = isFullscreen
     ? BUTTON_LABELS.FULLSCREEN.EXIT
     : BUTTON_LABELS.FULLSCREEN.ENTER;
+  fullscreenBtn.setAttribute(
+    'aria-label',
+    isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'
+  );
 }
 
 // Play end sound
@@ -2731,22 +2728,15 @@ function startNominationsCountdown() {
   nominationsCountdownRemaining = delay;
   secondsEl.textContent = nominationsCountdownRemaining;
   countdownEl.hidden = false;
-  countdownEl.setAttribute(
-    'aria-label',
-    `Nominations open in ${nominationsCountdownRemaining} seconds`
-  );
 
   autoOpenNominationsInterval = setInterval(() => {
     const step = stepNominationsCountdown(nominationsCountdownRemaining);
     nominationsCountdownRemaining = step.remaining;
     secondsEl.textContent = nominationsCountdownRemaining;
-    countdownEl.setAttribute(
-      'aria-label',
-      `Nominations open in ${nominationsCountdownRemaining} seconds`
-    );
 
     if (step.open) {
       clearNominationsCountdown();
+      announceGameStatus('Nominations are open');
       playNominationsOpenSound();
     }
   }, 1000);
@@ -2929,12 +2919,6 @@ function updateDisplay() {
     accelerateBtn.disabled = true;
     resetBtn.disabled = true; // Disable reset when timer is at 0 or after reset
   }
-
-  // Update ARIA labels
-  timerDisplayEl.setAttribute(
-    'aria-label',
-    `Timer: ${minutes} minutes and ${seconds} seconds remaining`
-  );
 }
 
 const ACCELERATE_CONFIRM_SECONDS = 5;
@@ -3213,11 +3197,20 @@ function refreshDayPhase() {
   }
 }
 
+function announceGameStatus(message) {
+  const status = document.getElementById('gameStatus');
+  if (!status || !message || status.textContent === message) return;
+  status.textContent = message;
+}
+
 // Update day display
 function updateDayDisplay(state = '', options = {}) {
   const shouldPersist = options.persist !== false;
   const dayInfo = document.querySelector('.day-display');
   if (!dayInfo) return;
+
+  const previousPhase = game.getPhase();
+  const previousDay = game.getCurrentDay();
 
   // Remove existing state classes
   dayInfo.classList.remove('dawn', 'dusk');
@@ -3236,6 +3229,24 @@ function updateDayDisplay(state = '', options = {}) {
   const paceText =
     progress.pace.charAt(0).toUpperCase() + progress.pace.slice(1);
   const dayMarkup = `<span>${progress.currentDay}</span><div class="pace-indicator">${paceEmoji} ${paceText}</div>`;
+  const phaseName =
+    progress.phase === 'dawn'
+      ? 'Dawn'
+      : progress.phase === 'dusk'
+        ? 'Dusk'
+        : '';
+  dayInfo.setAttribute(
+    'aria-label',
+    phaseName
+      ? `Day ${progress.currentDay}, ${phaseName}, ${paceText} pace`
+      : `Day ${progress.currentDay}, ${paceText} pace`
+  );
+  if (
+    phaseName &&
+    (progress.phase !== previousPhase || progress.currentDay !== previousDay)
+  ) {
+    announceGameStatus(`${phaseName}, day ${progress.currentDay}`);
+  }
 
   if (progress.phase === 'dawn') {
     dayInfo.classList.add('dawn');
@@ -3374,14 +3385,15 @@ function createYoutubePlayerContainer() {
   const playPauseBtn = document.createElement('button');
   playPauseBtn.className = 'youtube-control';
   playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
+  playPauseBtn.setAttribute('aria-label', 'Play music');
   playPauseBtn.addEventListener('click', () => {
     runYoutube((player) => {
       if (player.getPlayerState?.() === globalThis.YT?.PlayerState?.PLAYING) {
         player.pauseVideo?.();
-        playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PLAY;
+        setYoutubeControlButtonIcon(false);
       } else {
         player.playVideo?.();
-        playPauseBtn.innerHTML = YOUTUBE_CONTROL_SVG_PAUSE;
+        setYoutubeControlButtonIcon(true);
       }
     });
   });
@@ -3459,6 +3471,7 @@ function onPlayerReady(event) {
     return;
   }
   try {
+    event.target.getIframe?.()?.setAttribute('tabindex', '-1');
     event.target.setVolume(youtubeVolume);
     const { playlistId } = extractVideoAndPlaylistIds(youtubePlaylistUrl);
 
@@ -3547,41 +3560,38 @@ function updateYoutubePlaylist() {
   }
 }
 
+function syncMusicControlAvailability() {
+  const enabled = playMusic;
+  const night = document.getElementById('playMusicAtNight');
+  const playlist = document.getElementById('youtubePlaylist');
+  const volume = document.getElementById('musicVolume');
+
+  for (const control of [night, playlist, volume]) {
+    control.disabled = !enabled;
+    control.removeAttribute('aria-hidden');
+    control.closest('label')?.classList.toggle('inactive', !enabled);
+  }
+
+  for (const id of [
+    'useBardcorePlaylist',
+    'useAtmosphericPlaylist',
+    'openYoutubePlaylist',
+  ]) {
+    const link = document.getElementById(id);
+    if (!link) continue;
+    link.classList.toggle('inactive', !enabled);
+    if (enabled) {
+      link.removeAttribute('tabindex');
+    } else {
+      link.tabIndex = -1;
+    }
+  }
+}
+
 // Toggle music playback
 function updateMusicPlayback() {
   playMusic = document.getElementById('playMusic').checked;
-
-  // Update states for music-related elements
-  const playMusicAtNightLabel = document
-    .getElementById('playMusicAtNight')
-    .closest('label');
-  const youtubePlaylistLabel = document
-    .getElementById('youtubePlaylist')
-    .closest('label');
-  const musicVolumeInput = document.getElementById('musicVolume');
-
-  document
-    .getElementById('youtubePlaylist')
-    .setAttribute('aria-hidden', !playMusic);
-  musicVolumeInput.setAttribute('aria-hidden', !playMusic);
-  musicVolumeInput.disabled = !playMusic;
-  document
-    .getElementById('playMusicAtNight')
-    .setAttribute('aria-hidden', !playMusic);
-
-  playMusicAtNightLabel.classList.toggle('inactive', !playMusic);
-  youtubePlaylistLabel.classList.toggle('inactive', !playMusic);
-  musicVolumeInput.closest('label').classList.toggle('inactive', !playMusic);
-
-  document
-    .getElementById('useBardcorePlaylist')
-    .classList.toggle('inactive', !playMusic);
-  document
-    .getElementById('useAtmosphericPlaylist')
-    .classList.toggle('inactive', !playMusic);
-  document
-    .getElementById('openYoutubePlaylist')
-    .classList.toggle('inactive', !playMusic);
+  syncMusicControlAvailability();
 
   if (playMusic) {
     initYoutubePlayer();
@@ -3636,7 +3646,6 @@ function updateSoundEffects() {
   const nominationsOpenLabel = document.querySelector(
     'label:has(#nominationsOpenSound)'
   );
-  const nominationsOpenSelect = document.getElementById('nominationsOpenSound');
 
   soundDependentElements.forEach(({ element, type }) => {
     if (element) {
@@ -3652,11 +3661,11 @@ function updateSoundEffects() {
       if (type === 'label') {
         const input = element.querySelector('select, input');
         if (input) {
-          input.setAttribute('aria-hidden', inactive);
-          if (input === nominationsOpenSelect) {
-            input.disabled = !autoOpenNominations;
-          }
+          input.removeAttribute('aria-hidden');
+          input.disabled = inactive;
         }
+        const preview = element.querySelector('.preview-sound');
+        if (preview) preview.disabled = inactive;
       }
     }
   });
@@ -3956,13 +3965,24 @@ function closeChangeHistory() {
   }
 }
 
+function isAnyDialogOpen() {
+  return document.querySelector('dialog[open]') !== null;
+}
+
+function isFormFieldFocused(event) {
+  const target = event.target;
+  if (!(target instanceof Element)) return false;
+  if (target.closest('input, textarea, select')) return true;
+  const editable = target.closest('[contenteditable]');
+  return editable !== null && editable.getAttribute('contenteditable') !== 'false';
+}
+
+function isGameplayShortcutBlocked(event) {
+  return isAnyDialogOpen() || isFormFieldFocused(event);
+}
+
 function tryHandleResetShortcut(e, currentKey) {
-  if (
-    !keyboardShortcuts.reset ||
-    currentKey !== keyboardShortcuts.reset ||
-    settingsDialog.open ||
-    infoDialog.open
-  ) {
+  if (!keyboardShortcuts.reset || currentKey !== keyboardShortcuts.reset) {
     return;
   }
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
@@ -3975,40 +3995,28 @@ function setupKeyboardNavigation() {
   document.removeEventListener('keydown', handleKeyboardNavigation);
 
   function handleKeyboardNavigation(e) {
-    if (e.target.classList.contains('shortcut-input')) return;
+    if (isGameplayShortcutBlocked(e)) return;
 
     const currentKey = e.key;
 
-    if (
-      keyboardShortcuts.settings &&
-      currentKey === keyboardShortcuts.settings &&
-      !settingsDialog.open
-    ) {
+    if (keyboardShortcuts.settings && currentKey === keyboardShortcuts.settings) {
       openSettings();
     }
-    if (
-      keyboardShortcuts.info &&
-      currentKey === keyboardShortcuts.info &&
-      !infoDialog.open
-    ) {
+    if (keyboardShortcuts.info && currentKey === keyboardShortcuts.info) {
       openInfo();
     }
     if (keyboardShortcuts.wakeUp && currentKey === keyboardShortcuts.wakeUp) {
-      if (!settingsDialog.open && !infoDialog.open) {
-        e.preventDefault();
-        // Match the Wake Up button: it is disabled during the wake-up countdown
-        // and while the end-of-day sound is playing.
-        if (!startBtn.disabled) {
-          startTimer();
-        }
+      e.preventDefault();
+      // Match the Wake Up button: it is disabled during the wake-up countdown
+      // and while the end-of-day sound is playing.
+      if (!startBtn.disabled) {
+        startTimer();
       }
     }
     tryHandleResetShortcut(e, currentKey);
     if (
       keyboardShortcuts.accelerate &&
-      currentKey === keyboardShortcuts.accelerate &&
-      !settingsDialog.open &&
-      !infoDialog.open
+      currentKey === keyboardShortcuts.accelerate
     ) {
       e.preventDefault();
       if (!accelerateBtn.disabled) {
@@ -4022,13 +4030,36 @@ function setupKeyboardNavigation() {
       e.preventDefault();
       toggleFullscreen();
     }
-    if (e.key === 'Escape' && document.fullscreenElement) {
-      document.exitFullscreen();
-    }
   }
 
   document.addEventListener('keydown', handleKeyboardNavigation);
 }
+
+// Escape can close a dialog before the key event reaches this listener.
+// Remember that dismissal for the rest of the current turn only.
+let dialogDismissedBeforeEscape = false;
+
+document.addEventListener(
+  'close',
+  (event) => {
+    if (!(event.target instanceof HTMLDialogElement)) return;
+    dialogDismissedBeforeEscape = true;
+    queueMicrotask(() => {
+      dialogDismissedBeforeEscape = false;
+    });
+  },
+  true
+);
+
+function handleFullscreenEscape(event) {
+  if (event.key !== 'Escape' || !document.fullscreenElement) return;
+  const dismissedDialog = isAnyDialogOpen() || dialogDismissedBeforeEscape;
+  dialogDismissedBeforeEscape = false;
+  if (dismissedDialog) return;
+  document.exitFullscreen();
+}
+
+document.addEventListener('keydown', handleFullscreenEscape, true);
 
 // Enhance error handling for async operations
 async function safeAsyncOperation(operation, fallback = null) {
