@@ -7,6 +7,7 @@ export const CHANGELOG = {
     changes: {
       improvements: [
         'Tidied up the layout styles and removed redundant rules, making the timer easier to maintain while preserving its existing appearance across screen sizes',
+        'Removed the unused Accelerate progress fill left over from press-and-hold',
       ],
     },
   },
