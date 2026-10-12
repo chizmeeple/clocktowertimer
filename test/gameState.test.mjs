@@ -7,6 +7,7 @@ import {
   estimateGameLengthMinutes,
   generateDayPresets,
   getPresetDayLabel,
+  isNightAppearance,
   listVisiblePresets,
   nominationsDelaySeconds,
   presetForDay,
@@ -264,6 +265,11 @@ describe('game state transitions', () => {
     assert.deepEqual(game.getUsedPresetByDay(), {});
     assert.deepEqual(game.getHiddenPresetDays(), []);
     assert.equal(game.getPace(), 'speedy');
+    assert.equal(game.isAwaitingFirstDay(), true);
+
+    game.clearAwaitingFirstDay();
+    assert.equal(game.isAwaitingFirstDay(), false);
+    assert.equal(game.getPhase(), '');
   });
 
   it('does not treat dusk as a day change by itself', () => {
@@ -272,6 +278,98 @@ describe('game state transitions', () => {
     game.setPhase('dusk');
     assert.equal(game.isDusk(), true);
     assert.equal(game.getCurrentDay(), 2);
+  });
+});
+
+describe('night appearance', () => {
+  it('stays neutral before a game has started', () => {
+    assert.equal(isNightAppearance(), false);
+    const game = createGameState();
+    assert.equal(game.isAwaitingFirstDay(), false);
+    assert.equal(
+      isNightAppearance({
+        phase: game.getPhase(),
+        awaitingFirstDay: game.isAwaitingFirstDay(),
+      }),
+      false
+    );
+  });
+
+  it('is night for a new game before the first daytime countdown', () => {
+    const game = createGameState();
+    game.startNewGame();
+    assert.equal(
+      isNightAppearance({
+        phase: game.getPhase(),
+        awaitingFirstDay: game.isAwaitingFirstDay(),
+      }),
+      true
+    );
+  });
+
+  it('is day while the countdown is running or paused', () => {
+    assert.equal(
+      isNightAppearance({
+        isRunning: true,
+        countdownKind: 'day',
+        timeLeft: 30,
+      }),
+      false
+    );
+    assert.equal(
+      isNightAppearance({ timeLeft: 30, hasReset: false, isRunning: false }),
+      false
+    );
+  });
+
+  it('is night when the day is complete and throughout wake-up', () => {
+    assert.equal(isNightAppearance({ phase: 'dusk', timeLeft: 0 }), true);
+    assert.equal(
+      isNightAppearance({
+        phase: 'dawn',
+        countdownKind: 'wake-up',
+        timeLeft: 6,
+        isRunning: false,
+      }),
+      true
+    );
+    assert.equal(isNightAppearance({ phase: 'dawn' }), true);
+  });
+
+  it('returns to day only once the next countdown is running', () => {
+    assert.equal(
+      isNightAppearance({
+        isRunning: true,
+        countdownKind: 'day',
+        timeLeft: 280,
+        awaitingFirstDay: false,
+      }),
+      false
+    );
+  });
+
+  it('uses the daytime appearance after Reset Day', () => {
+    assert.equal(
+      isNightAppearance({
+        timeLeft: 285,
+        hasReset: true,
+        awaitingFirstDay: false,
+        isRunning: false,
+      }),
+      false
+    );
+  });
+
+  it('lets a running day override a leftover waiting flag', () => {
+    assert.equal(
+      isNightAppearance({
+        awaitingFirstDay: true,
+        isRunning: true,
+        countdownKind: 'day',
+        timeLeft: 10,
+      }),
+      false
+    );
   });
 });
 

@@ -1,7 +1,17 @@
 // Version tracking
-export const APP_VERSION = '1.1.3';
+export const APP_VERSION = '1.2.0';
 
 export const CHANGELOG = {
+  '1.2.0': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'Before the first day, after a day ends, and during the wake-up countdown, the timer panel, day card, countdown, and day presets shift to a cooler, darker night appearance. A running or paused day keeps the usual warm colours. Wake Up and the player counts stay bright',
+        'Night uses a fixed night-sky wallpaper. Daytime keeps the selected wallpaper, and opening Settings previews that choice even while the town is asleep',
+        'The night sky crossfades with the selected wallpaper over 600ms. Reduced motion keeps the change immediate, and choosing a wallpaper in Settings still updates the preview straight away',
+      ],
+    },
+  },
   '1.1.3': {
     date: '2026-10-12',
     changes: {

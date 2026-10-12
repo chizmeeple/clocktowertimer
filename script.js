@@ -12,6 +12,7 @@ import {
   createGameState,
   estimateGameLengthMinutes,
   getPresetDayLabel,
+  isNightAppearance,
   listVisiblePresets,
   nominationsDelaySeconds,
   presetForDay,
@@ -2386,6 +2387,11 @@ function loadSettings() {
     });
   }
 
+  // The night plate is already at its initial opacity. Flush that style
+  // before the crossfade is allowed, so the first paint does not fade.
+  document.querySelector('.night-wallpaper')?.getBoundingClientRect();
+  document.body.classList.add('wallpaper-ready');
+
   initialSettingsApplied = true;
   if (game.getPhase() === 'dusk' || game.getPhase() === 'dawn') {
     gameSessionActive = true;
@@ -2919,6 +2925,8 @@ function updateDisplay() {
     accelerateBtn.disabled = true;
     resetBtn.disabled = true; // Disable reset when timer is at 0 or after reset
   }
+
+  syncNightAppearance();
 }
 
 const ACCELERATE_CONFIRM_SECONDS = 5;
@@ -3124,6 +3132,7 @@ function playWakeUpSound() {
 
 function startCountdown() {
   beginGameSession();
+  game.clearAwaitingFirstDay();
   timer.setRunning(true);
   timer.setCurrentInterval(timer.getNormalInterval());
   continueCountdownAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
@@ -3277,6 +3286,22 @@ function updateDayDisplay(state = '', options = {}) {
     // Save the current state
     saveSettings();
   }
+
+  syncNightAppearance();
+}
+
+// Day and pre-game share the existing styles. Night is a class on body so
+// it survives settings, presets, and orientation without dimming the controls.
+function syncNightAppearance() {
+  const night = isNightAppearance({
+    phase: game.getPhase(),
+    countdownKind: timer.getCountdownKind(),
+    isRunning: timer.isRunning(),
+    timeLeft: timer.getTimeLeft(),
+    hasReset: timer.hasReset(),
+    awaitingFirstDay: game.isAwaitingFirstDay(),
+  });
+  document.body.classList.toggle('game--night', night);
 }
 
 // Generate QR code for the website
