@@ -19,6 +19,11 @@ import {
   stepNominationsCountdown,
 } from './gameState.js';
 import { navigateToNewerRelease } from './releaseCheck.js';
+import {
+  bindCompanionCapture,
+  publishCompanionSnapshot,
+} from './companionPublish.js';
+import { projectCompanionState } from './companionState.js';
 
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
@@ -1075,6 +1080,17 @@ const DEFAULT_KEYBOARD_SHORTCUTS = {
 
 let keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
 
+// Dormant until a caller enables publishing. Capture reads one monotonic instant.
+bindCompanionCapture(() => {
+  const timestamp = performance.now();
+  return projectCompanionState({
+    game: game.snapshot(),
+    timer: timer.snapshot(timestamp),
+    playerCount,
+    travellerCount,
+  });
+});
+
 /** Maps shortcut input element ids to keyboardShortcuts keys */
 const SHORTCUT_INPUT_ID_TO_ACTION = {
   shortcutSettings: 'settings',
@@ -1491,10 +1507,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
-  resetBtn.addEventListener('click', () => {
-    resetTimer();
-    endGameSession();
-  });
+  resetBtn.addEventListener('click', resetDay);
   fullscreenBtn.addEventListener('click', toggleFullscreen);
   settingsBtn.addEventListener('click', openSettings);
   closeSettingsBtn.addEventListener('click', closeSettings);
@@ -2578,6 +2591,7 @@ function updatePlayerCount() {
   updateEstimatedGameLength();
   updatePlayerCountQr();
   saveSettings();
+  publishCompanionSnapshot();
 }
 
 // Update traveller count
@@ -2595,6 +2609,7 @@ function updateTravellerCount() {
     .classList.toggle('visible', travellerCount > 0);
   document.getElementById('travellerAmount').textContent = travellerCount;
   saveSettings();
+  publishCompanionSnapshot();
 }
 
 function openSettings() {
@@ -2850,6 +2865,9 @@ function finishDayCountdown(wasAccelerated) {
   if (autoOpenNominations && autoOpenNominationsDelay > 0) {
     startNominationsCountdown();
   }
+  if (game.getPhase() === 'dusk') {
+    publishCompanionSnapshot();
+  }
 }
 
 function finishWakeUpCountdown() {
@@ -2955,6 +2973,9 @@ function accelerateTime() {
   ensureCountdownLoop();
   // Disable accelerate button after use (do not reset label during accelerated countdown)
   accelerateBtn.disabled = true;
+  if (timer.isCountdownActive() && timer.getCountdownKind() === 'day') {
+    publishCompanionSnapshot();
+  }
 }
 
 // Start timer
@@ -2962,6 +2983,7 @@ function startTimer() {
   if (timer.isRunning()) {
     // Pause timer before touching music, so a dead player cannot block the click
     timerUtils.stop();
+    publishCompanionSnapshot();
     runYoutube((player) => {
       player.pauseVideo?.();
       setYoutubeControlButtonIcon(false);
@@ -3028,6 +3050,14 @@ function resetTimer() {
 
   // Update the display with the new time
   updateDisplay();
+}
+
+// The button and the shortcut both finish here. Wake Up calls resetTimer()
+// itself and must not publish the restored preset before its own countdown.
+function resetDay() {
+  resetTimer();
+  endGameSession();
+  publishCompanionSnapshot();
 }
 
 // Handle minutes preset selection
@@ -3127,6 +3157,9 @@ function playWakeUpSound() {
 
   timer.setCurrentInterval(timer.getNormalInterval());
   continueCountdownAt('wake-up', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+  if (timer.isCountdownActive() && timer.getCountdownKind() === 'wake-up') {
+    publishCompanionSnapshot();
+  }
 
   // Sound comes last so a failed or stalled file cannot skip the countdown
   safePlaySound(wakeUpSound, { fallbackBeep: true });
@@ -3139,6 +3172,9 @@ function startCountdown() {
   timer.setCurrentInterval(timer.getNormalInterval());
   continueCountdownAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
   updateDisplay();
+  if (timer.isCountdownActive() && timer.getCountdownKind() === 'day') {
+    publishCompanionSnapshot();
+  }
 
   // Music is best-effort and must not prevent the countdown from starting
   if (!game.isDusk()) {
@@ -3178,6 +3214,7 @@ function startNewGame() {
   saveSettings();
   closeSettings();
   endGameSession();
+  publishCompanionSnapshot();
 
   // Stop any playing video and reshuffle playlist. Failure must not undo the new game.
   runYoutube((player) => {
@@ -4013,8 +4050,7 @@ function tryHandleResetShortcut(e, currentKey) {
     return;
   }
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-  resetTimer();
-  endGameSession();
+  resetDay();
 }
 
 // Add keyboard navigation support

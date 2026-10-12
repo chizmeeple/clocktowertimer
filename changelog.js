@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.2';
+export const APP_VERSION = '1.2.3';
 
 export const CHANGELOG = {
+  '1.2.3': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'The timer can record the public day, countdown, and character counts when they change, ready for a companion display. Nothing is sent, and Companion Mode is not available on the page yet',
+      ],
+    },
+  },
   '1.2.2': {
     date: '2026-10-12',
     changes: {
