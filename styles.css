@@ -206,78 +206,53 @@ body[data-theme='large-clock-face']::before {
   background-image: url('images/backgrounds/large-clock-face.png');
 }
 
-/* Blitz mode red theme overrides */
-body[data-pace='blitz'] .preset-btn {
+/* Blitz mode red theme overrides.
+   Grouped selectors share one declaration. Each selector keeps its own specificity. */
+body[data-pace='blitz'] .preset-btn,
+body[data-pace='blitz'] .minute-btn,
+body[data-pace='blitz'] #accelerateBtn,
+body[data-pace='blitz'] #fullscreenBtn,
+body[data-pace='blitz'] #settingsBtn,
+body[data-pace='blitz'] #infoBtn,
+body[data-pace='blitz'] .clocktower-presets button,
+body[data-pace='blitz'] .number-input-group button,
+body[data-pace='blitz'] .preview-sound {
   background-color: #3e2c2c;
 }
 
-body[data-pace='blitz'] .preset-btn:hover {
+body[data-pace='blitz'] .preset-btn:hover,
+body[data-pace='blitz'] .minute-btn:hover,
+body[data-pace='blitz'] #accelerateBtn:hover,
+body[data-pace='blitz'] #fullscreenBtn:hover,
+body[data-pace='blitz'] #settingsBtn:hover,
+body[data-pace='blitz'] #infoBtn:hover,
+body[data-pace='blitz'] .clocktower-presets button:hover,
+body[data-pace='blitz'] .number-input-group button:hover,
+body[data-pace='blitz'] .preview-sound:hover {
   background-color: #513c3c;
 }
 
-body[data-pace='blitz'] .preset-btn.active {
-  background-color: #f44336;
-}
-
-body[data-pace='blitz'] .minute-btn {
-  background-color: #3e2c2c;
-}
-
-body[data-pace='blitz'] .minute-btn:hover {
-  background-color: #513c3c;
-}
-
-body[data-pace='blitz'] .minute-btn.active {
-  background-color: #f44336;
+body[data-pace='blitz'] .preset-btn.active,
+body[data-pace='blitz'] .minute-btn.active,
+body[data-pace='blitz'] .clocktower-presets button.active {
+  background-color: var(--colour-blitz);
 }
 
 body[data-pace='blitz'] #startBtn {
-  background-color: #f44336;
+  background-color: var(--colour-blitz);
   border: 1px solid rgba(244, 67, 54, 0.2);
 }
 
 body[data-pace='blitz'] #startBtn:hover {
-  background-color: #e53935;
+  background-color: var(--colour-blitz-hover);
 }
 
 body[data-pace='blitz'] #startBtn:active {
   background-color: #d32f2f;
 }
 
-body[data-pace='blitz'] #accelerateBtn {
-  background-color: #3e2c2c;
-}
-
 body[data-pace='blitz'] #accelerateBtn::before {
   background-color: rgba(244, 67, 54, 0.3);
-}
-
-body[data-pace='blitz'] #accelerateBtn:hover {
-  background-color: #513c3c;
-}
-
-body[data-pace='blitz'] #fullscreenBtn,
-body[data-pace='blitz'] #settingsBtn,
-body[data-pace='blitz'] #infoBtn {
-  background-color: #3e2c2c;
-}
-
-body[data-pace='blitz'] #fullscreenBtn:hover,
-body[data-pace='blitz'] #settingsBtn:hover,
-body[data-pace='blitz'] #infoBtn:hover {
-  background-color: #513c3c;
-}
-
-body[data-pace='blitz'] .clocktower-presets button {
-  background-color: #3e2c2c;
-}
-
-body[data-pace='blitz'] .clocktower-presets button:hover {
-  background-color: #513c3c;
-}
-
-body[data-pace='blitz'] .clocktower-presets button.active {
-  background-color: #f44336;
 }
 
 body[data-pace='blitz'] .pace-indicator {
@@ -289,97 +264,46 @@ body[data-pace='blitz'] .day-display .pace-indicator {
   color: #8b2c2c;
 }
 
-body[data-pace='blitz'] .dialog-content h3 {
-  color: #f44336;
-}
-
-body[data-pace='blitz'] .setting-group h3 {
-  color: #f44336;
-}
-
-body[data-pace='blitz'] .dialog-buttons button.primary-btn {
-  background: #f44336;
-}
-
-body[data-pace='blitz'] .dialog-buttons button.primary-btn:hover {
-  background: #e53935;
-}
-
-body[data-pace='blitz'] .tab-button.active {
-  background: #f44336;
-}
-
-body[data-pace='blitz'] .version-number {
-  color: #f44336;
-}
-
-body[data-pace='blitz'] .changes-section h3 {
-  color: #f44336;
-}
-
-body[data-pace='blitz'] .changes-section li::before {
-  color: #f44336;
-}
-
-body[data-pace='blitz'] .playlist-link {
-  color: #f44336;
+body[data-pace='blitz'] .dialog-content h3,
+body[data-pace='blitz'] .setting-group h3,
+body[data-pace='blitz'] .version-number,
+body[data-pace='blitz'] .changes-section h3,
+body[data-pace='blitz'] .changes-section li::before,
+body[data-pace='blitz'] .playlist-link,
+body[data-pace='blitz'] .changelog-link,
+body[data-pace='blitz'] .disclaimer a,
+body[data-pace='blitz'] .main-site-link a,
+body[data-pace='blitz'] .portrait-warning-dialog h2,
+body[data-pace='blitz'] .info-value {
+  color: var(--colour-blitz);
 }
 
 body[data-pace='blitz'] .playlist-link:hover {
   color: #ff6659;
 }
 
-body[data-pace='blitz'] .changelog-link {
-  color: #f44336;
+body[data-pace='blitz'] .dialog-buttons button.primary-btn,
+body[data-pace='blitz'] .tab-button.active,
+body[data-pace='blitz'] .portrait-warning-dialog button {
+  background: var(--colour-blitz);
 }
 
-body[data-pace='blitz'] .number-input-group button {
-  background-color: #3e2c2c;
-}
-
-body[data-pace='blitz'] .number-input-group button:hover {
-  background-color: #513c3c;
+body[data-pace='blitz'] .dialog-buttons button.primary-btn:hover,
+body[data-pace='blitz'] .portrait-warning-dialog button:hover {
+  background: var(--colour-blitz-hover);
 }
 
 body[data-pace='blitz'] .setting-group input[type='checkbox'] {
-  accent-color: #f44336;
+  accent-color: var(--colour-blitz);
 }
 
 body[data-pace='blitz'] .volume-slider::-webkit-slider-thumb {
-  background: #f44336;
-}
-
-body[data-pace='blitz'] .preview-sound {
-  background: #3e2c2c;
-}
-
-body[data-pace='blitz'] .preview-sound:hover {
-  background: #513c3c;
+  background: var(--colour-blitz);
 }
 
 body[data-pace='blitz'] .preview-sound.playing {
-  background: #f44336;
+  background: var(--colour-blitz);
   box-shadow: 0 0 12px rgba(244, 67, 54, 0.4);
-}
-
-body[data-pace='blitz'] .disclaimer a {
-  color: #f44336;
-}
-
-body[data-pace='blitz'] .main-site-link a {
-  color: #f44336;
-}
-
-body[data-pace='blitz'] .portrait-warning-dialog h2 {
-  color: #f44336;
-}
-
-body[data-pace='blitz'] .portrait-warning-dialog button {
-  background-color: #f44336;
-}
-
-body[data-pace='blitz'] .portrait-warning-dialog button:hover {
-  background-color: #e53935;
 }
 
 body[data-pace='blitz']::after {
@@ -430,11 +354,6 @@ body[data-pace='blitz'] .bottom-container {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-}
-
-h1 {
-  color: #ffffff;
-  margin-bottom: 1rem;
 }
 
 .timer-display {
@@ -552,10 +471,6 @@ html.fonts-ready .timer-display .time {
 
 .minutes-presets {
   margin-bottom: 0.5rem;
-}
-
-.action-buttons {
-  display: none;
 }
 
 .preset-btn {
@@ -731,16 +646,11 @@ html.fonts-ready .timer-display .time {
   transform: translateY(2px) scale(0.98);
 }
 
-#startBtn:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-  transform: none;
-}
-
 #resetBtn {
   background-color: #8b4513;
   color: white;
   min-width: 120px;
+  position: static;
 }
 
 #resetBtn:focus-visible {
@@ -750,6 +660,8 @@ html.fonts-ready .timer-display .time {
 
 #resetBtn:hover {
   background-color: #6b3410;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 #accelerateBtn {
@@ -760,12 +672,10 @@ html.fonts-ready .timer-display .time {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  position: relative;
+  /* Static so the progress fill stays anchored to the fixed bar, as before. */
+  position: static;
   overflow: hidden;
-  transition:
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast),
-    background-color var(--transition-fast);
+  transition: all 0.2s;
   --progress-width: 0%;
 }
 
@@ -796,9 +706,9 @@ html.fonts-ready .timer-display .time {
 }
 
 #accelerateBtn:hover {
-  background-color: #3c513c;
+  background-color: var(--colour-button-secondary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 #accelerateBtn:disabled {
@@ -819,21 +729,10 @@ html.fonts-ready .timer-display .time {
 }
 
 #fullscreenBtn {
-  background-color: var(--colour-button-secondary);
-  color: white;
-  padding: 0.75rem;
-  min-width: auto;
-  position: static;
   opacity: 0.7;
-  transition: opacity var(--transition-fast);
-  height: 48px;
-  width: 48px;
 }
 
 #fullscreenBtn:hover {
-  background-color: #3c513c;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   opacity: 1;
 }
 
@@ -845,8 +744,6 @@ html.fonts-ready .timer-display .time {
 
 .fullscreen-icon {
   display: block;
-  width: 24px;
-  height: 24px;
 }
 
 /* Fullscreen mode adjustments */
@@ -945,20 +842,6 @@ html.fonts-ready .timer-display .time {
   margin-right: 0.5rem;
 }
 
-/* Remove any fixed positioning from the buttons */
-.action-buttons {
-  display: none;
-}
-
-/* Override any fixed positioning */
-#settingsBtn,
-#infoBtn,
-#fullscreenBtn,
-#resetBtn,
-#accelerateBtn {
-  position: static !important;
-}
-
 /* Settings Dialog */
 .settings-dialog {
   border: 1px solid var(--colour-border);
@@ -1006,28 +889,6 @@ html.fonts-ready .timer-display .time {
   color: var(--colour-text-muted);
   text-align: center;
   font-weight: normal;
-}
-
-.settings-groups-container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-}
-
-@media (max-width: 640px) {
-  .settings-groups-container {
-    grid-template-columns: 1fr;
-  }
-
-  .settings-dialog {
-    width: 95vw;
-  }
-}
-
-.settings-column {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
 }
 
 .dialog-content h3 {
@@ -1117,10 +978,6 @@ html.fonts-ready .timer-display .time {
   gap: 0.5rem;
 }
 
-body[data-pace='blitz'] .info-value {
-  color: #f44336;
-}
-
 .setting-group select {
   background: #2a2a2a;
   border: 1px solid #444;
@@ -1149,26 +1006,6 @@ body[data-pace='blitz'] .info-value {
 .setting-group input[type='number']:focus {
   border-color: #4caf50;
   outline: none;
-}
-
-.playlist-links {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 0.5rem;
-}
-
-.restore-link {
-  color: #4caf50;
-  text-decoration: none;
-  font-size: 0.9rem;
-  opacity: 0.8;
-  transition: all 0.2s;
-}
-
-.restore-link:hover {
-  opacity: 1;
-  text-decoration: underline;
 }
 
 .volume-control {
@@ -1207,52 +1044,6 @@ body[data-pace='blitz'] .info-value {
   color: var(--colour-text-muted);
 }
 
-.dialog-buttons {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-.dialog-buttons button {
-  flex: 1;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dialog-buttons button.primary-btn {
-  background: var(--colour-accent);
-  color: white;
-}
-
-.dialog-buttons button:not(.primary-btn) {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.dialog-buttons button {
-  transition:
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast),
-    background-color var(--transition-fast);
-}
-
-.dialog-buttons button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-}
-
-.dialog-buttons button.primary-btn:hover {
-  background: var(--colour-accent-hover);
-}
-
-.dialog-buttons button:not(.primary-btn):hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
 #closeSettings {
   background-color: #444;
   color: white;
@@ -1260,14 +1051,6 @@ body[data-pace='blitz'] .info-value {
 
 #closeSettings:hover {
   background-color: #555;
-}
-
-.clocktower-settings {
-  display: none;
-}
-
-.clocktower-settings.visible {
-  display: block;
 }
 
 .character-counts-wrapper {
@@ -1400,24 +1183,39 @@ body[data-pace='blitz'] .info-value {
 }
 
 .dialog-buttons button {
-  background-color: #4a4a4a;
-  color: white;
+  flex: 1;
   padding: 0.75rem 1.5rem;
+  border: none;
   border-radius: 4px;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 1rem;
-  flex: 1;
+  background-color: #4a4a4a;
+  color: white;
 }
 
 .dialog-buttons button.primary-btn {
   background-color: #4caf50;
+  color: white;
+}
+
+.dialog-buttons button:not(.primary-btn) {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .dialog-buttons button:hover {
   background-color: #45a049;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-buttons button.primary-btn:hover {
+  background: var(--colour-accent-hover);
+}
+
+.dialog-buttons button:not(.primary-btn):hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .clocktower-presets button.skipped-day {
@@ -1446,18 +1244,6 @@ body[data-pace='blitz'] .info-value {
 .clocktower-presets button.current-day {
   box-shadow: 0 0 0 2px var(--colour-gold);
   animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.2);
-  }
-  100% {
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.5);
-  }
 }
 
 .character-type {
@@ -1555,12 +1341,6 @@ body[data-pace='blitz'] .info-value {
   display: flex;
 }
 
-/* Hide regular presets when clocktower mode is active */
-.clocktower-settings.visible ~ #regularPresets,
-.clocktower-settings.visible ~ #regularSecondsPresets {
-  display: none;
-}
-
 .clocktower-presets {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1612,19 +1392,8 @@ body[data-pace='blitz'] .info-value {
   line-height: 1;
 }
 
-/* Remove the old selector that was causing issues */
-.clocktower-settings ~ #regularPresets,
-.clocktower-settings ~ #regularSecondsPresets {
-  display: none;
-}
-
-/* Regular timer controls */
+/* Minute and second presets stay in the page for timer setup, but are not shown. */
 #regularTimerControls {
-  display: none;
-}
-
-/* Hide regular controls when clocktower mode is active */
-body:has(.clocktower-settings.visible) #regularTimerControls {
   display: none;
 }
 
@@ -1633,10 +1402,6 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
-}
-
-:fullscreen .action-buttons {
-  margin-top: 0.5rem;
 }
 
 /* Info Dialog */
@@ -1822,26 +1587,6 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   transform: translateY(-2px);
 }
 
-/* Responsive layout for info dialog */
-@media (max-width: 640px) {
-  .info-dialog {
-    max-width: 95vw;
-  }
-
-  .info-dialog-main {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .qr-code-column {
-    align-items: center;
-  }
-
-  .qr-code-container {
-    max-width: 250px;
-  }
-}
-
 .game-pace-select {
   width: 100%;
   padding: 0.5rem;
@@ -1895,13 +1640,6 @@ body:has(.clocktower-settings.visible) #regularTimerControls {
   color: rgba(255, 255, 255, 0.8);
   font-family: 'Azeret Mono', ui-monospace, 'Cascadia Mono', monospace;
   font-weight: 600;
-}
-
-.game-pace-display {
-  font-size: 1rem;
-  color: var(--colour-gold);
-  text-align: center;
-  margin-top: 0.25rem;
 }
 
 .youtube-player-container:hover {
@@ -1997,6 +1735,7 @@ button:disabled {
   background-color: #8b4513;
   border-color: #654321;
   color: rgba(255, 255, 255, 0.7);
+  transform: none;
 }
 
 .restore-link {
@@ -2006,6 +1745,7 @@ button:disabled {
   font-size: 0.8rem;
   color: #4caf50;
   text-decoration: none;
+  opacity: 0.8;
   transition:
     color 0.2s ease,
     opacity 0.2s ease;
@@ -2016,6 +1756,7 @@ button:disabled {
 .restore-link:hover {
   color: #81c784;
   text-decoration: underline;
+  opacity: 1;
 }
 
 .restore-link.disabled {
@@ -2023,32 +1764,6 @@ button:disabled {
   cursor: not-allowed;
   color: #666;
   pointer-events: none;
-}
-
-.playlist-links {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: -0.5rem;
-  margin-bottom: 1rem;
-  padding-right: 0.5rem;
-}
-
-.playlist-link {
-  font-size: 0.8rem;
-  color: #4caf50;
-  text-decoration: none;
-  transition:
-    color 0.2s ease,
-    opacity 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.playlist-link:hover {
-  color: #81c784;
-  text-decoration: underline;
 }
 
 .playlist-link.disabled {
@@ -2134,13 +1849,6 @@ button:disabled {
   border-radius: var(--radius-md);
 }
 
-/* Add spacing between setting groups in the same column */
-.settings-column {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
 /* Restore playlist badge */
 .playlist-badge {
   position: absolute;
@@ -2174,11 +1882,12 @@ button:disabled {
 /* Playlist links styling */
 .playlist-links {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   justify-content: flex-end;
   margin-top: -0.5rem;
   margin-bottom: 0.75rem;
-  padding-right: 0.5rem;
+  padding: 0.5rem;
 }
 
 .playlist-link {
@@ -2262,27 +1971,6 @@ button:disabled {
   padding: 1rem 1.5rem;
   overflow-y: auto;
   max-height: 50vh;
-  /* Add scroll indicators for better UX */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-}
-
-.whats-new-dialog .dialog-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.whats-new-dialog .dialog-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-.whats-new-dialog .dialog-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-}
-
-.whats-new-dialog .dialog-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
 }
 
 .version-info {
@@ -2395,140 +2083,6 @@ button:disabled {
 
 .whats-new-dialog .dialog-buttons .changelog-link:hover {
   text-decoration: underline;
-}
-
-/* TV-friendly optimisations for changelog dialogs */
-@media (max-height: 600px) {
-  .whats-new-dialog,
-  .change-history-dialog {
-    max-height: 95vh;
-    width: 90vw;
-    max-width: 400px;
-  }
-
-  .whats-new-dialog .dialog-header {
-    padding: 0.75rem 1rem 0.5rem 1rem;
-  }
-
-  .whats-new-dialog .dialog-header h2 {
-    font-size: 1.1rem;
-  }
-
-  .whats-new-dialog .dialog-content,
-  .change-history-dialog .dialog-content {
-    padding: 0.75rem 1rem;
-  }
-
-  .whats-new-dialog .dialog-buttons,
-  .change-history-dialog .dialog-footer {
-    padding: 0.5rem 1rem;
-  }
-
-  .changes-container {
-    gap: 0.75rem;
-  }
-
-  .version-separator {
-    margin: 0.25rem 0;
-  }
-
-  .changes-section {
-    margin-bottom: 0.75rem;
-  }
-
-  .changes-section h3 {
-    font-size: 0.9rem;
-    margin-bottom: 0.125rem;
-  }
-
-  .changes-section li {
-    margin-bottom: 0.125rem;
-    font-size: 0.85rem;
-    line-height: 1.2;
-    padding-left: 1rem;
-  }
-
-  .version-info {
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.125rem;
-  }
-
-  .version-number {
-    font-size: 1rem;
-  }
-
-  .version-date {
-    font-size: 0.75rem;
-  }
-
-  .whats-new-dialog .dialog-buttons button {
-    min-height: 1.75rem;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.9rem;
-  }
-}
-
-/* Ultra-compact for very short screens */
-@media (max-height: 480px) {
-  .whats-new-dialog {
-    width: 85vw;
-    max-width: 350px;
-  }
-
-  .whats-new-dialog .dialog-content {
-    max-height: 50vh;
-    padding: 0.5rem 0.75rem;
-  }
-
-  .whats-new-dialog .dialog-header {
-    padding: 0.5rem 0.75rem 0.25rem 0.75rem;
-  }
-
-  .whats-new-dialog .dialog-header h2 {
-    font-size: 1rem;
-  }
-
-  .whats-new-dialog .dialog-buttons {
-    padding: 0.25rem 0.75rem;
-  }
-
-  .whats-new-dialog .dialog-buttons button {
-    min-height: 1.5rem;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.85rem;
-  }
-
-  .version-info {
-    margin-bottom: 0.25rem;
-    padding-bottom: 0.125rem;
-  }
-
-  .version-number {
-    font-size: 0.9rem;
-  }
-
-  .version-date {
-    font-size: 0.7rem;
-  }
-
-  .changes-section h3 {
-    font-size: 0.8rem;
-    margin-bottom: 0.125rem;
-  }
-
-  .changes-section li {
-    font-size: 0.8rem;
-    margin-bottom: 0.125rem;
-    line-height: 1.1;
-  }
-
-  .changes-container {
-    gap: 0.5rem;
-  }
-
-  .version-separator {
-    margin: 0.125rem 0;
-  }
 }
 
 .sound-selection {
@@ -2693,25 +2247,32 @@ button:disabled {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  /* Add scroll indicators for better UX */
+}
+
+.whats-new-dialog .dialog-content,
+.change-history-dialog .dialog-content {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 }
 
+.whats-new-dialog .dialog-content::-webkit-scrollbar,
 .change-history-dialog .dialog-content::-webkit-scrollbar {
   width: 8px;
 }
 
+.whats-new-dialog .dialog-content::-webkit-scrollbar-track,
 .change-history-dialog .dialog-content::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
+.whats-new-dialog .dialog-content::-webkit-scrollbar-thumb,
 .change-history-dialog .dialog-content::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
 }
 
+.whats-new-dialog .dialog-content::-webkit-scrollbar-thumb:hover,
 .change-history-dialog .dialog-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
@@ -2800,77 +2361,6 @@ button:disabled {
   background-color: var(--colour-accent-hover);
 }
 
-/* Optimize for shorter viewports */
-@media (max-height: 700px) {
-  .settings-dialog {
-    max-height: 95vh;
-  }
-
-  .dialog-content {
-    max-height: 85vh;
-  }
-
-  .number-input-group {
-    gap: 0.35rem;
-  }
-
-  .number-input-group button {
-    width: 28px;
-    height: 28px;
-  }
-
-  .sound-selection {
-    gap: 6px;
-  }
-
-  .preview-sound {
-    width: 28px;
-    height: 28px;
-  }
-
-  .settings-column {
-    gap: 0.75rem;
-  }
-
-  .setting-group select,
-  .setting-group input[type='text'],
-  .setting-group input[type='number'] {
-    padding: 0.35rem;
-    font-size: 0.9rem;
-    min-width: 100px;
-  }
-}
-
-/* Additional optimizations for very short viewports */
-@media (max-height: 670px) {
-  .settings-dialog {
-    max-height: 98vh;
-  }
-
-  .dialog-content {
-    padding: 0.5rem;
-    gap: 0.5rem;
-    max-height: 90vh;
-  }
-
-  .setting-group {
-    padding: 0.5rem;
-  }
-
-  .setting-group label {
-    padding: 0.15rem;
-    gap: 0.5rem;
-  }
-
-  .dialog-buttons {
-    margin-top: 0.35rem;
-  }
-
-  .dialog-buttons button {
-    padding: 0.4rem 0.75rem;
-  }
-}
-
 /* Settings Tabs */
 .settings-tabs {
   display: flex;
@@ -2922,55 +2412,6 @@ button:disabled {
 
 .settings-panel.active {
   display: flex;
-}
-
-/* Adjust media queries for tabs */
-@media (max-height: 700px) {
-  .settings-dialog {
-    max-height: 95vh;
-  }
-
-  .dialog-content {
-    max-height: 85vh;
-  }
-
-  .settings-tabs {
-    padding-bottom: 0.35rem;
-    margin-bottom: 0.35rem;
-  }
-
-  .tab-button {
-    padding: 0.35rem 0.75rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-height: 670px) {
-  .settings-dialog {
-    max-height: 98vh;
-  }
-
-  .dialog-content {
-    padding: 0.5rem;
-    gap: 0.5rem;
-    max-height: 90vh;
-  }
-
-  .settings-tabs {
-    padding-bottom: 0.25rem;
-    margin-bottom: 0.25rem;
-  }
-}
-
-/* Add specific styles for small viewports */
-@media (max-height: 700px) {
-  .setting-group {
-    transform: translateZ(0); /* Force a new stacking context */
-  }
-
-  .setting-group select {
-    transform: translateZ(0); /* Force a new stacking context */
-  }
 }
 
 .bottom-container {
@@ -3028,38 +2469,6 @@ button:disabled {
   justify-content: center;
 }
 
-#resetBtn {
-  background-color: #8b4513;
-  min-width: 120px;
-  position: static;
-}
-
-#resetBtn:hover {
-  background-color: #6b3410;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-#accelerateBtn {
-  background-color: #2c3e2c;
-  min-width: 160px;
-  position: static;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.2s;
-  --progress-width: 0%;
-}
-
-#accelerateBtn:hover {
-  background-color: var(--colour-button-secondary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-}
-
 /* Keyboard Shortcuts Styles */
 .shortcuts-container {
   display: grid;
@@ -3071,17 +2480,6 @@ button:disabled {
 /* Make the 6th shortcut (Open Info) span both columns */
 .shortcut-item:nth-child(6) {
   grid-column: 1 / -1;
-}
-
-/* Fallback to single column on very small screens */
-@media (max-width: 400px) {
-  .shortcuts-container {
-    grid-template-columns: 1fr;
-  }
-
-  .shortcut-item:nth-child(6) {
-    grid-column: 1;
-  }
 }
 
 .shortcut-item {
@@ -3145,6 +2543,7 @@ button:disabled {
   animation: shake 0.5s ease-in-out;
 }
 
+/* Opacity pulse shared by the current-day preset and shortcut recording. */
 @keyframes pulse {
   0%,
   100% {
@@ -3198,4 +2597,257 @@ button:disabled {
 
 .settings-panel[data-panel='shortcuts'] .setting-group {
   gap: 0.75rem;
+}
+
+/* Responsive adjustments.
+   Shorter height queries follow the taller ones, so both can match and the
+   shorter query wins. Change History keeps its own size: the short-screen
+   What's New rules used to be followed by Change History's base rules, which
+   cancelled the shared dialog sizing. */
+@media (max-width: 640px) {
+  .settings-dialog {
+    width: 95vw;
+  }
+
+  .info-dialog {
+    max-width: 95vw;
+  }
+
+  .info-dialog-main {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .qr-code-column {
+    align-items: center;
+  }
+
+  .qr-code-container {
+    max-width: 250px;
+  }
+}
+
+@media (max-height: 600px) {
+  .whats-new-dialog {
+    max-height: 95vh;
+    width: 90vw;
+    max-width: 400px;
+  }
+
+  .whats-new-dialog .dialog-header {
+    padding: 0.75rem 1rem 0.5rem 1rem;
+  }
+
+  .whats-new-dialog .dialog-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .whats-new-dialog .dialog-content {
+    padding: 0.75rem 1rem;
+  }
+
+  .whats-new-dialog .dialog-buttons {
+    padding: 0.5rem 1rem;
+  }
+
+  .changes-container {
+    gap: 0.75rem;
+  }
+
+  .version-separator {
+    margin: 0.25rem 0;
+  }
+
+  .changes-section {
+    margin-bottom: 0.75rem;
+  }
+
+  .changes-section h3 {
+    font-size: 0.9rem;
+    margin-bottom: 0.125rem;
+  }
+
+  .changes-section li {
+    margin-bottom: 0.125rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    padding-left: 1rem;
+  }
+
+  .version-info {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.125rem;
+  }
+
+  .version-number {
+    font-size: 1rem;
+  }
+
+  .version-date {
+    font-size: 0.75rem;
+  }
+
+  .whats-new-dialog .dialog-buttons button {
+    min-height: 1.75rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-height: 480px) {
+  .whats-new-dialog {
+    width: 85vw;
+    max-width: 350px;
+  }
+
+  .whats-new-dialog .dialog-content {
+    max-height: 50vh;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .whats-new-dialog .dialog-header {
+    padding: 0.5rem 0.75rem 0.25rem 0.75rem;
+  }
+
+  .whats-new-dialog .dialog-header h2 {
+    font-size: 1rem;
+  }
+
+  .whats-new-dialog .dialog-buttons {
+    padding: 0.25rem 0.75rem;
+  }
+
+  .whats-new-dialog .dialog-buttons button {
+    min-height: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .version-info {
+    margin-bottom: 0.25rem;
+    padding-bottom: 0.125rem;
+  }
+
+  .version-number {
+    font-size: 0.9rem;
+  }
+
+  .version-date {
+    font-size: 0.7rem;
+  }
+
+  .changes-section h3 {
+    font-size: 0.8rem;
+    margin-bottom: 0.125rem;
+  }
+
+  .changes-section li {
+    font-size: 0.8rem;
+    margin-bottom: 0.125rem;
+    line-height: 1.1;
+  }
+
+  .changes-container {
+    gap: 0.5rem;
+  }
+
+  .version-separator {
+    margin: 0.125rem 0;
+  }
+}
+
+@media (max-height: 700px) {
+  .settings-dialog {
+    max-height: 95vh;
+  }
+
+  .dialog-content {
+    max-height: 85vh;
+  }
+
+  .number-input-group {
+    gap: 0.35rem;
+  }
+
+  .number-input-group button {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sound-selection {
+    gap: 6px;
+  }
+
+  .preview-sound {
+    width: 28px;
+    height: 28px;
+  }
+
+  .setting-group select,
+  .setting-group input[type='text'],
+  .setting-group input[type='number'] {
+    padding: 0.35rem;
+    font-size: 0.9rem;
+    min-width: 100px;
+  }
+
+  .settings-tabs {
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .tab-button {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  /* Keeps short-viewport selects in their own layer. */
+  .setting-group,
+  .setting-group select {
+    transform: translateZ(0);
+  }
+}
+
+@media (max-height: 670px) {
+  .settings-dialog {
+    max-height: 98vh;
+  }
+
+  .dialog-content {
+    padding: 0.5rem;
+    gap: 0.5rem;
+    max-height: 90vh;
+  }
+
+  .setting-group {
+    padding: 0.5rem;
+  }
+
+  .setting-group label {
+    padding: 0.15rem;
+    gap: 0.5rem;
+  }
+
+  .dialog-buttons {
+    margin-top: 0.35rem;
+  }
+
+  .dialog-buttons button {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .settings-tabs {
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .shortcuts-container {
+    grid-template-columns: 1fr;
+  }
+
+  .shortcut-item:nth-child(6) {
+    grid-column: 1;
+  }
 }
