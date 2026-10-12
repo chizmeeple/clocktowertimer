@@ -1,0 +1,26 @@
+{
+  // Local companion session service. SQLite is declared with
+  // new_sqlite_classes, which is the supported Durable Object storage
+  // backend. The older new_classes key selects key-value storage and is
+  // not available on the Workers Free plan.
+  "name": "clocktower-companion",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-12",
+  "workers_dev": true,
+  "vars": {
+    "AUTH_TIMEOUT_MS": "5000",
+    "PUBLISH_LIMIT": "30"
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "COMPANION_SESSION", "class_name": "CompanionSession" },
+      { "name": "SESSION_DIRECTORY", "class_name": "SessionDirectory" }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CompanionSession", "SessionDirectory"]
+    }
+  ]
+}

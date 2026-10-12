@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.3';
+export const APP_VERSION = '1.2.4';
 
 export const CHANGELOG = {
+  '1.2.4': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'A local companion session service can mint a session code and accept public timer snapshots. It is not deployed, and Companion Mode is not available on the timer page yet',
+      ],
+    },
+  },
   '1.2.3': {
     date: '2026-10-12',
     changes: {

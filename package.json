@@ -1,22 +1,29 @@
 {
   "name": "clocktowertimer",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Clock Tower Timer Application",
   "scripts": {
     "stamp-release": "node scripts/release-assets.mjs --write",
     "test": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress run'",
     "test:open": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress open'",
-    "test:unit": "node --test test/*.test.mjs"
+    "test:unit": "node --test test/*.test.mjs",
+    "test:worker": "vitest run --config worker/vitest.config.js",
+    "dev:worker": "wrangler dev --config worker/wrangler.jsonc"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.0",
     "cypress": "^16.1.0",
     "serve": "^14.2.6",
-    "start-server-and-test": "^3.0.0"
+    "start-server-and-test": "^3.0.0",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.149.0"
   },
   "overrides": {
     "compression": "^1.8.2"
   },
   "allowScripts": {
-    "cypress@16.1.1": true
+    "cypress@16.1.1": true,
+    "esbuild@0.28.2": true,
+    "workerd@1.20261006.1": true
   }
 }
