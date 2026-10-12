@@ -424,6 +424,25 @@ html.fonts-ready .timer-display .time {
   margin-bottom: -0.5em;
 }
 
+/* Night: dim the countdown only. Wake Up, player counts, the day number,
+   focus rings, and the other controls keep their daytime styles.
+   #9a8f6a stays above the large-text contrast minimum, including the
+   existing wake-up pulse. No extra animation. */
+body.game--night .timer-display .time,
+body.game--night .timer-display.wake-up-countdown .time {
+  color: #9a8f6a;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+body.game--night .timer-display.wake-up-countdown::before {
+  color: #b7b1a4;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+body.game--night .clocktower-presets button.current-day {
+  box-shadow: 0 0 0 2px #9a8f6a;
+}
+
 .nominations-countdown {
   font-size: min(4vw, 1.5rem);
   color: var(--colour-text);

@@ -202,7 +202,30 @@ function blankProgress() {
     pace: DEFAULT_PACE,
     usedPresetByDay: {},
     hiddenPresetDays: [],
+    // True only after Start New Game, until the first daytime countdown.
+    // A fresh page has the same empty phase, so this is what makes Night 1
+    // look different from the pre-game screen. It is not a gameplay phase.
+    awaitingFirstDay: false,
   };
+}
+
+// Night styling for the inactive countdown. Dusk and wake-up share it.
+// A running or paused day countdown stays in the daytime appearance.
+// Reset Day (time remaining, but marked reset) uses the daytime appearance.
+export function isNightAppearance({
+  phase = '',
+  countdownKind = null,
+  isRunning = false,
+  timeLeft = 0,
+  hasReset = false,
+  awaitingFirstDay = false,
+} = {}) {
+  if (phase === 'dawn' || phase === 'dusk' || countdownKind === 'wake-up') {
+    return true;
+  }
+  if (isRunning) return false;
+  if (timeLeft > 0 && !hasReset) return false;
+  return Boolean(awaitingFirstDay);
 }
 
 export function createGameState() {
@@ -215,6 +238,7 @@ export function createGameState() {
       pace: progress.pace,
       usedPresetByDay: { ...progress.usedPresetByDay },
       hiddenPresetDays: [...progress.hiddenPresetDays],
+      awaitingFirstDay: progress.awaitingFirstDay,
     };
   }
 
@@ -226,6 +250,11 @@ export function createGameState() {
     getPace: () => progress.pace,
     getUsedPresetByDay: () => ({ ...progress.usedPresetByDay }),
     getHiddenPresetDays: () => [...progress.hiddenPresetDays],
+    isAwaitingFirstDay: () => progress.awaitingFirstDay,
+
+    clearAwaitingFirstDay() {
+      progress.awaitingFirstDay = false;
+    },
 
     setCurrentDay(day) {
       progress.currentDay = day;
@@ -307,6 +336,7 @@ export function createGameState() {
       progress = blankProgress();
       progress.currentDay = 1;
       progress.pace = pace;
+      progress.awaitingFirstDay = true;
     },
   };
 }

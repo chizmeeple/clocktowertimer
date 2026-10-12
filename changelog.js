@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.1.3';
+export const APP_VERSION = '1.2.0';
 
 export const CHANGELOG = {
+  '1.2.0': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'The countdown dims while the town is asleep: before the first day, after a day ends, and during the wake-up countdown. A running or paused day keeps the usual gold countdown. Wake Up and the player counts stay bright',
+      ],
+    },
+  },
   '1.1.3': {
     date: '2026-10-12',
     changes: {
