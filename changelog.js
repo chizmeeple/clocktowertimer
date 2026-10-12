@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.1.1';
+export const APP_VERSION = '1.1.2';
 
 export const CHANGELOG = {
+  '1.1.2': {
+    date: '2026-10-11',
+    changes: {
+      improvements: [
+        'The timer, controls, and dialogs keep their layout on phones, tablets, and short screens',
+      ],
+    },
+  },
   '1.1.1': {
     date: '2026-10-11',
     changes: {
