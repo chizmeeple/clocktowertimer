@@ -151,10 +151,11 @@ export function visitGameplay({
   harness = true,
   randomValue = 0,
   audio = null,
+  path = '/',
   onBeforeLoad,
 } = {}) {
   ignoreExternalRequests();
-  cy.visit('/', {
+  cy.visit(path, {
     onBeforeLoad(win) {
       showTimerDigits(win);
       seedSettings(win, settings);

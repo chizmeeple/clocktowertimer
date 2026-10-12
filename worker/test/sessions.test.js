@@ -51,11 +51,19 @@ function runningDay(remainingMs, traveller = 0) {
 function listen(ws) {
   const queued = [];
   const waiting = [];
+  const acks = [];
+  const ackWaiting = [];
   ws.addEventListener('message', (event) => {
     const text = typeof event.data === 'string'
       ? event.data
       : new TextDecoder().decode(event.data);
     const value = JSON.parse(text);
+    if (value.type === 'published') {
+      const resolve = ackWaiting.shift();
+      if (resolve) resolve(value);
+      else acks.push(value);
+      return;
+    }
     const resolve = waiting.shift();
     if (resolve) resolve(value);
     else queued.push(value);
@@ -65,13 +73,33 @@ function listen(ws) {
     async next(timeoutMs = 2000) {
       if (queued.length > 0) return queued.shift();
       return new Promise((resolve, reject) => {
+        let settle;
         const timer = setTimeout(() => {
+          const index = waiting.indexOf(settle);
+          if (index >= 0) waiting.splice(index, 1);
           reject(new Error('timed out waiting for a socket message'));
         }, timeoutMs);
-        waiting.push((value) => {
+        settle = (value) => {
           clearTimeout(timer);
           resolve(value);
-        });
+        };
+        waiting.push(settle);
+      });
+    },
+    ack(timeoutMs = 2000) {
+      if (acks.length > 0) return Promise.resolve(acks.shift());
+      return new Promise((resolve, reject) => {
+        let settle;
+        const timer = setTimeout(() => {
+          const index = ackWaiting.indexOf(settle);
+          if (index >= 0) ackWaiting.splice(index, 1);
+          reject(new Error('timed out waiting for a publish acknowledgement'));
+        }, timeoutMs);
+        settle = (value) => {
+          clearTimeout(timer);
+          resolve(value);
+        };
+        ackWaiting.push(settle);
       });
     },
   };
@@ -580,6 +608,116 @@ describe('companion sessions', () => {
     const blocked = await postSession();
     expect(blocked.response.status).toBe(429);
     expect(blocked.body).toEqual({ error: 'create-limit' });
+  });
+
+  it('acknowledges an accepted publish and stays quiet when it is rejected', async () => {
+    const { body } = await postSession();
+    const storyteller = await connectStoryteller(body.code, body.writeToken);
+    const reader = await connectReader(body.code);
+    storyteller.ws.send(JSON.stringify({
+      type: 'publish',
+      state: runningDay(40_000),
+      capturedAt: 1_000,
+      upstreamOffsetMs: 25,
+    }));
+    const snapshot = await reader.inbox.next();
+    expectSnapshot(snapshot, { rev: 1, remainingMs: 40_000 });
+    expect(snapshot.capturedAt).toBe(1_000);
+    expect(snapshot.upstreamOffsetMs).toBe(25);
+    expectSnapshot(await storyteller.inbox.next(), { rev: 1, remainingMs: 40_000 });
+    const ack = await storyteller.inbox.ack();
+    expect(ack).toMatchObject({ type: 'published', rev: 1 });
+    expect(ack.serverTime).toBe(snapshot.serverTime);
+
+    storyteller.ws.send(JSON.stringify({ type: 'publish', state: { v: 1 } }));
+    expect(await storyteller.inbox.next()).toMatchObject({
+      type: 'error',
+      reason: 'invalid-state',
+    });
+    storyteller.ws.send(JSON.stringify({
+      type: 'publish',
+      state: runningDay(30_000),
+      capturedAt: 500,
+    }));
+    expect(await storyteller.inbox.next()).toEqual({
+      type: 'error',
+      reason: 'stale-publish',
+    });
+    const late = await connectReader(body.code);
+    expectSnapshot(late.first, { rev: 1, remainingMs: 40_000 });
+  });
+
+  it('answers a ping with the worker clock', async () => {
+    const { body } = await postSession();
+    const reader = await connectReader(body.code);
+    const before = Date.now();
+    reader.ws.send(JSON.stringify({ type: 'ping', id: 'sample-1' }));
+    const pong = await reader.inbox.next();
+    expect(pong.type).toBe('pong');
+    expect(pong.id).toBe('sample-1');
+    expect(pong.serverTime).toBeGreaterThanOrEqual(before);
+    expect(pong.serverTime).toBeLessThanOrEqual(Date.now() + 50);
+  });
+
+  it('expires each unauthenticated socket on its own deadline', async () => {
+    const { body } = await postSession();
+    const storyteller = await connectStoryteller(body.code, body.writeToken);
+    const reader = await connectReader(body.code);
+    const first = accept(await openSocket(`/sessions/${body.code}/storyteller`));
+    const second = accept(await openSocket(`/sessions/${body.code}/storyteller`));
+    const stub = await sessionStub(body.code);
+    const now = Date.now();
+    await runInDurableObject(stub, (_instance, state) => {
+      const pending = state.getWebSockets('storyteller').filter((ws) => {
+        return !ws.deserializeAttachment()?.authenticated;
+      });
+      pending[0].serializeAttachment({
+        ...pending[0].deserializeAttachment(),
+        authDeadline: now - 1000,
+      });
+      pending[1].serializeAttachment({
+        ...pending[1].deserializeAttachment(),
+        authDeadline: now + 60_000,
+      });
+    });
+
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+    const [firstMessage, secondMessage] = await Promise.all([
+      first.inbox.next(1000).then((message) => message, () => null),
+      second.inbox.next(1000).then((message) => message, () => null),
+    ]);
+    const closed = [firstMessage, secondMessage].filter(Boolean);
+    expect(closed).toEqual([{ type: 'error', reason: 'auth-timeout' }]);
+    const survivor = firstMessage ? second : first;
+    const alarmAfterFirst = await runInDurableObject(stub, (_instance, state) =>
+      state.storage.getAlarm()
+    );
+    expect(alarmAfterFirst).toBeGreaterThan(now + 30_000);
+    expect(alarmAfterFirst).toBeLessThan(now + 90_000);
+
+    await runInDurableObject(stub, (_instance, state) => {
+      const pending = state.getWebSockets('storyteller').filter((ws) => {
+        return !ws.deserializeAttachment()?.authenticated;
+      });
+      expect(pending).toHaveLength(1);
+      pending[0].serializeAttachment({
+        ...pending[0].deserializeAttachment(),
+        authDeadline: Date.now() - 1000,
+      });
+    });
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+    expect(await survivor.inbox.next()).toEqual({ type: 'error', reason: 'auth-timeout' });
+
+    storyteller.ws.send(JSON.stringify({ type: 'publish', state: runningDay(12_000) }));
+    expectSnapshot(await reader.inbox.next(), { rev: 1, remainingMs: 12_000 });
+
+    await evictDurableObject(stub);
+    const restored = await runInDurableObject(stub, async (_instance, state) => {
+      return state.storage.getAlarm();
+    });
+    expect(restored).toBeGreaterThan(Date.now() + 60 * 60 * 1000);
+    const again = await connectReader(body.code);
+    expectSnapshot(again.first, { rev: 1, remainingMs: 12_000 });
   });
 
   it('does not list sessions', async () => {

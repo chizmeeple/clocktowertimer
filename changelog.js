@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.4';
+export const APP_VERSION = '1.2.5';
 
 export const CHANGELOG = {
+  '1.2.5': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'A local development page can follow the public countdown through a worker on this machine. Companion Mode is not on the public timer, and the service is not deployed',
+      ],
+    },
+  },
   '1.2.4': {
     date: '2026-10-12',
     changes: {

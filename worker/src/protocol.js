@@ -20,10 +20,16 @@ export const CREATE_WINDOW_MS = 60_000;
 
 export const AUTH_TIMEOUT_MS = 5_000;
 
-const CLIENT_KEYS = {
-  auth: ['type', 'token'],
-  publish: ['type', 'state'],
-  end: ['type'],
+// Timing fields sit beside the public snapshot. They are optional so a
+// publish that only has `state` is still accepted.
+const CLIENT_MESSAGES = {
+  auth: { required: ['type', 'token'], optional: [] },
+  publish: {
+    required: ['type', 'state'],
+    optional: ['capturedAt', 'upstreamOffsetMs'],
+  },
+  end: { required: ['type'], optional: [] },
+  ping: { required: ['type', 'id'], optional: [] },
 };
 
 function isPlainObject(value) {
@@ -45,12 +51,33 @@ export function parseClientMessage(raw) {
   if (!isPlainObject(value) || typeof value.type !== 'string') {
     return { ok: false, reason: 'invalid-message' };
   }
-  const allowed = CLIENT_KEYS[value.type];
-  if (!allowed) return { ok: false, reason: 'invalid-message' };
+  const spec = CLIENT_MESSAGES[value.type];
+  if (!spec) return { ok: false, reason: 'invalid-message' };
   const keys = Object.keys(value);
+  if (spec.required.some((key) => !Object.hasOwn(value, key))) {
+    return { ok: false, reason: 'invalid-message' };
+  }
   if (
-    keys.length !== allowed.length ||
-    allowed.some((key) => !Object.hasOwn(value, key))
+    keys.some(
+      (key) => !spec.required.includes(key) && !spec.optional.includes(key)
+    )
+  ) {
+    return { ok: false, reason: 'invalid-message' };
+  }
+  if (value.type === 'publish') {
+    if ('capturedAt' in value && !Number.isFinite(value.capturedAt)) {
+      return { ok: false, reason: 'invalid-message' };
+    }
+    if (
+      'upstreamOffsetMs' in value &&
+      !Number.isFinite(value.upstreamOffsetMs)
+    ) {
+      return { ok: false, reason: 'invalid-message' };
+    }
+  }
+  if (
+    value.type === 'ping' &&
+    (typeof value.id !== 'string' || value.id.length < 1 || value.id.length > 64)
   ) {
     return { ok: false, reason: 'invalid-message' };
   }

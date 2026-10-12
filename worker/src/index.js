@@ -67,6 +67,8 @@ async function route(request, env) {
   const url = new URL(request.url);
   if (hasTokenInUrl(url)) return json({ error: 'token-in-url' }, 400);
 
+  if (url.pathname === '/health') return json({ ok: true }, 200);
+
   if (url.pathname === '/sessions' && request.method === 'POST') {
     return createSession(env);
   }

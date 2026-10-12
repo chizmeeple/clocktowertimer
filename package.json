@@ -1,6 +1,6 @@
 {
   "name": "clocktowertimer",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Clock Tower Timer Application",
   "scripts": {
     "stamp-release": "node scripts/release-assets.mjs --write",
@@ -8,7 +8,9 @@
     "test:open": "start-server-and-test 'npx serve -l 8006' http://localhost:8006 'cypress open'",
     "test:unit": "node --test test/*.test.mjs",
     "test:worker": "vitest run --config worker/vitest.config.js",
-    "dev:worker": "wrangler dev --config worker/wrangler.jsonc"
+    "test:integration": "start-server-and-test 'npm run dev:worker' http://127.0.0.1:8787/health 'npm run dev:timer' http://127.0.0.1:8006 'cypress run --config specPattern=cypress/integration/**/*.cy.js'",
+    "dev:worker": "WRANGLER_SEND_METRICS=false wrangler dev --config worker/wrangler.jsonc --port 8787 --ip 127.0.0.1",
+    "dev:timer": "node scripts/dev-server.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.4.0",

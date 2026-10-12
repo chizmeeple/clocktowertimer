@@ -38,7 +38,9 @@ export class CompanionSession extends DurableObject {
           last_publish_at INTEGER,
           rev INTEGER NOT NULL,
           state_json TEXT,
-          status TEXT NOT NULL
+          status TEXT NOT NULL,
+          captured_at REAL,
+          upstream_offset_ms REAL
         )
       `);
       this.ctx.storage.sql.exec(`
@@ -46,8 +48,25 @@ export class CompanionSession extends DurableObject {
           at INTEGER NOT NULL
         )
       `);
+      this.#ensureTimingColumns();
+      this.#closeExpiredAuth(Date.now());
+      await this.#schedule();
     });
-    this.#closeExpiredAuth(Date.now());
+  }
+
+  #ensureTimingColumns() {
+    const names = this.ctx.storage.sql
+      .exec('PRAGMA table_info(meta)')
+      .toArray()
+      .map((column) => column.name);
+    if (!names.includes('captured_at')) {
+      this.ctx.storage.sql.exec('ALTER TABLE meta ADD COLUMN captured_at REAL');
+    }
+    if (!names.includes('upstream_offset_ms')) {
+      this.ctx.storage.sql.exec(
+        'ALTER TABLE meta ADD COLUMN upstream_offset_ms REAL'
+      );
+    }
   }
 
   async open({ sessionId, code, tokenHash, createdAt }) {
@@ -128,6 +147,22 @@ export class CompanionSession extends DurableObject {
       this.#send(ws, { type: 'error', reason: 'session-closed' });
       return;
     }
+    if (parsed.value.type === 'ping') {
+      const attachment = ws.deserializeAttachment();
+      const joined =
+        attachment?.role === 'reader' ||
+        (attachment?.role === 'storyteller' && attachment.authenticated);
+      if (!joined) {
+        this.#send(ws, { type: 'error', reason: 'unauthenticated' });
+        return;
+      }
+      this.#send(ws, {
+        type: 'pong',
+        id: parsed.value.id,
+        serverTime: Date.now(),
+      });
+      return;
+    }
     if (parsed.value.type === 'auth') {
       await this.#authenticate(ws, parsed.value.token);
       return;
@@ -143,7 +178,7 @@ export class CompanionSession extends DurableObject {
       await this.#end('ended');
       return;
     }
-    await this.#publish(parsed.value.state);
+    await this.#publish(ws, parsed.value);
   }
 
   async webSocketClose() {}
@@ -205,35 +240,54 @@ export class CompanionSession extends DurableObject {
     await this.#schedule();
   }
 
-  async #publish(state) {
-    const validated = validateCompanionState(state);
+  async #publish(ws, message) {
+    const validated = validateCompanionState(message.state);
     if (!validated.ok) {
-      this.#sendAuthenticated({
+      this.#send(ws, {
         type: 'error',
         reason: 'invalid-state',
         detail: validated.reason,
-      }, { readers: false });
+      });
+      return;
+    }
+    const meta = this.#meta();
+    const capturedAt = Number.isFinite(message.capturedAt) ? message.capturedAt : null;
+    const upstreamOffsetMs = Number.isFinite(message.upstreamOffsetMs)
+      ? message.upstreamOffsetMs
+      : null;
+    if (
+      capturedAt != null &&
+      Number.isFinite(meta.captured_at) &&
+      capturedAt < meta.captured_at
+    ) {
+      this.#send(ws, { type: 'error', reason: 'stale-publish' });
       return;
     }
     const now = Date.now();
     if (!this.#takePublishSlot(now)) {
-      this.#sendAuthenticated({ type: 'error', reason: 'rate-limited' }, { readers: false });
+      this.#send(ws, { type: 'error', reason: 'rate-limited' });
       return;
     }
-    const meta = this.#meta();
     const rev = meta.rev + 1;
     this.ctx.storage.sql.exec(
-      `UPDATE meta SET rev = ?, state_json = ?, last_publish_at = ? WHERE id = 1`,
+      `UPDATE meta
+       SET rev = ?, state_json = ?, last_publish_at = ?, captured_at = ?, upstream_offset_ms = ?
+       WHERE id = 1`,
       rev,
       JSON.stringify(validated.value),
-      now
+      now,
+      capturedAt,
+      upstreamOffsetMs
     );
     this.#sendAuthenticated({
       type: 'snapshot',
       rev,
       serverTime: now,
+      capturedAt,
+      upstreamOffsetMs,
       state: validated.value,
     });
+    this.#send(ws, { type: 'published', rev, serverTime: now });
     await this.#schedule();
   }
 
@@ -314,6 +368,10 @@ export class CompanionSession extends DurableObject {
       type: 'snapshot',
       rev: meta.rev,
       serverTime,
+      capturedAt: Number.isFinite(meta.captured_at) ? meta.captured_at : null,
+      upstreamOffsetMs: Number.isFinite(meta.upstream_offset_ms)
+        ? meta.upstream_offset_ms
+        : null,
       state: JSON.parse(meta.state_json),
     };
   }

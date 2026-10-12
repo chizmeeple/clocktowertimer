@@ -14,8 +14,10 @@ function problemText(error) {
  * Lifecycle for one capture function.
  * `capture` reads the current public snapshot. It is called only while
  * publishing is enabled, at one moment per publish.
- * Identical transition snapshots are skipped. A heartbeat always publishes,
- * so a later companion can correct drift even when the phase has not changed.
+ * Identical transition snapshots are skipped after the publisher accepts
+ * them. A throw or a rejected promise does not count as acceptance, so the
+ * same snapshot can be offered again. A heartbeat always publishes, and
+ * `publish(true)` captures a fresh copy even when it matches the last one.
  */
 export function createCompanionPublishing({
   capture,
@@ -43,7 +45,7 @@ export function createCompanionPublishing({
     }
   }
 
-  function emit(heartbeat) {
+  function emit(heartbeat, force) {
     if (publisher === null) return;
 
     let snapshot;
@@ -61,23 +63,26 @@ export function createCompanionPublishing({
     }
 
     const encoded = JSON.stringify(validated.value);
-    if (!heartbeat && encoded === lastPayload) return;
+    if (!heartbeat && !force && encoded === lastPayload) return;
 
     try {
       const result = publisher(validated.value);
       lastPayload = encoded;
       lastProblem = null;
       if (result && typeof result.then === 'function') {
-        result.then(null, (error) => report(error));
+        result.then(null, (error) => {
+          if (lastPayload === encoded) lastPayload = null;
+          report(error);
+        });
       }
     } catch (error) {
       report(error);
     }
   }
 
-  function safeEmit(heartbeat) {
+  function safeEmit(heartbeat, force) {
     try {
-      emit(heartbeat);
+      emit(heartbeat, force);
     } catch (error) {
       report(error);
     }
@@ -109,8 +114,8 @@ export function createCompanionPublishing({
     },
     enable,
     disable,
-    publish() {
-      safeEmit(false);
+    publish(force = false) {
+      safeEmit(false, force === true);
     },
   };
 }
@@ -137,6 +142,6 @@ export function isCompanionPublishingEnabled() {
   return publishing?.enabled === true;
 }
 
-export function publishCompanionSnapshot() {
-  publishing?.publish();
+export function publishCompanionSnapshot(force = false) {
+  publishing?.publish(force === true);
 }

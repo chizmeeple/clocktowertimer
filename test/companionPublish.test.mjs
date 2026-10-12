@@ -169,12 +169,32 @@ describe('companion publishing', () => {
   });
 
   it('handles a publisher that returns a rejected promise', async () => {
+    let calls = 0;
     const { publishing, warnings } = harness();
-    publishing.enable(() => Promise.reject(new Error('publisher rejected')));
+    publishing.enable(() => {
+      calls += 1;
+      return Promise.reject(new Error('publisher rejected'));
+    });
     await Promise.resolve();
     assert.equal(warnings.length, 1);
     assert.equal(warnings[0].error.message, 'publisher rejected');
     assert.equal(publishing.enabled, true);
+
+    publishing.publish();
+    await Promise.resolve();
+    assert.equal(calls, 2);
+  });
+
+  it('sends a fresh copy when asked, even if the snapshot matches', () => {
+    const { published, publishing } = harness();
+    publishing.enable((snapshot) => {
+      published.push(snapshot);
+    });
+    publishing.publish();
+    assert.equal(published.length, 1);
+    publishing.publish(true);
+    assert.equal(published.length, 2);
+    assert.deepEqual(published[0], published[1]);
   });
 
   it('leaves an enabled publisher in place when enable is given no function', () => {

@@ -24,6 +24,7 @@ import {
   publishCompanionSnapshot,
 } from './companionPublish.js';
 import { projectCompanionState } from './companionState.js';
+import { mountCompanionDev } from './companionDev.js';
 
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
@@ -1090,6 +1091,8 @@ bindCompanionCapture(() => {
     travellerCount,
   });
 });
+
+mountCompanionDev();
 
 /** Maps shortcut input element ids to keyboardShortcuts keys */
 const SHORTCUT_INPUT_ID_TO_ACTION = {
