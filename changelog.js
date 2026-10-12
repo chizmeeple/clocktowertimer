@@ -15,6 +15,7 @@ export const CHANGELOG = {
         'Pulsing animations stay still when reduced motion is requested',
         'Settings headings, the selected day, the dawn pace, traveller names, and the team labels are easier to read. Wake Up stays bright green, with heavier type so its lettering meets the large-text contrast requirement, and Blitz red stays recognisable, including the pace label at dusk',
         'Skipped-day checks in the test suite advance the timer directly, and Node tests use one command locally and in CI',
+        'Cypress browser tests run in the installed Google Chrome, locally and in CI',
       ],
     },
   },

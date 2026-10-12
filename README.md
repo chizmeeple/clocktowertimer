@@ -112,12 +112,16 @@ local development does not need a build. While you are editing the current
 version, those URLs stay the same, and a browser may reuse a cached module
 until you hard-refresh or change `APP_VERSION`.
 
-Install dependencies, then run the checks you need. `npm test` and
-`npm run test:open` start a static server on port 8006, wait until it
-responds, and stop it when Cypress finishes. `npm run test:unit` does not
-need that server. `npm run stamp-release` writes the current version into the
-entry page and release manifest; use it only when preparing or updating a
-release, not during ordinary testing.
+Install dependencies, then run the checks you need. Cypress uses the
+installed Google Chrome browser by default, so Chrome must be installed for
+the browser tests. `npm test` starts a static server on port 8006, waits
+until it responds, runs the complete Cypress suite, and stops the server when
+Cypress finishes. `npm run test:open` starts the same server and launches
+interactive Cypress. `npm run test:unit` does not need that server. To use
+another supported browser, pass `--browser` to Cypress, which overrides the
+default. `npm run stamp-release` writes the current version into the entry
+page and release manifest; use it only when preparing or updating a release,
+not during ordinary testing.
 
 ```bash
 npm ci
