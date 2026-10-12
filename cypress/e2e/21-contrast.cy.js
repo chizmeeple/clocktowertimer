@@ -7,6 +7,7 @@ import {
 } from '../support/gameplay.js';
 import {
   composite,
+  contrastOf,
   contrastRatio,
   isLargeText,
   parseColor,
@@ -114,6 +115,20 @@ describe('Colour contrast', () => {
     expectContrast('#characterCounts .character-type:nth-child(1) .label', 4.5);
     expectContrast('#characterCounts .character-type:nth-child(3) .label', 4.5);
     expectContrast('.day-display > span', 3, { large: true });
+    expectContrast('.day-display .pace-indicator', 4.5);
+    expectContrast('#currentTime', 4.5);
+    expectContrast('#clocktowerPresets .clocktower-btn:not(.active) .time', 4.5);
+    expectContrast('#clocktowerPresets .clocktower-btn:not(.active) .day', 4.5);
+    cy.get('.day-display').should(($el) => {
+      const header = $el[0].ownerDocument.defaultView.getComputedStyle(
+        $el[0],
+        '::before'
+      );
+      expect(
+        contrastOf(header.color, header.backgroundColor),
+        'day header contrast'
+      ).to.be.at.least(4.5);
+    });
 
     cy.get('#startBtn').click();
     cy.get('.timer-display').should('have.class', 'wake-up-countdown');

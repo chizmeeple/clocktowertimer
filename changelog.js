@@ -6,7 +6,7 @@ export const CHANGELOG = {
     date: '2026-10-12',
     changes: {
       improvements: [
-        'The countdown dims while the town is asleep: before the first day, after a day ends, and during the wake-up countdown. A running or paused day keeps the usual gold countdown. Wake Up and the player counts stay bright',
+        'Before the first day, after a day ends, and during the wake-up countdown, the timer panel, day card, countdown, and day presets shift to a cooler, darker night appearance. A running or paused day keeps the usual warm colours. Wake Up and the player counts stay bright',
       ],
     },
   },

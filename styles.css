@@ -424,25 +424,6 @@ html.fonts-ready .timer-display .time {
   margin-bottom: -0.5em;
 }
 
-/* Night: dim the countdown only. Wake Up, player counts, the day number,
-   focus rings, and the other controls keep their daytime styles.
-   #9a8f6a stays above the large-text contrast minimum, including the
-   existing wake-up pulse. No extra animation. */
-body.game--night .timer-display .time,
-body.game--night .timer-display.wake-up-countdown .time {
-  color: #9a8f6a;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-}
-
-body.game--night .timer-display.wake-up-countdown::before {
-  color: #b7b1a4;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
-}
-
-body.game--night .clocktower-presets button.current-day {
-  box-shadow: 0 0 0 2px #9a8f6a;
-}
-
 .nominations-countdown {
   font-size: min(4vw, 1.5rem);
   color: var(--colour-text);
@@ -1429,6 +1410,112 @@ body.game--night .clocktower-presets button.current-day {
   font-size: 0.75rem;
   opacity: 0.8;
   line-height: 1;
+}
+
+/* Night quiets the central panel only. Wake Up, player counts, focus rings,
+   and the daytime rules above are unchanged. No added animation. */
+body.game--night .container {
+  background-color: rgba(16, 28, 44, 0.94);
+  border-color: rgba(143, 170, 196, 0.28);
+}
+
+body.game--night .timer-display .time,
+body.game--night .timer-display.wake-up-countdown .time {
+  color: #7f96ae;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+body.game--night .timer-display.wake-up-countdown::before {
+  color: #c5d4e4;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+body.game--night .current-time,
+body.game--night .session-countdown:not(.final-hour):not(.times-up) {
+  color: #b7c6d6;
+}
+
+body.game--night .day-display,
+body.game--night .day-display.dawn,
+body.game--night .day-display.dusk {
+  background: #1a2838;
+  border-color: rgba(143, 170, 196, 0.22);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.game--night .day-display::before {
+  background: #102033;
+  color: #d5e2ef;
+}
+
+body.game--night .day-display span,
+body.game--night .day-display.dawn span,
+body.game--night .day-display.dusk span {
+  color: #e4edf6;
+}
+
+body.game--night .day-display .pace-indicator,
+body.game--night .day-display.dawn .pace-indicator,
+body.game--night .day-display.dusk .pace-indicator,
+body[data-pace='blitz'].game--night .day-display .pace-indicator,
+body[data-pace='blitz'].game--night .day-display.dusk .pace-indicator {
+  background: rgba(186, 206, 224, 0.16);
+  color: #d5e2ef;
+}
+
+body.game--night .clocktower-presets button:not(.active):not(.skipped-day) {
+  background-color: #162231;
+  border-color: rgba(143, 170, 196, 0.16);
+  color: #c5d3e2;
+}
+
+body.game--night .clocktower-presets button .time {
+  color: #d5e1ee;
+}
+
+body.game--night .clocktower-presets button .day {
+  opacity: 1;
+  color: #b7c8da;
+}
+
+body.game--night
+  .clocktower-presets
+  button:hover:not(.skipped-day):not(.past-day):not(.active) {
+  background-color: #223246;
+}
+
+body.game--night .clocktower-presets button.active {
+  background-color: #2c4258;
+  border-color: rgba(168, 196, 220, 0.5);
+  box-shadow: none;
+  color: #e8eef6;
+}
+
+body.game--night .clocktower-presets button.active .time,
+body.game--night .clocktower-presets button.active .day {
+  color: #e8eef6;
+}
+
+body.game--night .clocktower-presets button.active:hover {
+  background-color: #34506a;
+}
+
+body.game--night .clocktower-presets button.current-day {
+  box-shadow: 0 0 0 2px #7f96ae;
+  animation: none;
+}
+
+body.game--night .clocktower-presets button.skipped-day,
+body.game--night .clocktower-presets button.past-day,
+body.game--night .clocktower-presets button.skipped-day .time,
+body.game--night .clocktower-presets button.skipped-day .day,
+body.game--night .clocktower-presets button.past-day .time,
+body.game--night .clocktower-presets button.past-day .day {
+  color: #f2f6fa;
+}
+
+body.game--night .clocktower-presets button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.4);
 }
 
 /* Minute and second presets stay in the page for timer setup, but are not shown. */

@@ -8,16 +8,35 @@ import {
 } from '../support/gameplay.js';
 
 const DAY_DIGITS = 'rgb(212, 175, 55)';
-const NIGHT_DIGITS = 'rgb(154, 143, 106)';
+const NIGHT_DIGITS = 'rgb(127, 150, 174)';
+const DAY_PANEL = 'rgba(33, 33, 33, 0.75)';
+const NIGHT_PANEL = 'rgba(16, 28, 44, 0.94)';
+const DAY_CARD = 'rgb(245, 241, 230)';
+const NIGHT_CARD = 'rgb(26, 40, 56)';
+const DAY_PRESET = 'rgb(44, 62, 44)';
+const NIGHT_PRESET = 'rgb(22, 34, 49)';
 const WAKE_UP_GREEN = 'rgb(69, 160, 73)';
 
 function expectAppearance(night) {
   cy.get('body').should(night ? 'have.class' : 'not.have.class', 'game--night');
+  cy.get('.container').should(
+    'have.css',
+    'background-color',
+    night ? NIGHT_PANEL : DAY_PANEL
+  );
+  cy.get('.day-display').should(
+    'have.css',
+    'background-color',
+    night ? NIGHT_CARD : DAY_CARD
+  );
   cy.get('.timer-display .time').should(
     'have.css',
     'color',
     night ? NIGHT_DIGITS : DAY_DIGITS
   );
+  cy.get('#clocktowerPresets .clocktower-btn:not(.active):not(.skipped-day)')
+    .first()
+    .should('have.css', 'background-color', night ? NIGHT_PRESET : DAY_PRESET);
   if (!night) {
     cy.get('.timer-display .time').should('have.css', 'animation-name', 'none');
   }
