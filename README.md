@@ -112,6 +112,21 @@ local development does not need a build. While you are editing the current
 version, those URLs stay the same, and a browser may reuse a cached module
 until you hard-refresh or change `APP_VERSION`.
 
+Install dependencies, then run the checks you need. `npm test` and
+`npm run test:open` start a static server on port 8006, wait until it
+responds, and stop it when Cypress finishes. `npm run test:unit` does not
+need that server. `npm run stamp-release` writes the current version into the
+entry page and release manifest; use it only when preparing or updating a
+release, not during ordinary testing.
+
+```bash
+npm ci
+npm run test:unit
+npm test
+npm run test:open
+npm run stamp-release
+```
+
 ## Releasing
 
 GitHub Pages publishes the `main` branch from the repository root. There is no
@@ -122,7 +137,7 @@ When it changes, update the entry page and release manifest so the stylesheet
 and every local module use that version:
 
 ```bash
-node scripts/release-assets.mjs --write
+npm run stamp-release
 ```
 
 Commit `index.html` and `release.json` with the version change. The node tests

@@ -1,14 +1,12 @@
+import { finishAcceleratedDay, visitFirstRun } from '../support/gameplay.js';
+
 describe('Preset skips and accelerate behaviour', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
   });
 
   it('keeps all days while hiding only appropriate skipped presets', () => {
-    // Load page
-    cy.visit('/');
-
-    // Settings dialog open on first load
-    cy.get('#settingsDialog').should('be.visible');
+    visitFirstRun();
 
     // Game settings: 12 players
     cy.get('#playerCount').clear().type('12');
@@ -69,16 +67,8 @@ describe('Preset skips and accelerate behaviour', () => {
     // Still have the same visible day presets
     expectSameDaySet();
 
-    // Day 4 preset click already started the timer; accelerate is enabled
-    // Use Accelerate Time (click then confirm)
-    cy.get('#accelerateBtn', { timeout: 20000 }).should('not.be.disabled');
-    cy.get('#accelerateBtn').click();
-    cy.get('#accelerateBtn').click();
-
-    // Wait for accelerated day to complete (Wake Up active again)
-    cy.contains('#startBtn .button-text', '⏰ Wake Up!', {
-      timeout: 20000,
-    }).should('be.visible');
+    // Day 4 preset click already started the timer; finish that day
+    finishAcceleratedDay();
 
     // After day end: no visible skipped presets, same Day set
     cy.get('#clocktowerPresets .clocktower-btn.skipped-day:visible').should(
@@ -113,14 +103,7 @@ describe('Preset skips and accelerate behaviour', () => {
         expect(remainingDays).to.include.members([3, 4, 5, 6, 7, 8, 9]);
       });
 
-    // Day 4 preset click already started the timer; accelerate is enabled
-    cy.get('#accelerateBtn', { timeout: 20000 }).should('not.be.disabled');
-    cy.get('#accelerateBtn').click();
-    cy.get('#accelerateBtn').click();
-
-    cy.contains('#startBtn .button-text', '⏰ Wake Up!', {
-      timeout: 20000,
-    }).should('be.visible');
+    finishAcceleratedDay();
 
     // After second day end: no skulls, same Day set
     cy.get('#clocktowerPresets .clocktower-btn.skipped-day:visible').should(
@@ -153,14 +136,7 @@ describe('Preset skips and accelerate behaviour', () => {
         expect(remainingDays.length).to.be.greaterThan(0);
       });
 
-    // Day 4 preset click already started the timer; accelerate is enabled
-    cy.get('#accelerateBtn', { timeout: 20000 }).should('not.be.disabled');
-    cy.get('#accelerateBtn').click();
-    cy.get('#accelerateBtn').click();
-
-    cy.contains('#startBtn .button-text', '⏰ Wake Up!', {
-      timeout: 20000,
-    }).should('be.visible');
+    finishAcceleratedDay();
 
     // After third day end: no skulls, same Day set
     cy.get('#clocktowerPresets .clocktower-btn.skipped-day:visible').should(
