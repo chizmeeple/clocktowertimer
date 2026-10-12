@@ -21,5 +21,7 @@ jobs:
       - name: Run Node tests
         run: npm run test:unit
 
+      # Chrome is selected by defaultBrowser in cypress.config.js.
+      # ubuntu-latest already includes Google Chrome, so no install step is needed.
       - name: Run Cypress tests
         run: npm test
