@@ -16,6 +16,6 @@
     "compression": "^1.8.2"
   },
   "allowScripts": {
-    "cypress@16.1.0": true
+    "cypress@16.1.1": true
   }
 }
