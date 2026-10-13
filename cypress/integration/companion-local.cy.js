@@ -32,11 +32,22 @@ function companionSeconds() {
 }
 
 function openCompanion() {
-  cy.get('#companionDevOpen').click();
+  cy.get('#companionDevCode').invoke('text').then((code) => {
+    cy.get('#companionDevOpen')
+      .should('have.attr', 'href', `companion.html?code=${code}`)
+      .and('have.attr', 'target', '_blank')
+      .and('have.attr', 'rel', 'noopener');
+    cy.get('#companionDevDiagnostics')
+      .should('have.attr', 'href', `companion-dev.html?code=${code}`)
+      .and('have.attr', 'target', '_blank')
+      .and('have.attr', 'rel', 'noopener');
+  });
+  cy.get('#companionDevDiagnostics').click();
   cy.window().should((win) => {
     expect(win.__companionDevClient && !win.__companionDevClient.closed).to.equal(true);
     const href = win.__companionDevClient.location.href;
     const params = new URL(href).searchParams;
+    expect(href).to.contain('companion-dev.html');
     expect(params.get('code'), 'session code').to.match(/^[0-9A-HJKMNP-TV-Z]{6}$/);
     expect(params.has('token')).to.equal(false);
     expect(params.has('writeToken')).to.equal(false);
@@ -215,6 +226,8 @@ describe('Local companion session', () => {
 
     cy.get('#companionDevEnd').click();
     cy.get('#companionDevStatus', { timeout: 10000 }).should('have.text', 'ended');
+    cy.get('#companionDevOpen').should('have.attr', 'aria-disabled', 'true').and('not.have.attr', 'href');
+    cy.get('#companionDevDiagnostics').should('have.attr', 'aria-disabled', 'true').and('not.have.attr', 'href');
     expectCompanion('#connection', (text) => {
       expect(text).to.equal('ended');
     });

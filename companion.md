@@ -141,7 +141,7 @@ COMPANION_WORKER_URL='https://clocktower-companion.redmeeple.workers.dev' \
   npm run dev:timer
 ```
 
-Then visit `http://127.0.0.1:8006/?companionDev=1`.
+Then visit `http://127.0.0.1:8006/?companionDev=1`. After a session starts, **Open companion** opens the player page and **Open diagnostics** opens the diagnostic client. Both use the current code and are not links once that session has ended.
 
 `companion.html` allows connections only to itself and `clocktower-companion.redmeeple.workers.dev` (HTTPS and WSS). On localhost it still uses the `/companion-api` proxy, so the same page works with a local worker or `COMPANION_WORKER_URL`. The Storyteller page's Content Security Policy is unchanged, because that page does not call the worker.
 

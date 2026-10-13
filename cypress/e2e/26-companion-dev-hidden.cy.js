@@ -23,4 +23,18 @@ describe('Companion dev panel', () => {
       expect(workerCalls).to.equal(0);
     });
   });
+
+  it('keeps the player and diagnostic links closed until a session exists', () => {
+    visitGameplay({ path: '/?companionDev=1' });
+    cy.get('#companionDev').should('be.visible');
+    for (const id of ['#companionDevOpen', '#companionDevDiagnostics']) {
+      cy.get(id)
+        .should('have.attr', 'target', '_blank')
+        .and('have.attr', 'rel', 'noopener')
+        .and('have.attr', 'aria-disabled', 'true')
+        .and('not.have.attr', 'href');
+    }
+    cy.get('#companionDevOpen').should('have.text', 'Open companion');
+    cy.get('#companionDevDiagnostics').should('have.text', 'Open diagnostics');
+  });
 });

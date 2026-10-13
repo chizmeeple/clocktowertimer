@@ -9,6 +9,20 @@ import {
   publishCompanionSnapshot,
 } from './companionPublish.js';
 
+const CLOSED_SESSION = new Set(['idle', 'ended', 'expired', 'disconnected', 'replaced', 'failed']);
+
+export function companionDevHrefs(status) {
+  const code = typeof status?.code === 'string' ? status.code : '';
+  if (!code || CLOSED_SESSION.has(status?.connection)) {
+    return { companion: null, diagnostics: null };
+  }
+  const query = new URLSearchParams({ code }).toString();
+  return {
+    companion: `companion.html?${query}`,
+    diagnostics: `companion-dev.html?${query}`,
+  };
+}
+
 export function mountCompanionDev(locationObject = globalThis.location) {
   const host = locationObject.hostname;
   const local = host === 'localhost' || host === '127.0.0.1';
@@ -33,6 +47,7 @@ export function mountCompanionDev(locationObject = globalThis.location) {
     #companionDev h2 { margin: 0 0 8px; font-size: 14px; }
     #companionDev p { margin: 4px 0; }
     #companionDev button, #companionDev a { margin: 8px 8px 0 0; }
+    #companionDev a[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
     #companionDev code { font-size: 18px; letter-spacing: 0.08em; }
     #companionDev.remote { border-color: #8a2b2b; background: #fff1ef; }
   `;
@@ -51,7 +66,8 @@ export function mountCompanionDev(locationObject = globalThis.location) {
     <button type="button" id="companionDevDrop">Drop connection</button>
     <button type="button" id="companionDevStop">Stop</button>
     <button type="button" id="companionDevEnd">End session</button>
-    <a id="companionDevOpen" href="companion-dev.html" target="_blank" rel="noopener">Open companion</a>
+    <a id="companionDevOpen" target="_blank" rel="noopener" aria-disabled="true">Open companion</a>
+    <a id="companionDevDiagnostics" target="_blank" rel="noopener" aria-disabled="true">Open diagnostics</a>
   `;
   document.body.appendChild(panel);
 
@@ -72,7 +88,24 @@ export function mountCompanionDev(locationObject = globalThis.location) {
   const codeNode = panel.querySelector('#companionDevCode');
   const statusNode = panel.querySelector('#companionDevStatus');
   const deliveryNode = panel.querySelector('#companionDevDelivery');
-  const openLink = panel.querySelector('#companionDevOpen');
+  const sessionLinks = [
+    [panel.querySelector('#companionDevOpen'), 'companionPlayer'],
+    [panel.querySelector('#companionDevDiagnostics'), 'companionDevClient'],
+  ];
+
+  function applySessionLinks(status) {
+    const hrefs = companionDevHrefs(status);
+    for (const [link, windowName] of sessionLinks) {
+      const href = windowName === 'companionPlayer' ? hrefs.companion : hrefs.diagnostics;
+      if (!href) {
+        link.removeAttribute('href');
+        link.setAttribute('aria-disabled', 'true');
+        continue;
+      }
+      link.setAttribute('href', href);
+      link.removeAttribute('aria-disabled');
+    }
+  }
 
   const transport = createStorytellerTransport({
     enablePublishing: enableCompanionPublishing,
@@ -83,9 +116,7 @@ export function mountCompanionDev(locationObject = globalThis.location) {
       statusNode.textContent = status.connection;
       const rev = status.acceptedRev == null ? 'none' : String(status.acceptedRev);
       deliveryNode.textContent = `${status.delivery}, revision ${rev}`;
-      if (status.code) {
-        openLink.href = `companion-dev.html?code=${encodeURIComponent(status.code)}`;
-      }
+      applySessionLinks(status);
     },
   });
 
@@ -98,11 +129,21 @@ export function mountCompanionDev(locationObject = globalThis.location) {
   panel.querySelector('#companionDevStop').addEventListener('click', () => {
     transport.stop();
   });
-  openLink.addEventListener('click', (event) => {
-    event.preventDefault();
-    const child = window.open(openLink.href, 'companionDevClient');
-    if (child) window.__companionDevClient = child;
-  });
+  for (const [link, windowName] of sessionLinks) {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      const href = link.getAttribute('href');
+      if (!href || link.getAttribute('aria-disabled') === 'true') return;
+      const child = window.open(href, windowName);
+      if (!child) return;
+      try {
+        child.opener = null;
+      } catch {
+        // A closed window cannot drop its opener.
+      }
+      if (windowName === 'companionDevClient') window.__companionDevClient = child;
+    });
+  }
   panel.querySelector('#companionDevEnd').addEventListener('click', () => {
     transport.end();
   });

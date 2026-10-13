@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.8';
+export const APP_VERSION = '1.2.9';
 
 export const CHANGELOG = {
+  '1.2.9': {
+    date: '2026-10-13',
+    changes: {
+      improvements: [
+        'The local companion panel can open the player page or the diagnostic page for the current session. Those links are not on the public timer',
+      ],
+    },
+  },
   '1.2.8': {
     date: '2026-10-13',
     changes: {
