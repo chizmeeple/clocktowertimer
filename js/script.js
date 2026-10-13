@@ -4140,9 +4140,11 @@ function showChangeHistory() {
     return;
   }
 
-  const versions = Object.entries(CHANGELOG).sort(
-    ([a], [b]) => Number.parseFloat(b) - Number.parseFloat(a)
-  );
+  const versions = Object.entries(CHANGELOG).sort(([a], [b]) => {
+    if (a === 'unreleased') return -1;
+    if (b === 'unreleased') return 1;
+    return Number.parseFloat(b) - Number.parseFloat(a);
+  });
 
   // Don't open dialog if there's no changelog data
   if (versions.length === 0) {
@@ -4156,10 +4158,16 @@ function showChangeHistory() {
     const fixes = data.changes.fixes || [];
     const improvements = data.changes.improvements || [];
 
+    const versionLabel =
+      version === 'unreleased' ? 'Unreleased' : `Version ${version}`;
+    const dateMarkup = data.date
+      ? `<span class="version-date">${data.date}</span>`
+      : '';
+
     html += `
       <div class="version-info">
-        <span class="version-number">Version ${version}</span>
-        <span class="version-date">${data.date}</span>
+        <span class="version-number">${versionLabel}</span>
+        ${dateMarkup}
       </div>
       <div class="changes-container">
         ${

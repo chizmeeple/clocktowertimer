@@ -2,91 +2,10 @@
 export const APP_VERSION = '1.2.12';
 
 export const CHANGELOG = {
-  '1.2.12': {
-    date: '2026-10-13',
+  unreleased: {
     changes: {
-      improvements: [
-        'Settings is compact again. Game, Display, Time and Effects sit on the first row, with Music, Shortcuts and Companion centred on the row below',
-      ],
-    },
-  },
-  '1.2.11': {
-    date: '2026-10-13',
-    changes: {
-      improvements: [
-        'Settings is wider so Game, Display, Time, Effects, Music, Shortcuts and Companion sit on one row on a desktop, and wrap more evenly on a smaller screen',
-      ],
-    },
-  },
-  '1.2.10': {
-    date: '2026-10-13',
-    changes: {
-      improvements: [
-        'Storytellers can turn on Companion Mode in Settings and share a code or QR link. The same session continues across games, and the timer face is unchanged. Sharing stays off until it is enabled',
-      ],
-    },
-  },
-  '1.2.9': {
-    date: '2026-10-13',
-    changes: {
-      improvements: [
-        'The local companion panel can open the player page or the diagnostic page for the current session. Those links are not on the public timer',
-      ],
-    },
-  },
-  '1.2.8': {
-    date: '2026-10-13',
-    changes: {
-      improvements: [
-        'Players can open the companion page and follow a public session with a code. The Storyteller timer does not yet have sharing controls',
-      ],
-    },
-  },
-  '1.2.7': {
-    date: '2026-10-13',
-    changes: {
-      improvements: [
-        'The local companion test reports a refused connection to the deployed session service instead of staying on connecting. Companion Mode is not on the public timer',
-      ],
-    },
-  },
-  '1.2.6': {
-    date: '2026-10-12',
-    changes: {
-      improvements: [
-        'The companion session service is ready for a private Cloudflare test. Companion Mode is not on the public timer, and nothing is deployed until you choose to deploy it',
-      ],
-    },
-  },
-  '1.2.5': {
-    date: '2026-10-12',
-    changes: {
-      improvements: [
-        'A local development page can follow the public countdown through a worker on this machine. Companion Mode is not on the public timer, and the service is not deployed',
-      ],
-    },
-  },
-  '1.2.4': {
-    date: '2026-10-12',
-    changes: {
-      improvements: [
-        'A local companion session service can mint a session code and accept public timer snapshots. It is not deployed, and Companion Mode is not available on the timer page yet',
-      ],
-    },
-  },
-  '1.2.3': {
-    date: '2026-10-12',
-    changes: {
-      improvements: [
-        'The timer can record the public day, countdown, and character counts when they change, ready for a companion display. Nothing is sent, and Companion Mode is not available on the page yet',
-      ],
-    },
-  },
-  '1.2.2': {
-    date: '2026-10-12',
-    changes: {
-      improvements: [
-        'The timer can describe the current day, the five character counts including travellers, and the countdown for a companion display. The countdown on this page is unchanged',
+      features: [
+        'Companion Mode: players can now follow the game on their own phones. Share a session code or QR code to display the current day, game phase, character counts and a synchronised countdown. Optional sound and vibration alerts warn when time is running out, with preferences remembered between visits',
       ],
     },
   },
