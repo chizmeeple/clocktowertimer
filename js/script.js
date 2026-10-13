@@ -4141,9 +4141,14 @@ function showChangeHistory() {
   }
 
   const versions = Object.entries(CHANGELOG).sort(([a], [b]) => {
-    if (a === 'unreleased') return -1;
-    if (b === 'unreleased') return 1;
-    return Number.parseFloat(b) - Number.parseFloat(a);
+    const aParts = a.split('.').map(Number);
+    const bParts = b.split('.').map(Number);
+    const length = Math.max(aParts.length, bParts.length);
+    for (let index = 0; index < length; index += 1) {
+      const difference = (bParts[index] || 0) - (aParts[index] || 0);
+      if (difference !== 0) return difference;
+    }
+    return 0;
   });
 
   // Don't open dialog if there's no changelog data
@@ -4158,16 +4163,10 @@ function showChangeHistory() {
     const fixes = data.changes.fixes || [];
     const improvements = data.changes.improvements || [];
 
-    const versionLabel =
-      version === 'unreleased' ? 'Unreleased' : `Version ${version}`;
-    const dateMarkup = data.date
-      ? `<span class="version-date">${data.date}</span>`
-      : '';
-
     html += `
       <div class="version-info">
-        <span class="version-number">${versionLabel}</span>
-        ${dateMarkup}
+        <span class="version-number">Version ${version}</span>
+        <span class="version-date">${data.date}</span>
       </div>
       <div class="changes-container">
         ${

@@ -1,11 +1,12 @@
 // Version tracking
-export const APP_VERSION = '1.2.12';
+export const APP_VERSION = '1.3.0';
 
 export const CHANGELOG = {
-  unreleased: {
+  '1.3.0': {
+    date: '2026-10-13',
     changes: {
       features: [
-        'Companion Mode: players can now follow the game on their own phones. Share a session code or QR code to display the current day, game phase, character counts and a synchronised countdown. Optional sound and vibration alerts warn when time is running out, with preferences remembered between visits',
+        'Companion Mode: Players can now follow the game on their phones! Share a session code or QR code to see the current day, game phase, character counts and synchronised countdown. Optional sound and vibration alerts let players know when time is running out.',
       ],
     },
   },
@@ -125,7 +126,7 @@ export const CHANGELOG = {
       ],
       improvements: [
         'Blitz mode uses a red bottom button bar and a translucent red overlay on the background image',
-        'Estimated game length includes nominations, guessed as each day\'s length with a 3-minute minimum',
+        "Estimated game length includes nominations, guessed as each day's length with a 3-minute minimum",
         'Stale-tab banner refreshes the page automatically after a 10-second countdown, and can still be refreshed or dismissed immediately',
       ],
     },
