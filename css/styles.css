@@ -2642,7 +2642,6 @@ button:disabled {
   max-width: calc(100vw - 1.5rem);
   margin: 0;
   padding: 0.4rem 0.7rem 0.35rem;
-  pointer-events: none;
   text-align: center;
   background: rgba(16, 14, 12, 0.94);
   border: 1px solid rgba(212, 175, 55, 0.55);
@@ -2650,6 +2649,12 @@ button:disabled {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+/* The badge is informational. Clicks pass through to any day preset it covers. */
+.companion-join,
+.companion-join * {
+  pointer-events: none;
 }
 
 .companion-join[hidden] {
