@@ -111,8 +111,6 @@
 }
 
 .join-panel button,
-#showQr,
-#leave,
 #qrClose {
   border-radius: var(--radius-md);
   border: 0;
@@ -120,11 +118,47 @@
   cursor: pointer;
 }
 
+.session-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.session-actions:has(#showQr[hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.session-actions button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 0;
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.45rem;
+  font-size: clamp(0.82rem, 3.2vw, 1rem);
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+}
+
+.session-action-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+
 #showQr {
-  background: transparent;
-  color: var(--colour-text);
-  border: 1px solid var(--colour-border-strong);
+  background: var(--colour-accent-button);
+  color: white;
+  border: 0;
   font-weight: 700;
+}
+
+#showQr:hover {
+  background: var(--colour-accent-button-hover);
 }
 
 .join-panel button {
@@ -135,8 +169,9 @@
 
 #leave {
   background: transparent;
-  color: var(--colour-text-muted);
+  color: var(--colour-text);
   border: 1px solid var(--colour-border-strong);
+  font-weight: 600;
 }
 
 .companion-page :focus-visible {
@@ -372,14 +407,19 @@
   }
 
   .options summary,
-  #showQr,
-  #leave {
-    min-height: 2rem;
+  .session-actions button {
+    min-height: 2.25rem;
   }
 
-  #showQr,
-  #leave {
-    padding: 0.35rem 0.75rem;
+  .session-actions button {
+    flex-direction: row;
+    gap: 0.4rem;
+    padding: 0.35rem 0.55rem;
+  }
+
+  .session-action-icon {
+    width: 1rem;
+    height: 1rem;
   }
 }
 

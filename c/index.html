@@ -82,7 +82,26 @@
             </li>
           </ul>
         </div>
-        <button type="button" id="showQr" hidden>Show QR code</button>
+        <div class="session-actions" role="group" aria-label="Session">
+          <button type="button" id="showQr" hidden>
+            <svg class="session-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4-4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2zm-4 0h2v2h-2z"
+              />
+            </svg>
+            <span>Show QR code</span>
+          </button>
+          <button type="button" id="leave">
+            <svg class="session-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"
+              />
+            </svg>
+            <span>Leave session</span>
+          </button>
+        </div>
         <details class="options">
           <summary>Options</summary>
           <label class="option" id="alertOption">
@@ -98,7 +117,6 @@
           </label>
           <p id="wakeNote" class="option-note" hidden></p>
         </details>
-        <button type="button" id="leave">Leave session</button>
       </section>
     </main>
     <footer class="companion-footer">

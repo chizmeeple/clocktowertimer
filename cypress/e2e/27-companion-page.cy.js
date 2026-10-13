@@ -197,6 +197,15 @@ describe('Companion page', () => {
       });
       expectOnFirstScreen('#kicker');
       expectOnFirstScreen('#headline');
+      cy.get('#showQr').then(($qr) => {
+        cy.get('#leave').should(($leave) => {
+          const qrBox = $qr[0].getBoundingClientRect();
+          const leaveBox = $leave[0].getBoundingClientRect();
+          expect(leaveBox.left, 'leave sits beside show QR').to.be.greaterThan(qrBox.left);
+          expect(Math.abs(qrBox.top - leaveBox.top), 'shared row').to.be.lessThan(2);
+          expect(Math.abs(qrBox.height - leaveBox.height), 'matched height').to.be.lessThan(2);
+        });
+      });
       cy.get('#traveller').should('be.visible');
       cy.get('.options summary').should('exist');
       cy.get('.companion-footer').should('be.visible');
