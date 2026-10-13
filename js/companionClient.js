@@ -33,6 +33,7 @@ export function createCompanionClient({
 } = {}) {
   const root = trimBase(baseUrl);
   let code = null;
+  let established = false;
   let socket = null;
   let generation = 0;
   let intentional = false;
@@ -195,6 +196,8 @@ export function createCompanionClient({
     }
     if (message.type === 'session-ended') {
       intentional = true;
+      established = false;
+      code = null;
       clearRetry();
       closeSocket();
       setConnection(message.reason === 'ended' ? 'ended' : 'expired');
@@ -265,6 +268,7 @@ export function createCompanionClient({
     );
     if (socket && socket.readyState === Socket.OPEN && viewState.connection !== 'ended' && viewState.connection !== 'expired') {
       viewState.connection = 'live';
+      established = true;
     }
     let stale = false;
     if (receivedMono == null || !connected) {
@@ -283,6 +287,8 @@ export function createCompanionClient({
     const fresh = viewState.connection === 'live' && !stale && snapshot != null;
     return {
       connection: viewState.connection,
+      code,
+      established,
       fresh,
       stale: stale && viewState.connection !== 'idle',
       timing: timing.timing,
@@ -303,6 +309,7 @@ export function createCompanionClient({
 
   function join(nextCode) {
     if (nextCode !== code) {
+      established = false;
       heldRev = null;
       snapshot = null;
       envelope = null;
@@ -342,6 +349,7 @@ export function createCompanionClient({
 
   function leave() {
     intentional = true;
+    established = false;
     clearRetry();
     closeSocket();
     code = null;

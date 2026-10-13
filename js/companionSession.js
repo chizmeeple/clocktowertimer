@@ -1,7 +1,11 @@
 // One Storyteller companion session for Settings and the development panel.
 // The write token stays inside the transport and is never returned here.
 
-import { companionBaseUrl, isSessionCode } from './companionCode.js';
+import {
+  companionBaseUrl,
+  companionPlayerUrl,
+  isSessionCode,
+} from './companionCode.js';
 import {
   disableCompanionPublishing,
   enableCompanionPublishing,
@@ -9,7 +13,8 @@ import {
 } from './companionPublish.js';
 import { createStorytellerTransport } from './companionTransport.js';
 
-const PLAYER_PAGE = 'https://timer.arcane-scripts.net/c';
+export { companionPlayerUrl, companionQrImageUrl } from './companionCode.js';
+
 const SHARING = new Set(['connecting', 'live', 'reconnecting']);
 
 const IDLE_STATUS = {
@@ -19,23 +24,6 @@ const IDLE_STATUS = {
   acceptedRev: null,
   offsetMs: null,
 };
-
-export function companionPlayerUrl(code) {
-  const params = new URLSearchParams({ code });
-  return `${PLAYER_PAGE}?${params.toString()}`;
-}
-
-export function companionQrImageUrl(playerUrl) {
-  const params = new URLSearchParams({
-    size: '360x360',
-    format: 'svg',
-    qzone: '2',
-    color: '000000',
-    bgcolor: 'ffffff',
-    data: playerUrl,
-  });
-  return `https://api.qrserver.com/v1/create-qr-code/?${params.toString()}`;
-}
 
 export function presentCompanionSharing({ enabled, connection, code }) {
   const active = Boolean(enabled) && SHARING.has(connection) && typeof code === 'string' && code.length > 0;

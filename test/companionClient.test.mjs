@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { presentCompanionPlayerShare } from '../js/companionCode.js';
 import { createCompanionClient } from '../js/companionClient.js';
 
 class FakeSocket {
@@ -185,5 +186,95 @@ describe('companion client', () => {
     env.client.leave();
     assert.equal(env.client.view().connection, 'idle');
     assert.equal(env.client.view().problem, null);
+    assert.equal(env.client.view().code, null);
+    assert.equal(presentCompanionPlayerShare(env.client.view()).canShare, false);
+  });
+
+  it('shares a live code through a reconnect, then forgets it when the session ends', () => {
+    class HeldSocket {
+      static OPEN = 1;
+
+      constructor() {
+        this.readyState = 0;
+        HeldSocket.latest = this;
+      }
+
+      send() {}
+
+      close() {
+        this.readyState = 3;
+        this.onclose?.();
+      }
+
+      receive(message) {
+        this.onmessage?.({ data: JSON.stringify(message) });
+      }
+    }
+
+    const client = createCompanionClient({
+      baseUrl: 'http://127.0.0.1:8787',
+      WebSocket: HeldSocket,
+      now: () => 10_000,
+      mono: () => 100,
+      random: () => 0,
+      setTimeout() {
+        return 1;
+      },
+      clearTimeout() {},
+    });
+
+    client.join('ABC123');
+    const first = client.view();
+    assert.equal(first.connection, 'connecting');
+    assert.equal(first.established, false);
+    assert.equal(presentCompanionPlayerShare(first).canShare, false);
+
+    HeldSocket.latest.close();
+    const failed = client.view();
+    assert.equal(failed.connection, 'reconnecting');
+    assert.equal(failed.established, false);
+    assert.equal(presentCompanionPlayerShare(failed).playerUrl, '');
+
+    client.join('ABC123');
+    HeldSocket.latest.readyState = HeldSocket.OPEN;
+    const live = client.view();
+    assert.equal(live.connection, 'live');
+    assert.equal(live.code, 'ABC123');
+    assert.equal(presentCompanionPlayerShare(live).playerUrl, 'https://timer.arcane-scripts.net/c?code=ABC123');
+
+    HeldSocket.latest.close();
+    const reconnecting = client.view();
+    assert.equal(reconnecting.connection, 'reconnecting');
+    assert.equal(reconnecting.code, 'ABC123');
+    assert.equal(reconnecting.established, true);
+    assert.equal(
+      presentCompanionPlayerShare(reconnecting).playerUrl,
+      'https://timer.arcane-scripts.net/c?code=ABC123'
+    );
+
+    HeldSocket.latest = null;
+    client.join('ABC123');
+    const again = HeldSocket.latest;
+    again.readyState = HeldSocket.OPEN;
+    client.view();
+    again.receive({ type: 'session-ended', reason: 'ended' });
+    const ended = client.view();
+    assert.equal(ended.connection, 'ended');
+    assert.equal(ended.code, null);
+    assert.equal(presentCompanionPlayerShare(ended).canShare, false);
+
+    client.join('NEWCDE');
+    const next = client.view();
+    assert.equal(next.connection, 'connecting');
+    assert.equal(next.code, 'NEWCDE');
+    assert.equal(presentCompanionPlayerShare(next).playerUrl, '');
+    assert.equal(JSON.stringify(next).includes('ABC123'), false);
+    HeldSocket.latest.readyState = HeldSocket.OPEN;
+    const replacement = client.view();
+    assert.equal(replacement.code, 'NEWCDE');
+    assert.equal(
+      presentCompanionPlayerShare(replacement).playerUrl,
+      'https://timer.arcane-scripts.net/c?code=NEWCDE'
+    );
   });
 });

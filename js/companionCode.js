@@ -25,6 +25,44 @@ export function sessionCodeFromLocation(location) {
   return normaliseSessionCode(params.get('code') || '');
 }
 
+// Public player link. The Storyteller page and the player page both use this.
+// There is no slash before the query, and the write token is never included.
+const PLAYER_PAGE = 'https://timer.arcane-scripts.net/c';
+
+export function companionPlayerUrl(code) {
+  const params = new URLSearchParams({ code });
+  return `${PLAYER_PAGE}?${params.toString()}`;
+}
+
+export function companionQrImageUrl(playerUrl) {
+  const params = new URLSearchParams({
+    size: '360x360',
+    format: 'svg',
+    qzone: '2',
+    color: '000000',
+    bgcolor: 'ffffff',
+    data: playerUrl,
+  });
+  return `https://api.qrserver.com/v1/create-qr-code/?${params.toString()}`;
+}
+
+// A player can share a code while it is live, or while reconnecting after it
+// has already been live. The first connection attempt cannot, and neither can
+// a session that has ended, expired, or been left.
+export function presentCompanionPlayerShare(view) {
+  const connection = view?.connection;
+  const code = view?.code;
+  const established = view?.established === true;
+  const valid = isSessionCode(code);
+  const canShare =
+    valid && (connection === 'live' || (connection === 'reconnecting' && established));
+  return {
+    canShare,
+    code: canShare ? code : '',
+    playerUrl: canShare ? companionPlayerUrl(code) : '',
+  };
+}
+
 // Local pages keep using the development proxy, which can point at a
 // local worker or the deployed one. The public site talks to Cloudflare.
 export function companionBaseUrl(location) {

@@ -168,7 +168,9 @@ Then visit `http://127.0.0.1:8006/?companionDev=1`. After a session starts, **Op
 
 The companion page at `/c` allows connections only to itself and `clocktower-companion.redmeeple.workers.dev` (HTTPS and WSS). On localhost it still uses the `/companion-api` proxy, so the same page works with a local worker or `COMPANION_WORKER_URL`. The Storyteller page allows the same worker host, for HTTPS and WSS only, and uses it when the page is not served from localhost. Locally, `http://127.0.0.1:8006/c`, `http://127.0.0.1:8006/c/` and `http://127.0.0.1:8006/c/index.html` all serve that page. A direct link is `http://127.0.0.1:8006/c?code=ABC123`.
 
-The companion can play a short sound and vibrate about 30 seconds before a running countdown reaches zero, and again at zero. Both are off until the player opts in, and only while the page is open and the phone is unlocked. "Keep the screen awake" is also off until asked for, and the browser may refuse it. Neither feature runs in the background.
+The companion can play a short sound and vibrate about 30 seconds before a running countdown reaches zero, and again at zero. Both are off until the player opts in, and only while the page is open and the phone is unlocked. **Keep screen on** is off until the player turns it on, and it is not stored: a new visit starts with it off, the same way the alert option does. Where the browser supports the Screen Wake Lock API, the page requests a lock while it is visible and releases that lock when the option is turned off or the page is hidden. It asks again when the page becomes visible, if the option is still on. The browser can refuse the lock. A browser without the API shows the option disabled, with a short explanation. Neither alerts nor the wake lock run in the background, and a refusal does not stop the countdown or the session.
+
+A player whose session is live, or who is reconnecting after that session has already connected, can choose **Show QR code**. The code encodes `https://timer.arcane-scripts.net/c?code=<SESSION_CODE>` and nothing else. It stays available during a temporary reconnect, and it is removed when the session ends, expires, or the player leaves. The first connection attempt does not offer it until the session is established. The page footer says Made by Arcane Scripts and links to [https://arcane-scripts.net](https://arcane-scripts.net).
 
 ## Deployment and verification
 
@@ -228,7 +230,7 @@ npx wrangler rollback --config worker/wrangler.jsonc
 
 - Worker sessions expire. An idle session ends about three hours after the last accepted publish, and every session ends within twelve hours. The Settings tab then says the code is no longer valid. It does not create a replacement on its own.
 - A reload does not restore the write token. Automatic start, when enabled, creates a new code for that page load.
-- Alerts and the wake lock on the player page work only while that page is open and the phone is unlocked.
+- Alerts and Keep screen on work only while the player page is open and the phone is unlocked. Wake Lock is refused by some browsers, including iOS versions before 16.4, and it always ends when the page is hidden. Keep screen on does not claim the screen will stay awake when the browser cannot do it.
 - The development panel is not part of the public timer. It appears only at `http://127.0.0.1:8006/?companionDev=1` or the localhost equivalent.
 
 ## Next steps
@@ -243,7 +245,7 @@ npx wrangler rollback --config worker/wrangler.jsonc
 - `js/companionPublish.js` — opt-in publishing adapter.
 - `js/companionTransport.js`, `js/companionClient.js`, `js/companionSync.js` — transport and synchronisation.
 - `c/index.html`, `css/companion.css`, `js/companion-page.js` — player page. The public URL is `/c`.
-- `js/companionCode.js`, `js/companionDisplay.js`, `js/companionAlerts.js` — code entry, presentation and foreground warnings.
+- `js/companionCode.js`, `js/companionDisplay.js`, `js/companionAlerts.js`, `js/companionWake.js` — code entry, presentation, foreground warnings, and the screen wake lock. The public player URL and its QR image are built in `companionCode.js` and reused by the Storyteller session.
 - `js/companionSession.js` — the single Storyteller session used by Settings and the development panel.
 - `js/companionDev.js`, `companion-dev.html`, `js/companion-dev-page.js` — development harness.
 - `scripts/dev-server.mjs` — local frontend server and `/companion-api` proxy.

@@ -3,7 +3,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { COMPANION_WARNING_SECONDS, nextCompanionAlert } from '../js/companionAlerts.js';
-import { companionBaseUrl, isSessionCode, normaliseSessionCode, sessionCodeFromLocation } from '../js/companionCode.js';
+import {
+  companionBaseUrl,
+  companionQrImageUrl,
+  isSessionCode,
+  normaliseSessionCode,
+  presentCompanionPlayerShare,
+  sessionCodeFromLocation,
+} from '../js/companionCode.js';
 import { formatCountdown, presentCompanion } from '../js/companionDisplay.js';
 import { APP_VERSION } from '../js/changelog.js';
 
@@ -53,6 +60,7 @@ describe('companion presentation', () => {
     assert.equal(running.headline, '04:45');
     assert.equal(running.countdown, '04:45');
     assert.equal(running.kicker, 'Day 1');
+    assert.equal(presentCompanion(view({ day: 4 })).kicker, 'Day 4');
     assert.equal(running.counts.traveller, 0);
     assert.equal(running.night, false);
 
@@ -117,6 +125,60 @@ describe('companion presentation', () => {
   });
 });
 
+describe('companion player sharing', () => {
+  const code = 'ABC123';
+
+  function share(overrides) {
+    return presentCompanionPlayerShare({
+      connection: 'live',
+      code,
+      established: true,
+      ...overrides,
+    });
+  }
+
+  it('encodes only the public player url for a live session', () => {
+    const live = share({});
+    assert.equal(live.canShare, true);
+    assert.equal(live.code, 'ABC123');
+    assert.equal(live.playerUrl, 'https://timer.arcane-scripts.net/c?code=ABC123');
+    assert.equal(live.playerUrl.includes('/c/?'), false);
+    const qr = companionQrImageUrl(live.playerUrl);
+    assert.match(decodeURIComponent(qr), /https:\/\/timer\.arcane-scripts\.net\/c\?code=ABC123/);
+    assert.equal(qr.includes('writeToken'), false);
+    assert.equal(share({ stale: true }).canShare, true);
+  });
+
+  it('hides the code until the session is established, and after it ends', () => {
+    assert.equal(share({ connection: 'idle', code: null, established: false }).canShare, false);
+    assert.equal(share({ connection: 'connecting', established: false }).playerUrl, '');
+    assert.equal(share({ connection: 'connecting', established: true }).canShare, false);
+    assert.equal(share({ connection: 'reconnecting', established: false }).canShare, false);
+    assert.equal(share({ connection: 'reconnecting', established: true }).playerUrl, 'https://timer.arcane-scripts.net/c?code=ABC123');
+    for (const connection of ['ended', 'expired', 'idle']) {
+      const closed = share({ connection, established: false });
+      assert.equal(closed.canShare, false);
+      assert.equal(closed.code, '');
+      assert.equal(closed.playerUrl, '');
+    }
+    assert.equal(share({ code: 'NOPE' }).canShare, false);
+    assert.equal(share({ code: '' }).canShare, false);
+    assert.equal(share({ code: null }).canShare, false);
+  });
+});
+
+describe('companion heading style', () => {
+  it('enlarges the phase heading without overtaking the countdown', () => {
+    const css = readFileSync(new URL('../css/companion.css', import.meta.url), 'utf8');
+    const kicker = css.match(/\.kicker\s*\{([^}]+)\}/)[1];
+    const headline = css.match(/\.headline\s*\{([^}]+)\}/)[1];
+    assert.match(kicker, /font-size:\s*clamp\(1\.75rem, 8vw, 2\.75rem\)/);
+    assert.match(kicker, /font-weight:\s*700/);
+    assert.match(kicker, /var\(--colour-gold\)/);
+    assert.match(headline, /font-size:\s*clamp\(3\.5rem, 22vw, 7\.5rem\)/);
+  });
+});
+
 describe('companion alerts', () => {
   it('warns once before zero and does not warn from a stale gap', () => {
     let state = { previous: null, rev: null, phase: null };
@@ -151,7 +213,16 @@ describe('companion page policy', () => {
     const timer = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
     assert.match(page, new RegExp(`\\.\\./css/companion\\.css\\?v=${APP_VERSION}`));
     assert.match(page, new RegExp(`\\.\\./js/companion-page\\.js\\?v=${APP_VERSION}`));
+    assert.match(page, /img-src 'self' https:\/\/api\.qrserver\.com/);
     assert.match(page, /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
+    assert.match(page, /href="https:\/\/arcane-scripts\.net"/);
+    assert.match(page, /rel="noopener noreferrer"/);
+    assert.match(page, />Arcane Scripts</);
+    assert.match(page, /Keep screen on/);
+    assert.match(page, /Show QR code/);
+    assert.match(page, /Join this game/);
+    assert.doesNotMatch(timer, /companion-footer/);
+    assert.doesNotMatch(timer, /Keep screen on/);
     assert.match(page, /wss:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
     assert.doesNotMatch(page, /connect-src[^;]*\*/);
     const timerPolicy = timer.match(/content="([^"]*connect-src[^"]*)"/)[1];

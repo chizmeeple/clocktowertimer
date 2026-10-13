@@ -12,7 +12,7 @@
     <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self'; connect-src 'self' https://clocktower-companion.redmeeple.workers.dev wss://clocktower-companion.redmeeple.workers.dev;"
+      content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://api.qrserver.com; media-src 'self'; connect-src 'self' https://clocktower-companion.redmeeple.workers.dev wss://clocktower-companion.redmeeple.workers.dev;"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -55,7 +55,7 @@
       <section id="session" class="session" hidden>
         <div class="stage">
           <div class="phase-block">
-            <p id="kicker" class="kicker"></p>
+            <h2 id="kicker" class="kicker"></h2>
             <p id="headline" class="headline" aria-live="off"></p>
             <p id="message" class="message"></p>
           </div>
@@ -82,6 +82,7 @@
             </li>
           </ul>
         </div>
+        <button type="button" id="showQr" hidden>Show QR code</button>
         <details class="options">
           <summary>Options</summary>
           <label class="option" id="alertOption">
@@ -92,14 +93,27 @@
             A short sound, and vibration where the phone allows it. This only works while the page is open and the phone is unlocked.
           </p>
           <label class="option" id="wakeOption">
-            <input id="wake" type="checkbox" />
-            Keep the screen awake
+            <input id="wake" type="checkbox" aria-describedby="wakeNote" />
+            Keep screen on
           </label>
           <p id="wakeNote" class="option-note" hidden></p>
         </details>
         <button type="button" id="leave">Leave session</button>
       </section>
     </main>
+    <footer class="companion-footer">
+      Made by
+      <a href="https://arcane-scripts.net" target="_blank" rel="noopener noreferrer">Arcane Scripts</a>
+    </footer>
+    <dialog id="qrDialog" class="qr-dialog" aria-labelledby="qrHeading">
+      <h2 id="qrHeading">Join this game</h2>
+      <div class="qr-frame">
+        <img id="qrImage" alt="" width="360" height="360" />
+      </div>
+      <p id="qrCode"></p>
+      <p class="qr-address">timer.arcane-scripts.net/c</p>
+      <button type="button" id="qrClose">Close</button>
+    </dialog>
     <script type="module" src="../js/companion-page.js?v=1.2.12"></script>
   </body>
 </html>

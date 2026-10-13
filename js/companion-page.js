@@ -1,7 +1,15 @@
 import { nextCompanionAlert } from './companionAlerts.js';
-import { companionBaseUrl, isSessionCode, normaliseSessionCode, sessionCodeFromLocation } from './companionCode.js';
+import {
+  companionBaseUrl,
+  companionQrImageUrl,
+  isSessionCode,
+  normaliseSessionCode,
+  presentCompanionPlayerShare,
+  sessionCodeFromLocation,
+} from './companionCode.js';
 import { createCompanionClient } from './companionClient.js';
 import { presentCompanion } from './companionDisplay.js';
+import { createWakeLockController } from './companionWake.js';
 
 const joinPanel = document.querySelector('#joinPanel');
 const joinForm = document.querySelector('#joinForm');
@@ -17,8 +25,12 @@ const leaveButton = document.querySelector('#leave');
 const alertsInput = document.querySelector('#alerts');
 const alertOption = document.querySelector('#alertOption');
 const wakeInput = document.querySelector('#wake');
-const wakeOption = document.querySelector('#wakeOption');
 const wakeNote = document.querySelector('#wakeNote');
+const showQrButton = document.querySelector('#showQr');
+const qrDialog = document.querySelector('#qrDialog');
+const qrImage = document.querySelector('#qrImage');
+const qrCodeText = document.querySelector('#qrCode');
+const qrClose = document.querySelector('#qrClose');
 const countNodes = {
   townsfolk: document.querySelector('#townsfolk'),
   outsider: document.querySelector('#outsider'),
@@ -29,21 +41,42 @@ const countNodes = {
 
 const canSound = Boolean(window.AudioContext || window.webkitAudioContext);
 const canVibrate = typeof navigator.vibrate === 'function';
-const canWake = typeof navigator.wakeLock?.request === 'function';
 if (!canSound && !canVibrate) alertOption.hidden = true;
-if (!canWake) wakeOption.hidden = true;
 
 const client = createCompanionClient({ baseUrl: companionBaseUrl(location) });
 let alertState = { previous: null, rev: null, phase: null, alert: null };
 let audio = null;
-let wakeLock = null;
 let rendered = '';
+let currentView = null;
+let testView = null;
+
+const wake = createWakeLockController({
+  supported: typeof navigator.wakeLock?.request === 'function',
+  request: (type) => navigator.wakeLock.request(type),
+  visibility: () => document.visibilityState,
+  onActive() {
+    wakeNote.hidden = true;
+    text(wakeNote, '');
+  },
+  onRefused() {
+    wakeNote.hidden = false;
+    text(wakeNote, 'The browser did not keep the screen on.');
+  },
+});
+
+if (!wake.supported) {
+  wakeInput.disabled = true;
+  wakeInput.checked = false;
+  wakeNote.hidden = false;
+  text(wakeNote, 'This browser cannot keep the screen on.');
+}
 
 function text(node, value) {
   if (node.textContent !== value) node.textContent = value;
 }
 
 function paint(view) {
+  currentView = view;
   const presentation = presentCompanion(view);
   document.body.classList.toggle('game--night', presentation.night);
   document.body.classList.toggle('wallpaper-ready', presentation.night);
@@ -65,6 +98,7 @@ function paint(view) {
   for (const key of Object.keys(countNodes)) {
     text(countNodes[key], counts ? String(counts[key]) : '–');
   }
+  syncShare(view);
   const signature = JSON.stringify(presentation);
   if (signature !== rendered) rendered = signature;
 
@@ -75,6 +109,44 @@ function paint(view) {
   } else {
     alertState = { previous: view.displaySeconds, rev: view.rev, phase: view.phase, alert: null };
   }
+}
+
+function focusAfterQr() {
+  if (showQrButton.isConnected && !showQrButton.hidden) {
+    showQrButton.focus();
+    return;
+  }
+  if (!session.hidden && !leaveButton.hidden) {
+    leaveButton.focus();
+    return;
+  }
+  codeInput.focus();
+}
+
+function syncShare(view) {
+  const share = presentCompanionPlayerShare(view);
+  showQrButton.hidden = !share.canShare;
+  if (!share.canShare) {
+    if (qrDialog.open) qrDialog.close();
+    qrImage.removeAttribute('src');
+    text(qrCodeText, '');
+    return;
+  }
+  if (!qrDialog.open) return;
+  const src = companionQrImageUrl(share.playerUrl);
+  if (qrImage.getAttribute('src') !== src) qrImage.src = src;
+  qrImage.alt = `QR code for companion session ${share.code}`;
+  text(qrCodeText, share.code);
+}
+
+function openQr() {
+  const share = presentCompanionPlayerShare(currentView);
+  if (!share.canShare || qrDialog.open) return;
+  qrImage.src = companionQrImageUrl(share.playerUrl);
+  qrImage.alt = `QR code for companion session ${share.code}`;
+  text(qrCodeText, share.code);
+  qrDialog.showModal();
+  qrClose.focus();
 }
 
 function playAlert(kind) {
@@ -121,10 +193,30 @@ joinForm.addEventListener('submit', (event) => {
 });
 
 leaveButton.addEventListener('click', () => {
+  testView = null;
   client.leave();
   rememberCode('');
   showCodeError('');
   paint(client.view());
+});
+
+showQrButton.addEventListener('click', () => {
+  openQr();
+});
+
+qrClose.addEventListener('click', () => {
+  qrDialog.close();
+});
+
+qrDialog.addEventListener('close', () => {
+  qrImage.removeAttribute('src');
+  focusAfterQr();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !qrDialog.open) return;
+  event.preventDefault();
+  qrDialog.close();
 });
 
 alertsInput.addEventListener('change', () => {
@@ -134,39 +226,18 @@ alertsInput.addEventListener('change', () => {
   audio.resume();
 });
 
-async function syncWakeLock() {
-  if (!canWake) return;
-  if (!wakeInput.checked || document.visibilityState !== 'visible') {
-    if (wakeLock) {
-      try {
-        await wakeLock.release();
-      } catch {
-        // The browser may already have released it.
-      }
-      wakeLock = null;
-    }
-    return;
-  }
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeNote.hidden = true;
-    wakeLock.addEventListener('release', () => {
-      wakeLock = null;
-    });
-  } catch {
-    wakeInput.checked = false;
-    wakeNote.hidden = false;
-    text(wakeNote, 'The browser did not keep the screen awake. You can still lock your phone.');
-  }
-}
-
 wakeInput.addEventListener('change', () => {
-  syncWakeLock();
+  if (!wakeInput.checked && wake.supported) {
+    wakeNote.hidden = true;
+    text(wakeNote, '');
+  }
+  if (!wake.supported) return;
+  wake.setEnabled(wakeInput.checked);
 });
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') client.resume();
-  syncWakeLock();
+  wake.onVisibilityChange();
 });
 
 const initial = sessionCodeFromLocation(location);
@@ -176,7 +247,6 @@ if (initial) {
   else showCodeError('That code is not valid. Ask the Storyteller for the six-character code.');
 }
 
-let testView = null;
 setInterval(() => paint(testView || client.view()), 200);
 paint(client.view());
 
