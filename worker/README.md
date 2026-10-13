@@ -147,6 +147,8 @@ Open `http://127.0.0.1:8006/?companionDev=1`. The panel is red-tinted and says *
 
 The browser still talks to `http://127.0.0.1:8006/companion-api`. The dev server proxies that to the deployed worker and forwards the page's `Origin`. The production Content Security Policy is unchanged. Do not put the worker URL in the page query string. The URL belongs in the environment variable so a link cannot redirect the write token.
 
+The proxy answers a refused upgrade with that HTTP status and then closes the socket, so the browser leaves `CONNECTING` and shows a failed handshake. It does not forward Cloudflare's `alt-svc` header onto the local page.
+
 `npm run dev:worker` is not required for this remote test. If it is running, the page still uses `COMPANION_WORKER_URL` and not the local worker.
 
 ## Origin policy

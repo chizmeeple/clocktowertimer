@@ -1,6 +1,6 @@
 {
   "name": "clocktowertimer",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Clock Tower Timer Application",
   "scripts": {
     "stamp-release": "node scripts/release-assets.mjs --write",
@@ -18,7 +18,7 @@
     "serve": "^14.2.6",
     "start-server-and-test": "^3.0.0",
     "vitest": "^4.1.11",
-    "wrangler": "^4.149.0"
+    "wrangler": "^4.150.0"
   },
   "overrides": {
     "compression": "^1.8.2"

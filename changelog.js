@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.6';
+export const APP_VERSION = '1.2.7';
 
 export const CHANGELOG = {
+  '1.2.7': {
+    date: '2026-10-13',
+    changes: {
+      improvements: [
+        'The local companion test reports a refused connection to the deployed session service instead of staying on connecting. Companion Mode is not on the public timer',
+      ],
+    },
+  },
   '1.2.6': {
     date: '2026-10-12',
     changes: {

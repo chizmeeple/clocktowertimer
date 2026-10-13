@@ -78,8 +78,77 @@ function proxyPath(url) {
   return next.startsWith('/') ? next : `/${next}`;
 }
 
+// Hop-by-hop headers, plus Cloudflare routing headers. Forwarding
+// alt-svc would tell the browser this local origin is HTTP/3 on port 443.
+const droppedHeaders = new Set([
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'proxy-connection',
+  'te',
+  'trailer',
+  'trailers',
+  'transfer-encoding',
+  'upgrade',
+  'alt-svc',
+  'nel',
+  'report-to',
+]);
+
 function proxyHeaders(headers) {
-  return { ...headers, host: worker.host };
+  const next = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (droppedHeaders.has(key) || key === 'accept-encoding' || key === 'host') continue;
+    next[key] = value;
+  }
+  next.host = worker.host;
+  if (headers.upgrade) {
+    next.connection = 'Upgrade';
+    next.upgrade = headers.upgrade;
+  }
+  return next;
+}
+
+function responseHeaders(headers) {
+  const next = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (droppedHeaders.has(key)) continue;
+    next[key] = value;
+  }
+  return next;
+}
+
+function headerLines(headers) {
+  const lines = [];
+  for (const [key, value] of Object.entries(headers)) {
+    const values = Array.isArray(value) ? value : [value];
+    for (const item of values) {
+      if (typeof item !== 'string' || /[\r\n]/.test(item)) continue;
+      lines.push(`${key}: ${item}`);
+    }
+  }
+  return lines;
+}
+
+function writeStatus(socket, statusCode, statusMessage, headers) {
+  const lines = [
+    `HTTP/1.1 ${statusCode} ${statusMessage || 'Error'}`,
+    ...headerLines(headers),
+  ];
+  socket.write(`${lines.join('\r\n')}\r\n\r\n`);
+}
+
+function websocketHeaders(headers) {
+  const next = { connection: 'upgrade', upgrade: 'websocket' };
+  for (const name of [
+    'sec-websocket-accept',
+    'sec-websocket-extensions',
+    'sec-websocket-protocol',
+  ]) {
+    if (headers[name]) next[name] = headers[name];
+  }
+  return next;
 }
 
 const server = createServer(async (req, res) => {
@@ -99,7 +168,7 @@ const server = createServer(async (req, res) => {
         headers: proxyHeaders(req.headers),
       },
       (proxyRes) => {
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        res.writeHead(proxyRes.statusCode, responseHeaders(proxyRes.headers));
         proxyRes.pipe(res);
       }
     );
@@ -134,6 +203,7 @@ server.on('upgrade', (req, socket, head) => {
     socket.destroy();
     return;
   }
+  socket.setNoDelay(true);
   const proxy = worker.request({
     hostname: worker.hostname,
     port: worker.port,
@@ -141,23 +211,69 @@ server.on('upgrade', (req, socket, head) => {
     method: 'GET',
     headers: proxyHeaders(req.headers),
   });
+  let settled = false;
+
+  function finish(statusCode, statusMessage, headers, body) {
+    if (settled) return;
+    settled = true;
+    writeStatus(socket, statusCode, statusMessage, {
+      ...responseHeaders(headers || {}),
+      connection: 'close',
+      'content-type': headers?.['content-type'] || 'application/json',
+      'cache-control': 'no-store',
+    });
+    if (body) socket.write(body);
+    socket.end();
+    proxy.destroy();
+  }
+
+  proxy.setTimeout(10_000, () => {
+    finish(504, 'Gateway Timeout', {}, JSON.stringify({ error: 'worker-timeout' }));
+  });
   proxy.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
-    const lines = [`HTTP/1.1 101 ${proxyRes.statusMessage || 'Switching Protocols'}`];
-    for (const [key, value] of Object.entries(proxyRes.headers)) {
-      const values = Array.isArray(value) ? value : [value];
-      for (const item of values) {
-        if (item != null) lines.push(`${key}: ${item}`);
-      }
+    if (settled) {
+      proxySocket.destroy();
+      return;
     }
-    socket.write(`${lines.join('\r\n')}\r\n\r\n`);
+    settled = true;
+    proxy.setTimeout(0);
+    proxySocket.setNoDelay(true);
+    proxySocket.setTimeout(0);
+    socket.setTimeout(0);
+    writeStatus(
+      socket,
+      101,
+      proxyRes.statusMessage || 'Switching Protocols',
+      websocketHeaders(proxyRes.headers)
+    );
     if (proxyHead?.length) socket.write(proxyHead);
     if (head?.length) proxySocket.write(head);
     proxySocket.pipe(socket);
     socket.pipe(proxySocket);
     proxySocket.on('error', () => socket.destroy());
     socket.on('error', () => proxySocket.destroy());
+    socket.on('close', () => proxySocket.destroy());
+    proxySocket.on('close', () => socket.destroy());
   });
-  proxy.on('error', () => socket.destroy());
+  proxy.on('response', (proxyRes) => {
+    const chunks = [];
+    proxyRes.on('data', (chunk) => chunks.push(chunk));
+    proxyRes.on('end', () => {
+      finish(
+        proxyRes.statusCode || 502,
+        proxyRes.statusMessage,
+        proxyRes.headers,
+        Buffer.concat(chunks)
+      );
+    });
+    proxyRes.on('error', () => {
+      finish(502, 'Bad Gateway', {}, JSON.stringify({ error: 'worker-unavailable' }));
+    });
+  });
+  proxy.on('error', () => {
+    finish(502, 'Bad Gateway', {}, JSON.stringify({ error: 'worker-unavailable' }));
+  });
+  socket.on('error', () => proxy.destroy());
   proxy.end();
 });
 
