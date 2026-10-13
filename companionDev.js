@@ -2,12 +2,7 @@
 // The panel is created only on localhost when companionDev=1 is present.
 // The public timer page does not show it and does not open a socket.
 
-import { createStorytellerTransport } from './companionTransport.js';
-import {
-  disableCompanionPublishing,
-  enableCompanionPublishing,
-  publishCompanionSnapshot,
-} from './companionPublish.js';
+import { companionSession } from './companionSession.js';
 
 const CLOSED_SESSION = new Set(['idle', 'ended', 'expired', 'disconnected', 'replaced', 'failed']);
 
@@ -107,27 +102,22 @@ export function mountCompanionDev(locationObject = globalThis.location) {
     }
   }
 
-  const transport = createStorytellerTransport({
-    enablePublishing: enableCompanionPublishing,
-    disablePublishing: disableCompanionPublishing,
-    republish: () => publishCompanionSnapshot(true),
-    onStatus(status) {
-      codeNode.textContent = status.code ?? '—';
-      statusNode.textContent = status.connection;
-      const rev = status.acceptedRev == null ? 'none' : String(status.acceptedRev);
-      deliveryNode.textContent = `${status.delivery}, revision ${rev}`;
-      applySessionLinks(status);
-    },
+  companionSession.subscribe((status) => {
+    codeNode.textContent = status.code ?? '—';
+    statusNode.textContent = status.connection;
+    const rev = status.acceptedRev == null ? 'none' : String(status.acceptedRev);
+    deliveryNode.textContent = `${status.delivery}, revision ${rev}`;
+    applySessionLinks(status);
   });
 
   panel.querySelector('#companionDevStart').addEventListener('click', () => {
-    transport.start();
+    companionSession.start();
   });
   panel.querySelector('#companionDevDrop').addEventListener('click', () => {
-    transport.drop();
+    companionSession.drop();
   });
   panel.querySelector('#companionDevStop').addEventListener('click', () => {
-    transport.stop();
+    companionSession.stop();
   });
   for (const [link, windowName] of sessionLinks) {
     link.addEventListener('click', (event) => {
@@ -145,7 +135,7 @@ export function mountCompanionDev(locationObject = globalThis.location) {
     });
   }
   panel.querySelector('#companionDevEnd').addEventListener('click', () => {
-    transport.end();
+    companionSession.end();
   });
-  return transport;
+  return companionSession;
 }

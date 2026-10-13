@@ -153,6 +153,10 @@ describe('companion page policy', () => {
     assert.match(page, /wss:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
     assert.doesNotMatch(page, /connect-src[^;]*\*/);
     const timerPolicy = timer.match(/content="([^"]*connect-src[^"]*)"/)[1];
-    assert.doesNotMatch(timerPolicy, /workers\.dev/);
+    assert.match(timerPolicy, /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
+    assert.match(timerPolicy, /wss:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
+    assert.equal(timerPolicy.match(/wss:\/\//g).length, 1);
+    assert.doesNotMatch(timerPolicy, /\*\.workers\.dev/);
+    assert.doesNotMatch(timerPolicy, /wss:\/\/\*/);
   });
 });

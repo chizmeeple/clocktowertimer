@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.9';
+export const APP_VERSION = '1.2.10';
 
 export const CHANGELOG = {
+  '1.2.10': {
+    date: '2026-10-13',
+    changes: {
+      improvements: [
+        'Storytellers can turn on Companion Mode in Settings and share a code or QR link. The same session continues across games, and the timer face is unchanged. Sharing stays off until it is enabled',
+      ],
+    },
+  },
   '1.2.9': {
     date: '2026-10-13',
     changes: {

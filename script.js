@@ -25,6 +25,12 @@ import {
 } from './companionPublish.js';
 import { projectCompanionState } from './companionState.js';
 import { mountCompanionDev } from './companionDev.js';
+import {
+  companionQrImageUrl,
+  companionSession,
+  presentCompanionSharing,
+  resolveCompanionEnabledChange,
+} from './companionSession.js';
 
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
@@ -989,6 +995,8 @@ const DEFAULT_PLAY_MUSIC = false;
 const DEFAULT_PLAY_MUSIC_AT_NIGHT = false;
 const DEFAULT_PLAY_SOUND_EFFECTS = true;
 const DEFAULT_KEEP_DISPLAY_ON = true;
+const DEFAULT_COMPANION_ENABLED = false;
+const DEFAULT_COMPANION_AUTO_START = false;
 const DEFAULT_SHOW_PLAYER_COUNT_QR = false;
 const DEFAULT_SHOW_CURRENT_TIME = true;
 const DEFAULT_SHOW_SESSION_COUNTDOWN = false;
@@ -1051,6 +1059,8 @@ let soundEffectsVolume = DEFAULT_SOUND_EFFECTS_VOLUME;
 let backgroundTheme = DEFAULT_BACKGROUND_THEME;
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST;
 let keepDisplayOn = DEFAULT_KEEP_DISPLAY_ON;
+let companionEnabled = DEFAULT_COMPANION_ENABLED;
+let companionAutoStart = DEFAULT_COMPANION_AUTO_START;
 let showPlayerCountQr = DEFAULT_SHOW_PLAYER_COUNT_QR;
 let showCurrentTime = DEFAULT_SHOW_CURRENT_TIME;
 let clockFormat = DEFAULT_CLOCK_FORMAT;
@@ -1798,6 +1808,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize settings and update display before the portrait check.
   // The warning uses acceptedPortraitWarning, which loadSettings applies.
   loadSettings();
+  bindCompanionSettings();
   updateClocktowerPresets();
   updateDisplay();
 
@@ -1860,6 +1871,8 @@ const KNOWN_SETTINGS_KEYS = new Set([
   'autoOpenNominationsDelay',
   'acceptedPortraitWarning',
   'keyboardShortcuts',
+  'companionEnabled',
+  'companionAutoStart',
 ]);
 
 // Fields from a future version, kept so a later save does not drop them.
@@ -2073,6 +2086,8 @@ function applyInMemoryDefaultSettings() {
   autoOpenNominations = DEFAULT_AUTO_OPEN_NOMINATIONS;
   autoOpenNominationsDelay = DEFAULT_NOMINATION_OPEN_DELAY;
   acceptedPortraitWarning = DEFAULT_ACCEPTED_PORTRAIT_WARNING;
+  companionEnabled = DEFAULT_COMPANION_ENABLED;
+  companionAutoStart = DEFAULT_COMPANION_AUTO_START;
   keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
   updateDayDisplay('', { persist: false });
 }
@@ -2212,6 +2227,14 @@ function applyParsedSettings(settings) {
     settings.acceptedPortraitWarning,
     DEFAULT_ACCEPTED_PORTRAIT_WARNING
   );
+  companionEnabled = readBooleanSetting(
+    settings.companionEnabled,
+    DEFAULT_COMPANION_ENABLED
+  );
+  companionAutoStart = readBooleanSetting(
+    settings.companionAutoStart,
+    DEFAULT_COMPANION_AUTO_START
+  );
 
   const shortcutResult = readKeyboardShortcuts(settings.keyboardShortcuts);
   keyboardShortcuts = shortcutResult.shortcuts;
@@ -2321,6 +2344,160 @@ function applySettingsToForm() {
     .closest('label')
     .classList.toggle('inactive', !playSoundEffects);
 
+  const companionEnabledInput = document.getElementById('companionEnabled');
+  const companionAutoStartInput = document.getElementById('companionAutoStart');
+  if (companionEnabledInput) companionEnabledInput.checked = companionEnabled;
+  if (companionAutoStartInput) {
+    companionAutoStartInput.checked = companionAutoStart;
+    companionAutoStartInput.disabled = !companionEnabled;
+  }
+  document
+    .getElementById('companionAutoStartLabel')
+    ?.classList.toggle('is-unavailable', !companionEnabled);
+  renderCompanionSettings();
+}
+
+function renderCompanionSettings() {
+  const sharing = presentCompanionSharing({
+    enabled: companionEnabled,
+    ...companionSession.status(),
+  });
+  const statusNode = document.getElementById('companionStatus');
+  const sessionNode = document.getElementById('companionSession');
+  if (!statusNode || !sessionNode) return;
+
+  statusNode.textContent = sharing.status;
+  sessionNode.hidden = !companionEnabled;
+  const detailNode = document.getElementById('companionStatusDetail');
+  if (detailNode) {
+    detailNode.textContent = sharing.detail;
+    detailNode.hidden = sharing.detail === '';
+  }
+
+  const codeRow = document.getElementById('companionCodeRow');
+  const codeNode = document.getElementById('companionCode');
+  if (codeRow) codeRow.hidden = !sharing.canShare;
+  if (codeNode) codeNode.textContent = sharing.code;
+
+  const startButton = document.getElementById('companionStart');
+  const stopButton = document.getElementById('companionStop');
+  const copyButton = document.getElementById('companionCopy');
+  const qrButton = document.getElementById('companionShowQr');
+  if (startButton) startButton.disabled = !sharing.canStart;
+  if (stopButton) stopButton.disabled = !sharing.canStop;
+  if (copyButton) copyButton.disabled = !sharing.canShare;
+  if (qrButton) qrButton.disabled = !sharing.canShare;
+
+  const feedback = document.getElementById('companionCopyFeedback');
+  if (feedback) {
+    if (!sharing.canShare) feedback.textContent = '';
+    feedback.hidden = feedback.textContent === '';
+  }
+
+  const qr = document.getElementById('companionQr');
+  const qrImage = document.getElementById('companionQrImage');
+  if (!sharing.canShare) {
+    if (qr) qr.hidden = true;
+    if (qrImage) qrImage.removeAttribute('src');
+    return;
+  }
+  if (qr && !qr.hidden && qrImage) {
+    const src = companionQrImageUrl(sharing.playerUrl);
+    if (qrImage.getAttribute('src') !== src) qrImage.src = src;
+    const qrCode = document.getElementById('companionQrCode');
+    if (qrCode) qrCode.textContent = sharing.code;
+  }
+}
+
+function bindCompanionSettings() {
+  const enableInput = document.getElementById('companionEnabled');
+  const autoInput = document.getElementById('companionAutoStart');
+  if (!enableInput || !autoInput || enableInput.dataset.bound === 'true') return;
+  enableInput.dataset.bound = 'true';
+
+  enableInput.addEventListener('change', () => {
+    const sharing = presentCompanionSharing({
+      enabled: true,
+      ...companionSession.status(),
+    }).canStop;
+    const decision = resolveCompanionEnabledChange({
+      nextEnabled: enableInput.checked,
+      sharing,
+      confirmed:
+        enableInput.checked || !sharing
+          ? true
+          : globalThis.confirm(
+              'Stop sharing? Players using this code will lose access.'
+            ),
+    });
+    enableInput.checked = decision.enabled;
+    companionEnabled = decision.enabled;
+    autoInput.disabled = !companionEnabled;
+    document
+      .getElementById('companionAutoStartLabel')
+      ?.classList.toggle('is-unavailable', !companionEnabled);
+    if (decision.endSession) companionSession.end();
+    renderCompanionSettings();
+    saveSettings();
+  });
+
+  autoInput.addEventListener('change', () => {
+    companionAutoStart = autoInput.checked;
+    saveSettings();
+  });
+
+  document.getElementById('companionStart').addEventListener('click', () => {
+    const sharing = presentCompanionSharing({
+      enabled: companionEnabled,
+      ...companionSession.status(),
+    });
+    if (!sharing.canStart) return;
+    companionSession.start();
+  });
+  document.getElementById('companionStop').addEventListener('click', () => {
+    const sharing = presentCompanionSharing({
+      enabled: companionEnabled,
+      ...companionSession.status(),
+    });
+    if (!sharing.canStop) return;
+    companionSession.end();
+  });
+  document.getElementById('companionCopy').addEventListener('click', async () => {
+    const sharing = presentCompanionSharing({
+      enabled: companionEnabled,
+      ...companionSession.status(),
+    });
+    const feedback = document.getElementById('companionCopyFeedback');
+    if (!sharing.playerUrl || !feedback) return;
+    try {
+      await navigator.clipboard.writeText(sharing.playerUrl);
+      feedback.hidden = false;
+      feedback.textContent = 'Link copied';
+    } catch {
+      feedback.hidden = false;
+      feedback.textContent = 'Could not copy the link';
+    }
+  });
+  document.getElementById('companionShowQr').addEventListener('click', () => {
+    const sharing = presentCompanionSharing({
+      enabled: companionEnabled,
+      ...companionSession.status(),
+    });
+    if (!sharing.canShare) return;
+    const qr = document.getElementById('companionQr');
+    const qrImage = document.getElementById('companionQrImage');
+    qr.hidden = false;
+    qrImage.src = companionQrImageUrl(sharing.playerUrl);
+    qrImage.alt = `QR code for companion session ${sharing.code}`;
+    document.getElementById('companionQrCode').textContent = sharing.code;
+  });
+  document.getElementById('companionQrClose').addEventListener('click', () => {
+    document.getElementById('companionQr').hidden = true;
+  });
+
+  companionSession.subscribe(() => {
+    renderCompanionSettings();
+  });
 }
 
 // Load settings from localStorage
@@ -2409,6 +2586,10 @@ function loadSettings() {
   document.body.classList.add('wallpaper-ready');
 
   initialSettingsApplied = true;
+  companionSession.maybeAutoStart({
+    enabled: companionEnabled,
+    autoStart: companionAutoStart,
+  });
   if (game.getPhase() === 'dusk' || game.getPhase() === 'dawn') {
     gameSessionActive = true;
   }
@@ -2465,6 +2646,8 @@ function saveSettings() {
     autoOpenNominationsDelay,
     acceptedPortraitWarning,
     keyboardShortcuts,
+    companionEnabled,
+    companionAutoStart,
   };
   try {
     writeStorageItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));

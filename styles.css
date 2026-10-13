@@ -2549,6 +2549,7 @@ button:disabled {
 /* Settings Tabs */
 .settings-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
@@ -2791,6 +2792,108 @@ button:disabled {
 
 .settings-panel[data-panel='shortcuts'] .setting-group {
   gap: 0.75rem;
+}
+
+#companionAutoStartLabel.is-unavailable {
+  opacity: 0.45;
+}
+
+.companion-intro,
+.companion-hint,
+#companionCopyFeedback {
+  margin: 0;
+  color: var(--colour-text-muted);
+  font-size: 0.9rem;
+}
+
+#companionStatus {
+  margin: 0;
+  font-weight: 600;
+}
+
+#companionCodeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+#companionCodeRow[hidden],
+#companionSession[hidden],
+#companionQr[hidden] {
+  display: none;
+}
+
+#companionCode,
+#companionQrCode {
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+#companionCode {
+  font-size: 1.75rem;
+  color: var(--colour-gold-bright);
+}
+
+.companion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.companion-actions button,
+#companionQrClose {
+  width: auto;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.companion-actions button.primary-btn {
+  background: var(--colour-accent-button);
+  border-color: transparent;
+}
+
+.companion-actions button:disabled,
+#companionQrClose:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.companion-actions button:focus-visible,
+#companionQrClose:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.4);
+}
+
+.companion-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+.companion-qr-card img {
+  width: min(16rem, 100%);
+  height: auto;
+  background: #fff;
+}
+
+#companionQrCode {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #111;
 }
 
 /* Responsive adjustments.

@@ -339,6 +339,7 @@ export function createStorytellerTransport({
     }
     intentional = false;
     ending = false;
+    code = null;
     setConnection('connecting');
     let response;
     try {
