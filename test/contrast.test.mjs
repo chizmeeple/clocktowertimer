@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import {
+  composite,
   contrastOf,
   contrastRatio,
   isLargeText,
@@ -90,5 +91,16 @@ describe('contrast palette', () => {
     assert.ok(contrastOf('#101010', variable('--colour-blitz')) >= 4.5);
     assert.ok(contrastOf([255, 255, 255, 0.88], overPage(25, 118, 210, 0.7)) >= 4.5);
     assert.ok(contrastOf([255, 255, 255, 0.88], overPage(211, 47, 47, 0.7)) >= 4.5);
+  });
+
+  it('keeps the companion join code and label readable on the timer panel', () => {
+    const page = composite([255, 255, 255, 0.15], [26, 26, 26, 1]);
+    const panel = composite([16, 14, 12, 0.94], page);
+    const code = contrastOf(variable('--colour-gold-bright'), panel);
+    const label = contrastOf('#f3ecda', panel);
+    assert.ok(code >= 4.5, code);
+    assert.ok(label >= 4.5, label);
+    assert.match(css, /\.companion-join-code \{[^}]*color:\s*var\(--colour-gold-bright\)/);
+    assert.match(css, /\.companion-join-label,\s*\n\.companion-join-state \{[^}]*color:\s*#f3ecda/);
   });
 });

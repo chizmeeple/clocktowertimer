@@ -2,7 +2,7 @@
 // The panel is created only on localhost when companionDev=1 is present.
 // The public timer page does not show it and does not open a socket.
 
-import { companionSession } from './companionSession.js';
+import { companionSession, presentCompanionJoin } from './companionSession.js';
 
 const CLOSED_SESSION = new Set(['idle', 'ended', 'expired', 'disconnected', 'replaced', 'failed']);
 
@@ -54,7 +54,7 @@ export function mountCompanionDev(locationObject = globalThis.location) {
     <h2>Companion dev</h2>
     <p id="companionDevTarget">Checking worker…</p>
     <p>Nothing here is on the public timer.</p>
-    <p>Code <code id="companionDevCode">—</code></p>
+    <p id="companionDevCodeLine">Code <code id="companionDevCode">—</code></p>
     <p id="companionDevStatus">Idle</p>
     <p id="companionDevDelivery"></p>
     <button type="button" id="companionDevStart">Start sharing</button>
@@ -102,8 +102,15 @@ export function mountCompanionDev(locationObject = globalThis.location) {
     }
   }
 
+  const codeLine = panel.querySelector('#companionDevCodeLine');
   companionSession.subscribe((status) => {
     codeNode.textContent = status.code ?? '—';
+    const enabled = document.getElementById('companionEnabled')?.checked === true;
+    codeLine.hidden = presentCompanionJoin({
+      enabled,
+      connection: status.connection,
+      code: status.code,
+    }).visible;
     statusNode.textContent = status.connection;
     const rev = status.acceptedRev == null ? 'none' : String(status.acceptedRev);
     deliveryNode.textContent = `${status.delivery}, revision ${rev}`;

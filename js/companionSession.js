@@ -1,7 +1,7 @@
 // One Storyteller companion session for Settings and the development panel.
 // The write token stays inside the transport and is never returned here.
 
-import { companionBaseUrl } from './companionCode.js';
+import { companionBaseUrl, isSessionCode } from './companionCode.js';
 import {
   disableCompanionPublishing,
   enableCompanionPublishing,
@@ -61,6 +61,20 @@ export function presentCompanionSharing({ enabled, connection, code }) {
     canStart: Boolean(enabled) && !SHARING.has(connection),
     canStop: Boolean(enabled) && SHARING.has(connection),
     canShare: active,
+  };
+}
+
+const JOIN_CONNECTIONS = new Set(['live', 'reconnecting']);
+
+// The timer shows a code only for a valid session that players can still join.
+// Connecting, offline, and ended sessions stay off the timer face.
+export function presentCompanionJoin({ enabled, connection, code }) {
+  const visible =
+    Boolean(enabled) && JOIN_CONNECTIONS.has(connection) && isSessionCode(code);
+  return {
+    visible,
+    code: visible ? code : '',
+    reconnecting: visible && connection === 'reconnecting',
   };
 }
 

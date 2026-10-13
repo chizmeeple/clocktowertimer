@@ -346,6 +346,14 @@
 
     <!-- Bottom Controls Container -->
     <div class="bottom-container">
+      <aside id="companionJoin" class="companion-join" hidden>
+        <p class="companion-join-label" aria-hidden="true">Companion</p>
+        <p id="companionJoinCode" class="companion-join-code">
+          <span class="visually-hidden">Companion join code </span
+          ><span id="companionJoinValue"></span>
+        </p>
+        <p id="companionJoinState" class="companion-join-state" hidden>Reconnecting</p>
+      </aside>
       <div class="left-buttons">
         <button id="settingsBtn" aria-label="Settings">
           <svg

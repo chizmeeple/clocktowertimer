@@ -91,14 +91,16 @@ A companion page should use the latest authoritative snapshot, account for measu
 
 ## Storyteller settings
 
-Companion Mode is configured in the main timer's Settings dialog, on the **Companion** tab. Nothing is added to the timer face. Both settings are off until the Storyteller turns them on, and they are stored with the other timer settings.
+Companion Mode is configured in the main timer's Settings dialog, on the **Companion** tab. Both settings are off until the Storyteller turns them on, and they are stored with the other timer settings.
+
+While a session is live, the timer shows that session's six-character join code in a small panel just above the bottom-right controls. Players can read it without opening Settings. The panel stays hidden while Companion Mode is off, while sharing has not started, and while a session is still connecting. If the connection drops and that same session is reconnecting, the code remains and the panel says Reconnecting, so it is not shown as Live. The panel is removed when sharing stops, the session ends or expires, Companion Mode is turned off, or there is no valid code. Closing Settings, switching tabs, starting a new game, resetting the day, and pausing the countdown leave the code unchanged. The panel is read-only: it is not a control, and it does not create or end a session.
 
 - **Enable Companion Mode** is the master switch. While it is off, the timer does not create a session, connect to the Worker, or publish. The session controls stay unavailable. Turning it off during an active session asks for confirmation, because players lose access. Cancelling that confirmation leaves the session running.
 - **Start automatically** starts one sharing session when Tower Timer opens. It does nothing unless Companion Mode is also on. It runs once per page load, without opening Settings, and a failure leaves the timer playable so the Storyteller can press **Start sharing**. Starting a new game, resetting the day, or changing player or traveller counts does not create another session. Reloading the page does not reuse the previous write token; a new page load can receive a new code.
 
 **Start sharing** creates the session and publishes the current public snapshot. The status moves through Connecting and only says Live after the Storyteller socket has connected and authenticated. **Stop sharing** ends that session for connected players and leaves Companion Mode enabled, so another session can be started. Closing Settings, or switching tabs, does not stop the session.
 
-The six-character code is shown only while that session is connecting, live, or reconnecting. **Copy link** and **Show QR code** use the public player URL:
+In Settings, the six-character code is shown while that session is connecting, live, or reconnecting. On the timer it appears only once the session is live, and it remains during reconnect. **Copy link** and **Show QR code** use the public player URL:
 
 `https://timer.arcane-scripts.net/companion.html?code=<SESSION_CODE>`
 
@@ -144,7 +146,7 @@ The server wraps snapshots in a revisioned envelope with server timing informati
 | Browser API/WebSocket URL | Same-origin `/companion-api` development proxy | Direct HTTPS / `wss://` Worker endpoint |
 | Why a proxy? | Local pages call same-origin `/companion-api`, including when `COMPANION_WORKER_URL` selects the deployed Worker | Not needed; the Storyteller page connects to the Worker directly |
 | Player page | `companion.html` on the local server, still via `/companion-api` | `companion.html` connects directly to the deployed worker |
-| Publishing UI | Settings tab, plus the development panel at `?companionDev=1` | Settings tab, off until enabled |
+| Publishing UI | Settings tab and the timer join code while a session is live, plus the development panel at `?companionDev=1` | Settings tab, off until enabled. The timer shows the join code only while a session is live |
 
 For a local Worker:
 
@@ -160,7 +162,7 @@ COMPANION_WORKER_URL='https://clocktower-companion.redmeeple.workers.dev' \
   npm run dev:timer
 ```
 
-Then visit `http://127.0.0.1:8006/?companionDev=1`. After a session starts, **Open companion** opens the player page and **Open diagnostics** opens the diagnostic client. Both use the current code and are not links once that session has ended. The panel and the Settings tab share one session controller, so they cannot start two sessions for the same page. The panel remains a localhost diagnostic tool. Its stop and drop actions are local diagnostic controls; **Stop sharing** in Settings is what tells the Worker to end the session for players.
+Then visit `http://127.0.0.1:8006/?companionDev=1`. After a session starts, **Open companion** opens the player page and **Open diagnostics** opens the diagnostic client. Both use the current code and are not links once that session has ended. The panel and the Settings tab share one session controller, so they cannot start two sessions for the same page. The panel remains a localhost diagnostic tool. While the timer is showing the join code, the panel does not repeat that code. Its stop and drop actions are local diagnostic controls; **Stop sharing** in Settings is what tells the Worker to end the session for players.
 
 `companion.html` allows connections only to itself and `clocktower-companion.redmeeple.workers.dev` (HTTPS and WSS). On localhost it still uses the `/companion-api` proxy, so the same page works with a local worker or `COMPANION_WORKER_URL`. The Storyteller page allows the same worker host, for HTTPS and WSS only, and uses it when the page is not served from localhost.
 
@@ -202,7 +204,7 @@ Expected: session code, `Published revision 1`, and `Session ended`.
 - Remote smoke test created a session, published revision 1, and ended the session.
 - Remote two-window browser test confirmed Storyteller publishing and companion reception, with matching revisions.
 - The player page is `companion.html`. It joins with a code and talks to the deployed worker when it is not served from localhost.
-- Storytellers turn sharing on from Settings. The timer face has no Companion Mode controls. Sharing stays off until both the setting and a session exist.
+- Storytellers turn sharing on from Settings. The timer face has no Companion Mode controls. While a session is live it shows the join code above the bottom-right controls. Sharing stays off until both the setting and a session exist.
 
 The `curl --max-time` timeout during a successful WebSocket upgrade is expected: WebSockets remain open. Receiving snapshot frames before that timeout demonstrates data delivery for that diagnostic connection, **not** a completed browser end-to-end test.
 

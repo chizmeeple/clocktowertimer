@@ -28,6 +28,7 @@ import { mountCompanionDev } from './companionDev.js';
 import {
   companionQrImageUrl,
   companionSession,
+  presentCompanionJoin,
   presentCompanionSharing,
   resolveCompanionEnabledChange,
 } from './companionSession.js';
@@ -2357,7 +2358,24 @@ function applySettingsToForm() {
   renderCompanionSettings();
 }
 
+function renderCompanionJoin() {
+  const panel = document.getElementById('companionJoin');
+  const value = document.getElementById('companionJoinValue');
+  const state = document.getElementById('companionJoinState');
+  if (!panel || !value || !state) return;
+
+  const join = presentCompanionJoin({
+    enabled: companionEnabled,
+    ...companionSession.status(),
+  });
+  panel.hidden = !join.visible;
+  panel.classList.toggle('is-reconnecting', join.reconnecting);
+  if (value.textContent !== join.code) value.textContent = join.code;
+  state.hidden = !join.reconnecting;
+}
+
 function renderCompanionSettings() {
+  renderCompanionJoin();
   const sharing = presentCompanionSharing({
     enabled: companionEnabled,
     ...companionSession.status(),

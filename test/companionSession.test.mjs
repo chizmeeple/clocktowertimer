@@ -4,6 +4,7 @@ import {
   companionPlayerUrl,
   companionQrImageUrl,
   createCompanionSessionController,
+  presentCompanionJoin,
   presentCompanionSharing,
   resolveCompanionEnabledChange,
 } from '../js/companionSession.js';
@@ -66,6 +67,41 @@ describe('companion sharing presentation', () => {
       assert.equal(ended.playerUrl, '');
       assert.match(ended.detail, /no longer valid/);
       assert.equal(ended.canStart, true);
+    }
+  });
+
+  it('shows a join code only while a valid session is live or reconnecting', () => {
+    assert.deepEqual(
+      presentCompanionJoin({ enabled: false, connection: 'live', code: 'WH8X2P' }),
+      { visible: false, code: '', reconnecting: false }
+    );
+    assert.deepEqual(
+      presentCompanionJoin({ enabled: true, connection: 'idle', code: null }),
+      { visible: false, code: '', reconnecting: false }
+    );
+    assert.deepEqual(
+      presentCompanionJoin({ enabled: true, connection: 'connecting', code: 'WH8X2P' }),
+      { visible: false, code: '', reconnecting: false }
+    );
+    assert.deepEqual(
+      presentCompanionJoin({ enabled: true, connection: 'live', code: 'WH8X2P' }),
+      { visible: true, code: 'WH8X2P', reconnecting: false }
+    );
+    assert.deepEqual(
+      presentCompanionJoin({ enabled: true, connection: 'reconnecting', code: 'WH8X2P' }),
+      { visible: true, code: 'WH8X2P', reconnecting: true }
+    );
+    for (const connection of ['failed', 'disconnected', 'ended', 'expired', 'replaced']) {
+      assert.deepEqual(
+        presentCompanionJoin({ enabled: true, connection, code: 'WH8X2P' }),
+        { visible: false, code: '', reconnecting: false }
+      );
+    }
+    for (const code of [null, '', 'ABC', 'WH8X2I', 'wh8x2p', 'OLDCODE']) {
+      assert.equal(
+        presentCompanionJoin({ enabled: true, connection: 'live', code }).visible,
+        false
+      );
     }
   });
 
