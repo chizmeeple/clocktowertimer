@@ -877,7 +877,7 @@ html.fonts-ready .timer-display .time {
   padding: 0;
   background-color: var(--colour-surface-elevated);
   color: var(--colour-text);
-  width: min(1200px, calc(100vw - 32px));
+  width: min(640px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
   max-height: 90vh;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
@@ -917,15 +917,6 @@ html.fonts-ready .timer-display .time {
   color: var(--colour-text-muted);
   text-align: center;
   font-weight: normal;
-}
-
-.settings-dialog .dialog-content {
-  align-items: center;
-}
-
-.settings-dialog .dialog-content > h2,
-.settings-dialog .settings-tabs {
-  align-self: stretch;
 }
 
 .dialog-content h3 {
@@ -2561,8 +2552,9 @@ button:disabled {
 
 /* Settings Tabs */
 .settings-tabs {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
@@ -2570,7 +2562,8 @@ button:disabled {
 }
 
 .tab-button {
-  width: 100%;
+  flex: 0 0 calc((100% - 1.5rem) / 4);
+  min-width: 0;
   background: none;
   border: none;
   color: var(--colour-text-muted);
@@ -2604,11 +2597,6 @@ button:disabled {
 .settings-panels {
   overflow-y: auto;
   flex: 1;
-  width: min(100%, 36rem);
-}
-
-.settings-dialog .dialog-buttons {
-  width: min(100%, 36rem);
 }
 
 .settings-panel {
@@ -2922,15 +2910,9 @@ button:disabled {
    shorter query wins. Change History keeps its own size: the short-screen
    What's New rules used to be followed by Change History's base rules, which
    cancelled the shared dialog sizing. */
-@media (max-width: 900px) {
-  .settings-tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 520px) {
-  .settings-tabs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .tab-button {
+    flex-basis: calc((100% - 0.5rem) / 2);
   }
 }
 

@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.11';
+export const APP_VERSION = '1.2.12';
 
 export const CHANGELOG = {
+  '1.2.12': {
+    date: '2026-10-13',
+    changes: {
+      improvements: [
+        'Settings is compact again. Game, Display, Time and Effects sit on the first row, with Music, Shortcuts and Companion centred on the row below',
+      ],
+    },
+  },
   '1.2.11': {
     date: '2026-10-13',
     changes: {
