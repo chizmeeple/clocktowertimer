@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <meta
+      name="description"
+      content="Follow the public Tower Timer countdown, phase and character counts for a Blood on the Clocktower game."
+    />
+    <title>Companion · Tower Timer</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self'; connect-src 'self' https://clocktower-companion.redmeeple.workers.dev wss://clocktower-companion.redmeeple.workers.dev;"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Azeret+Mono:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=1.2.8" />
+    <link rel="stylesheet" href="companion.css?v=1.2.8" />
+  </head>
+  <body class="companion-page">
+    <div class="night-wallpaper" aria-hidden="true"></div>
+    <header class="companion-bar">
+      <a class="companion-home" href="index.html">Tower Timer</a>
+      <p id="status" class="status" role="status" hidden></p>
+      <p class="companion-mark">Companion</p>
+      <p id="statusDetail" class="status-detail" hidden></p>
+    </header>
+    <main class="companion-main">
+      <section id="joinPanel" class="join-panel">
+        <h1>Join a game</h1>
+        <p>Enter the six-character code from the Storyteller.</p>
+        <form id="joinForm">
+          <label for="code">Session code</label>
+          <input
+            id="code"
+            name="code"
+            maxlength="12"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            inputmode="text"
+            aria-describedby="codeError"
+          />
+          <p id="codeError" class="code-error" role="alert" hidden></p>
+          <button type="submit">Join</button>
+        </form>
+      </section>
+
+      <section id="session" class="session" hidden>
+        <div class="stage">
+          <div class="phase-block">
+            <p id="kicker" class="kicker"></p>
+            <p id="headline" class="headline" aria-live="off"></p>
+            <p id="message" class="message"></p>
+          </div>
+          <ul class="character-counts companion-counts" aria-label="Public character counts">
+            <li class="character-type">
+              <span class="label">Townsfolk</span>
+              <span id="townsfolk" class="amount">–</span>
+            </li>
+            <li class="character-type">
+              <span class="label">Outsiders</span>
+              <span id="outsider" class="amount">–</span>
+            </li>
+            <li class="character-type">
+              <span class="label">Minions</span>
+              <span id="minion" class="amount">–</span>
+            </li>
+            <li class="character-type">
+              <span class="label">Demon</span>
+              <span id="demon" class="amount">–</span>
+            </li>
+            <li class="character-type traveller visible">
+              <span class="label">Travellers</span>
+              <span id="traveller" class="amount">–</span>
+            </li>
+          </ul>
+        </div>
+        <details class="options">
+          <summary>Options</summary>
+          <label class="option" id="alertOption">
+            <input id="alerts" type="checkbox" />
+            Warn me near the end
+          </label>
+          <p class="option-note">
+            A short sound, and vibration where the phone allows it. This only works while the page is open and the phone is unlocked.
+          </p>
+          <label class="option" id="wakeOption">
+            <input id="wake" type="checkbox" />
+            Keep the screen awake
+          </label>
+          <p id="wakeNote" class="option-note" hidden></p>
+        </details>
+        <button type="button" id="leave">Leave session</button>
+      </section>
+    </main>
+    <script type="module" src="companion-page.js?v=1.2.8"></script>
+  </body>
+</html>

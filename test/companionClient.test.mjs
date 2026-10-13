@@ -167,4 +167,23 @@ describe('companion client', () => {
     assert.equal(env.client.view().connection, 'ended');
     assert.equal(env.pending.length, 0);
   });
+
+  it('records an unsupported snapshot version and clears it on leave', () => {
+    const env = harness();
+    env.client.join('ABCDEF');
+    const socket = FakeSocket.sockets[0];
+    socket.receive({
+      type: 'snapshot',
+      rev: 1,
+      serverTime: 10_000,
+      capturedAt: 10_000,
+      upstreamOffsetMs: 0,
+      state: { ...day(5_000), v: 2 },
+    });
+    assert.equal(env.client.view().problem, 'unsupported-version');
+    assert.equal(env.client.view().timerStatus, null);
+    env.client.leave();
+    assert.equal(env.client.view().connection, 'idle');
+    assert.equal(env.client.view().problem, null);
+  });
 });

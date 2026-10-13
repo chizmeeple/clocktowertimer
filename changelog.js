@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.7';
+export const APP_VERSION = '1.2.8';
 
 export const CHANGELOG = {
+  '1.2.8': {
+    date: '2026-10-13',
+    changes: {
+      improvements: [
+        'Players can open the companion page and follow a public session with a code. The Storyteller timer does not yet have sharing controls',
+      ],
+    },
+  },
   '1.2.7': {
     date: '2026-10-13',
     changes: {

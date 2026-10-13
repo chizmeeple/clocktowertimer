@@ -56,6 +56,10 @@ export function createCompanionClient({
     phase: null,
     day: null,
     counts: null,
+    timerStatus: null,
+    rate: null,
+    kind: null,
+    problem: null,
     remainingMs: null,
     displaySeconds: null,
     locallyComplete: false,
@@ -145,10 +149,17 @@ export function createCompanionClient({
 
   function applySnapshot(message) {
     const validated = validateCompanionState(message.state);
-    if (!validated.ok) return;
+    if (!validated.ok) {
+      if (validated.reason === 'unsupported-version') {
+        viewState.problem = 'unsupported-version';
+        emit();
+      }
+      return;
+    }
     const decision = decideRevision(heldRev, message.rev);
     if (decision === 'invalid' || decision === 'older') return;
     if (decision === 'accept') {
+      viewState.problem = null;
       heldRev = message.rev;
       snapshot = validated.value;
       envelope = {
@@ -279,6 +290,10 @@ export function createCompanionClient({
       phase: snapshot?.phase ?? null,
       day: snapshot?.day ?? null,
       counts: snapshot?.counts ?? null,
+      timerStatus: snapshot?.timer.status ?? null,
+      rate: snapshot?.timer.rate ?? null,
+      kind: snapshot?.timer.kind ?? null,
+      problem: viewState.problem,
       remainingMs: projected?.remainingMs ?? null,
       displaySeconds: projected?.displaySeconds ?? null,
       locallyComplete: projected?.locallyComplete ?? false,
@@ -330,6 +345,15 @@ export function createCompanionClient({
     clearRetry();
     closeSocket();
     code = null;
+    heldRev = null;
+    snapshot = null;
+    envelope = null;
+    receivedMono = null;
+    viewState.problem = null;
+    samples = [];
+    offsetMs = null;
+    monoBase = null;
+    serverBase = null;
     setConnection('idle');
   }
 
