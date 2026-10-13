@@ -622,3 +622,245 @@ describe('Companion countdown sounds', () => {
     cy.get('#headline').should('have.text', '00:00');
   });
 });
+
+describe('Companion player preferences', () => {
+  function grantWakeLock(win) {
+    const requests = [];
+    win.__wakeRequests = requests;
+    Object.defineProperty(win.navigator, 'wakeLock', {
+      configurable: true,
+      value: {
+        request() {
+          const sentinel = {
+            released: false,
+            release() {
+              this.released = true;
+              return Promise.resolve();
+            },
+            addEventListener() {},
+          };
+          requests.push(sentinel);
+          return Promise.resolve(sentinel);
+        },
+      },
+    });
+  }
+
+  function watchSounds(win) {
+    const played = [];
+    win.__played = played;
+    win.HTMLAudioElement.prototype.play = function watchPlay() {
+      played.push({ src: this.src, volume: this.volume });
+      return Promise.resolve();
+    };
+  }
+
+  it('starts from both options off and does not write a save', () => {
+    cy.visit('/c');
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#wake').should('not.be.checked');
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem('timer-companion')).to.equal(null);
+    });
+  });
+
+  it('restores a saved warning without playing it, then warns on the next crossing', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        watchSounds(win);
+        win.localStorage.setItem('timer-companion', JSON.stringify({
+          warnNearEnd: true,
+          keepScreenOn: false,
+        }));
+      },
+    });
+    cy.get('#alerts').should('be.checked');
+    cy.get('#wake').should('not.be.checked');
+    cy.window().its('__played').should('have.length', 0);
+    show({ displaySeconds: 15 });
+    show({ displaySeconds: 0, locallyComplete: true, rev: 2 });
+    cy.window().its('__played').should('have.length', 0);
+    cy.get('#headline').should('have.text', '00:00');
+    show({ displaySeconds: 40, rev: 3 });
+    show({ displaySeconds: 20, rev: 3 });
+    cy.window().should((win) => {
+      expect(win.__played).to.have.length(1);
+      expect(win.__played[0].src).to.include('warning-30sec.mp3');
+      expect(win.__played[0].volume).to.be.greaterThan(0);
+    });
+    cy.get('#testSound').click();
+    cy.get('#soundStatus').should('have.text', '30-second warning');
+    cy.get('#alerts').should('be.checked');
+  });
+
+  it('remembers one option across a refresh without clearing the other', () => {
+    cy.on('window:before:load', grantWakeLock);
+    cy.visit('/c');
+    show({});
+    cy.get('#alerts').check();
+    cy.get('#wake').check();
+    cy.window().then((win) => {
+      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+        warnNearEnd: true,
+        keepScreenOn: true,
+      });
+    });
+    cy.reload();
+    cy.get('#alerts').should('be.checked');
+    cy.get('#wake').should('be.checked');
+    cy.window().its('__wakeRequests').should('have.length', 1);
+    show({});
+    cy.get('#wake').uncheck();
+    cy.window().then((win) => {
+      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+        warnNearEnd: true,
+        keepScreenOn: false,
+      });
+    });
+    cy.reload();
+    cy.get('#alerts').should('be.checked');
+    cy.get('#wake').should('not.be.checked');
+    cy.window().its('__wakeRequests').should('have.length', 0);
+  });
+
+  it('requests a fresh wake lock when that choice was saved', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        grantWakeLock(win);
+        win.localStorage.setItem('timer-companion', JSON.stringify({
+          warnNearEnd: false,
+          keepScreenOn: true,
+        }));
+      },
+    });
+    cy.get('#wake').should('be.checked').and('not.be.disabled');
+    cy.get('#alerts').should('not.be.checked');
+    cy.window().its('__wakeRequests').should('have.length', 1);
+    cy.get('#headline').should('exist');
+  });
+
+  it('keeps the saved wake choice when the browser refuses the lock', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('timer-companion', JSON.stringify({
+          warnNearEnd: false,
+          keepScreenOn: true,
+        }));
+        Object.defineProperty(win.navigator, 'wakeLock', {
+          configurable: true,
+          value: {
+            request() {
+              return Promise.reject(new DOMException('denied', 'NotAllowedError'));
+            },
+          },
+        });
+      },
+    });
+    show({});
+    cy.get('#wake').should('be.checked');
+    cy.get('#wakeNote').should('be.visible').and('contain', 'did not keep the screen on');
+    cy.get('#headline').should('have.text', '04:45');
+    cy.window().then((win) => {
+      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+        warnNearEnd: false,
+        keepScreenOn: true,
+      });
+    });
+  });
+
+  it('leaves a saved wake choice in place when the browser cannot keep the screen on', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('timer-companion', JSON.stringify({
+          warnNearEnd: true,
+          keepScreenOn: true,
+        }));
+        Object.defineProperty(win.navigator, 'wakeLock', {
+          configurable: true,
+          value: undefined,
+        });
+      },
+    });
+    show({});
+    cy.get('#wake').should('be.disabled').and('not.be.checked');
+    cy.get('#wakeNote').should('be.visible').and('contain', 'cannot keep the screen on');
+    cy.get('#alerts').should('be.checked');
+    cy.window().then((win) => {
+      expect(JSON.parse(win.localStorage.getItem('timer-companion')).keepScreenOn).to.equal(true);
+    });
+  });
+
+  it('ignores a broken save and still lets the player choose', () => {
+    cy.on('window:before:load', grantWakeLock);
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('timer-companion', '{');
+      },
+    });
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#wake').should('not.be.checked');
+    show({});
+    cy.get('#headline').should('have.text', '04:45');
+    cy.get('#alerts').check();
+    cy.window().then((win) => {
+      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+        warnNearEnd: true,
+        keepScreenOn: false,
+      });
+    });
+  });
+
+  it('keeps a valid option when the other value has the wrong type', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        grantWakeLock(win);
+        win.localStorage.setItem('timer-companion', JSON.stringify({
+          warnNearEnd: 'yes',
+          keepScreenOn: true,
+          code: 'ABC123',
+        }));
+      },
+    });
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#wake').should('be.checked');
+    cy.window().its('__wakeRequests').should('have.length', 1);
+    show({});
+    cy.get('#alerts').check();
+    cy.window().then((win) => {
+      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+        warnNearEnd: true,
+        keepScreenOn: true,
+      });
+    });
+  });
+
+  it('still runs when storage itself throws', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        grantWakeLock(win);
+        const blocked = new Error('blocked');
+        const storage = win.localStorage;
+        const getItem = storage.getItem.bind(storage);
+        const setItem = storage.setItem.bind(storage);
+        cy.stub(storage, 'getItem').callsFake((key) => {
+          if (key === 'timer-companion') throw blocked;
+          return getItem(key);
+        });
+        cy.stub(storage, 'setItem').callsFake((key, value) => {
+          if (key === 'timer-companion') throw blocked;
+          return setItem(key, value);
+        });
+      },
+    });
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#wake').should('not.be.checked');
+    show({});
+    cy.get('#headline').should('have.text', '04:45');
+    cy.get('#alerts').check();
+    cy.get('#alerts').should('be.checked');
+    cy.get('#wake').check();
+    cy.get('#wake').should('be.checked');
+    cy.window().its('__wakeRequests').should('have.length', 1);
+    cy.get('#status').should('have.text', 'Live');
+  });
+});

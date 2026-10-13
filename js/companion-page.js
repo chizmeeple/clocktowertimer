@@ -10,6 +10,7 @@ import {
 } from './companionCode.js';
 import { createCompanionClient } from './companionClient.js';
 import { presentCompanion } from './companionDisplay.js';
+import { readCompanionPreferences, writeCompanionPreferences } from './companionPreferences.js';
 import { createWakeLockController } from './companionWake.js';
 
 const joinPanel = document.querySelector('#joinPanel');
@@ -70,11 +71,21 @@ const wake = createWakeLockController({
   },
 });
 
+let preferences = readCompanionPreferences();
+alertsInput.checked = preferences.warnNearEnd;
+
 if (!wake.supported) {
   wakeInput.disabled = true;
   wakeInput.checked = false;
   wakeNote.hidden = false;
   text(wakeNote, 'This browser cannot keep the screen on.');
+} else if (preferences.keepScreenOn) {
+  wakeInput.checked = true;
+  wake.setEnabled(true);
+}
+
+function rememberPreferences(patch) {
+  preferences = writeCompanionPreferences({ ...preferences, ...patch });
 }
 
 function text(node, value) {
@@ -222,6 +233,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 alertsInput.addEventListener('change', () => {
+  rememberPreferences({ warnNearEnd: alertsInput.checked });
   if (alertsInput.checked) sounds?.unlock();
 });
 
@@ -230,6 +242,7 @@ testSoundButton.addEventListener('click', () => {
 });
 
 wakeInput.addEventListener('change', () => {
+  if (wake.supported) rememberPreferences({ keepScreenOn: wakeInput.checked });
   if (!wakeInput.checked && wake.supported) {
     wakeNote.hidden = true;
     text(wakeNote, '');
