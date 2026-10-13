@@ -122,11 +122,12 @@ describe('Companion page', () => {
       .and('have.text', 'Options')
       .and('have.prop', 'tagName', 'H3')
       .and('not.have.attr', 'tabindex');
-    cy.get('.options summary, .options details, .options button').should('not.exist');
+    cy.get('.options summary, .options details').should('not.exist');
     cy.get('#optionsHeading').click().should('not.be.focused');
     cy.get('#alertOption').should('be.visible').and('contain', 'Warn me near the end');
     cy.get('#alerts').should('be.visible').and('not.be.checked');
     cy.get('#alertNote').should('be.visible');
+    cy.get('#testSound').should('be.visible').and('have.text', 'Test sound');
     cy.get('#wakeOption').should('be.visible').and('contain', 'Keep screen on');
     cy.get('#wake').should('be.visible').and('not.be.checked');
 
@@ -489,5 +490,135 @@ describe('Companion QR sharing', () => {
     cy.get('#showQr').click();
     cy.get('#qrCode').should('have.text', 'ABC123');
     cy.get('#qrCode').should('not.have.text', 'NEWCDE');
+  });
+});
+
+describe('Companion countdown sounds', () => {
+  function audible(win) {
+    return win.__played.filter((item) => item.volume > 0);
+  }
+
+  function watchSounds(win) {
+    const played = [];
+    win.__played = played;
+    win.HTMLAudioElement.prototype.play = function watchPlay() {
+      played.push({ src: this.src, volume: this.volume, el: this });
+      if (win.__failSounds) return Promise.reject(new Error('blocked'));
+      return Promise.resolve();
+    };
+  }
+
+  beforeEach(() => {
+    cy.visit('/c');
+    cy.window().then(watchSounds);
+    show({});
+  });
+
+  it('plays the bowl and then the bell without changing the alert', () => {
+    cy.get('#headline').should('have.text', '04:45');
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#testSound').click();
+    cy.get('#soundStatus').should('have.text', '30-second warning');
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#headline').should('have.text', '04:45');
+    cy.window().should((win) => {
+      const clips = audible(win);
+      expect(clips).to.have.length(1);
+      expect(clips[0].src).to.include('warning-30sec.mp3');
+      expect(clips[0].volume).to.be.lessThan(0.75);
+    });
+    cy.window().then((win) => {
+      audible(win)[0].el.dispatchEvent(new Event('ended'));
+    });
+    cy.get('#soundStatus').should('have.text', 'End of the countdown');
+    cy.window().should((win) => {
+      const clips = audible(win);
+      expect(clips).to.have.length(2);
+      expect(clips[1].src).to.include('single-church-bell-v2.mp3');
+      expect(clips[1].volume).to.be.greaterThan(clips[0].volume);
+    });
+    cy.get('#alerts').should('not.be.checked');
+    cy.window().then((win) => {
+      audible(win)[1].el.dispatchEvent(new Event('ended'));
+    });
+    cy.get('#soundStatus').should('have.text', '');
+  });
+
+  it('restarts the test instead of stacking sounds', () => {
+    cy.get('#testSound').click();
+    cy.get('#testSound').click();
+    cy.window().should((win) => {
+      const clips = audible(win);
+      expect(clips.length).to.be.at.least(2);
+      expect(clips.every((item) => item.src.includes('warning-30sec.mp3'))).to.equal(true);
+      expect(new Set(clips.map((item) => item.el)).size).to.equal(1);
+    });
+    cy.get('#alerts').should('not.be.checked');
+  });
+
+  it('leaves the countdown running when playback is refused', () => {
+    cy.window().then((win) => {
+      win.__failSounds = true;
+    });
+    cy.get('#testSound').click();
+    cy.get('#headline').should('have.text', '04:45');
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#soundStatus').should('have.text', '');
+    cy.get('#status').should('have.text', 'Live');
+  });
+
+  it('plays each countdown alert once, and not while hidden or stale', () => {
+    show({ displaySeconds: 40 });
+    cy.get('#alerts').check();
+    cy.get('#alerts').should('be.checked');
+    show({ displaySeconds: 20 });
+    cy.window().should((win) => {
+      const clips = audible(win);
+      expect(clips).to.have.length(1);
+      expect(clips[0].src).to.include('warning-30sec.mp3');
+    });
+    show({ displaySeconds: 10 });
+    cy.window().should((win) => {
+      expect(audible(win)).to.have.length(1);
+    });
+    show({ displaySeconds: 0, locallyComplete: true });
+    cy.window().should((win) => {
+      const clips = audible(win);
+      expect(clips).to.have.length(2);
+      expect(clips[1].src).to.include('single-church-bell-v2.mp3');
+    });
+    show({ displaySeconds: 0, locallyComplete: true });
+    cy.window().should((win) => {
+      expect(audible(win)).to.have.length(2);
+    });
+
+    cy.window().then((win) => {
+      win.__played.length = 0;
+      Object.defineProperty(win.document, 'visibilityState', {
+        configurable: true,
+        get: () => 'hidden',
+      });
+    });
+    show({ displaySeconds: 40, rev: 2 });
+    show({ displaySeconds: 15, rev: 2 });
+    cy.window().should((win) => {
+      expect(audible(win)).to.have.length(0);
+    });
+    cy.window().then((win) => {
+      Object.defineProperty(win.document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      });
+    });
+    show({ displaySeconds: 10, rev: 2 });
+    cy.window().should((win) => {
+      expect(audible(win)).to.have.length(0);
+    });
+
+    show({ fresh: false, stale: true, displaySeconds: 0, locallyComplete: true, rev: 3 });
+    cy.window().should((win) => {
+      expect(audible(win)).to.have.length(0);
+    });
+    cy.get('#headline').should('have.text', '00:00');
   });
 });

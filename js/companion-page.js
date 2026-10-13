@@ -1,4 +1,5 @@
 import { nextCompanionAlert } from './companionAlerts.js';
+import { createCompanionSounds } from './companionSound.js';
 import {
   companionBaseUrl,
   companionQrImageUrl,
@@ -24,6 +25,8 @@ const message = document.querySelector('#message');
 const leaveButton = document.querySelector('#leave');
 const alertsInput = document.querySelector('#alerts');
 const alertOption = document.querySelector('#alertOption');
+const testSoundButton = document.querySelector('#testSound');
+const soundStatus = document.querySelector('#soundStatus');
 const wakeInput = document.querySelector('#wake');
 const wakeNote = document.querySelector('#wakeNote');
 const showQrButton = document.querySelector('#showQr');
@@ -39,13 +42,16 @@ const countNodes = {
   traveller: document.querySelector('#traveller'),
 };
 
-const canSound = Boolean(window.AudioContext || window.webkitAudioContext);
+const canSound = typeof Audio === 'function';
 const canVibrate = typeof navigator.vibrate === 'function';
+if (!canSound) testSoundButton.hidden = true;
 if (!canSound && !canVibrate) alertOption.hidden = true;
+const sounds = canSound
+  ? createCompanionSounds({ hidden: () => document.visibilityState === 'hidden' })
+  : null;
 
 const client = createCompanionClient({ baseUrl: companionBaseUrl(location) });
 let alertState = { previous: null, rev: null, phase: null, alert: null };
-let audio = null;
 let rendered = '';
 let currentView = null;
 let testView = null;
@@ -151,15 +157,11 @@ function openQr() {
 
 function playAlert(kind) {
   if (canVibrate) navigator.vibrate(kind === 'zero' ? [90, 40, 90] : 50);
-  if (!canSound || !audio) return;
-  const oscillator = audio.createOscillator();
-  const gain = audio.createGain();
-  oscillator.frequency.value = kind === 'zero' ? 392 : 587;
-  gain.gain.value = 0.04;
-  oscillator.connect(gain);
-  gain.connect(audio.destination);
-  oscillator.start();
-  oscillator.stop(audio.currentTime + 0.16);
+  sounds?.play(kind);
+}
+
+function showSoundStatus(label) {
+  text(soundStatus, label || '');
 }
 
 function showCodeError(textValue) {
@@ -220,10 +222,11 @@ document.addEventListener('keydown', (event) => {
 });
 
 alertsInput.addEventListener('change', () => {
-  if (!alertsInput.checked || !canSound) return;
-  const Context = window.AudioContext || window.webkitAudioContext;
-  audio = audio || new Context();
-  audio.resume();
+  if (alertsInput.checked) sounds?.unlock();
+});
+
+testSoundButton.addEventListener('click', () => {
+  sounds?.preview(showSoundStatus);
 });
 
 wakeInput.addEventListener('change', () => {
@@ -237,6 +240,7 @@ wakeInput.addEventListener('change', () => {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') client.resume();
+  else sounds?.stop();
   wake.onVisibilityChange();
 });
 

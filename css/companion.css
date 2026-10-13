@@ -338,6 +338,36 @@
   height: 1.25rem;
 }
 
+.sound-test {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+#testSound {
+  flex: none;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--colour-border-strong);
+  background: transparent;
+  color: var(--colour-text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+#testSound:hover {
+  background: var(--colour-button-secondary-hover);
+}
+
+#soundStatus:empty {
+  display: none;
+}
+
 @media (orientation: landscape), (min-width: 52rem) {
   .stage {
     display: grid;
@@ -415,6 +445,10 @@
     flex-direction: row;
     gap: 0.4rem;
     padding: 0.35rem 0.55rem;
+  }
+
+  #testSound {
+    min-height: 2.25rem;
   }
 
   .session-action-icon {

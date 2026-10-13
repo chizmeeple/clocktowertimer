@@ -190,13 +190,40 @@ describe('companion alerts', () => {
     assert.equal(state.alert, null);
     state = nextCompanionAlert(state, view({ displaySeconds: 0, locallyComplete: true }), true);
     assert.equal(state.alert, 'zero');
+    state = nextCompanionAlert(state, view({ displaySeconds: 0, locallyComplete: true }), true);
+    assert.equal(state.alert, null);
+    state = nextCompanionAlert(state, view({ displaySeconds: 30 }), true);
+    assert.equal(state.alert, null);
 
-    const stale = nextCompanionAlert(
+    const skippedWarning = nextCompanionAlert(
+      { previous: 40, rev: 1, phase: 'day' },
+      view({ displaySeconds: 0, locallyComplete: true }),
+      true
+    );
+    assert.equal(skippedWarning.alert, 'zero');
+
+    const staleGap = nextCompanionAlert(
       { previous: 40, rev: 1, phase: 'day' },
       view({ fresh: false, stale: true, displaySeconds: 5 }),
       true
     );
+    assert.equal(staleGap.alert, null);
+
+    const stale = nextCompanionAlert(
+      { previous: 40, rev: 1, phase: 'day' },
+      view({ fresh: false, stale: true, displaySeconds: 0, locallyComplete: true }),
+      true
+    );
     assert.equal(stale.alert, null);
+    const afterStale = nextCompanionAlert(stale, view({ displaySeconds: 0, locallyComplete: true }), true);
+    assert.equal(afterStale.alert, null);
+
+    const reconnected = nextCompanionAlert(
+      { previous: 40, rev: 1, phase: 'day' },
+      view({ rev: 2, displaySeconds: 5 }),
+      true
+    );
+    assert.equal(reconnected.alert, null);
 
     const joinedAtZero = nextCompanionAlert(
       { previous: null, rev: null, phase: null },
@@ -220,6 +247,7 @@ describe('companion page policy', () => {
     assert.match(page, />Arcane Scripts</);
     assert.match(page, /<h3 id="optionsHeading">Options<\/h3>/);
     assert.match(page, /Warn me near the end/);
+    assert.match(page, /id="testSound"/);
     assert.match(page, /Keep screen on/);
     assert.doesNotMatch(page, /<details|<summary/);
     assert.match(page, /Show QR code/);
