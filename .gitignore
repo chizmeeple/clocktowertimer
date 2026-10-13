@@ -463,8 +463,10 @@ tags
 
 .DS_Store
 
-# Local Cloudflare worker state
+# Local Cloudflare worker state and credentials
 .wrangler/
+**/.wrangler/
+.dev.vars
 node_modules/
 *.log
 .env

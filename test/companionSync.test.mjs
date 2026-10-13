@@ -74,6 +74,25 @@ describe('clock samples', () => {
     );
   });
 
+  it('recovers a steady clock difference when the trip is even', () => {
+    const sample = measureRoundTrip({
+      sentAt: 1_000,
+      receivedAt: 1_100,
+      serverTime: 6_050,
+    });
+    assert.equal(sample.offsetMs, 5_000);
+  });
+
+  it('is wrong by half the imbalance when the trip is uneven', () => {
+    const sample = measureRoundTrip({
+      sentAt: 1_000,
+      receivedAt: 1_200,
+      serverTime: 1_020,
+    });
+    assert.equal(sample.rtt, 200);
+    assert.equal(sample.offsetMs, -80);
+  });
+
   it('grows the retry delay and then holds it', () => {
     assert.equal(nextRetryDelay(0, () => 0), 500);
     assert.equal(nextRetryDelay(1, () => 0), 1_000);

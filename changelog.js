@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.2.5';
+export const APP_VERSION = '1.2.6';
 
 export const CHANGELOG = {
+  '1.2.6': {
+    date: '2026-10-12',
+    changes: {
+      improvements: [
+        'The companion session service is ready for a private Cloudflare test. Companion Mode is not on the public timer, and nothing is deployed until you choose to deploy it',
+      ],
+    },
+  },
   '1.2.5': {
     date: '2026-10-12',
     changes: {

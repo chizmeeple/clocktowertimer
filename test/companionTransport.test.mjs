@@ -56,7 +56,7 @@ function timers() {
   };
 }
 
-function harness() {
+function harness(baseUrl = 'http://127.0.0.1:8787') {
   FakeSocket.sockets = [];
   const clock = timers();
   const posts = [];
@@ -66,7 +66,7 @@ function harness() {
   let wall = 5_000;
   const statuses = [];
   const transport = createStorytellerTransport({
-    baseUrl: 'http://127.0.0.1:8787',
+    baseUrl,
     fetch: async (url, options) => {
       posts.push({ url, method: options?.method });
       return {
@@ -130,6 +130,18 @@ describe('storyteller transport', () => {
     assert.equal(transport.status.delivery, 'accepted');
     assert.equal(transport.status.acceptedRev, 4);
     assert.equal(transport.status.connection, 'live');
+  });
+
+  it('opens a secure socket when the backend is https', async () => {
+    const { transport } = harness('https://clocktower-companion.example.workers.dev');
+    await transport.start();
+    await Promise.resolve();
+    const socket = FakeSocket.sockets[0];
+    assert.equal(
+      socket.url,
+      'wss://clocktower-companion.example.workers.dev/sessions/ABCDEF/storyteller'
+    );
+    assert.equal(socket.url.includes(TOKEN), false);
   });
 
   it('reconnects once, reauthenticates, and sends a fresh snapshot', async () => {

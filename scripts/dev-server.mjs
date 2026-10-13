@@ -4,12 +4,13 @@
 
 import { createServer } from 'node:http';
 import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const port = Number(process.env.PORT || 8006);
-const workerPort = Number(process.env.WORKER_PORT || 8787);
+const worker = workerEndpoint();
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -40,20 +41,62 @@ function localPath(urlPath) {
   return filePath;
 }
 
+function workerEndpoint() {
+  const raw = process.env.COMPANION_WORKER_URL;
+  if (!raw) {
+    const workerPort = Number(process.env.WORKER_PORT || 8787);
+    return {
+      request: httpRequest,
+      hostname: '127.0.0.1',
+      port: workerPort,
+      host: `127.0.0.1:${workerPort}`,
+      mode: 'local',
+    };
+  }
+  const url = new URL(raw);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('COMPANION_WORKER_URL must be http or https');
+  }
+  if (url.username || url.password || url.search || url.hash) {
+    throw new Error('COMPANION_WORKER_URL must be an origin without credentials');
+  }
+  const secure = url.protocol === 'https:';
+  const portNumber = Number(url.port || (secure ? 443 : 80));
+  const defaultPort = secure ? 443 : 80;
+  const localHost = url.hostname === '127.0.0.1' || url.hostname === 'localhost';
+  return {
+    request: secure ? httpsRequest : httpRequest,
+    hostname: url.hostname,
+    port: portNumber,
+    host: portNumber === defaultPort ? url.hostname : `${url.hostname}:${portNumber}`,
+    mode: localHost ? 'local' : 'remote',
+  };
+}
+
 function proxyPath(url) {
   const next = url.replace(/^\/companion-api/, '') || '/';
   return next.startsWith('/') ? next : `/${next}`;
 }
 
+function proxyHeaders(headers) {
+  return { ...headers, host: worker.host };
+}
+
 const server = createServer(async (req, res) => {
+  const pathOnly = (req.url || '/').split('?')[0];
+  if (pathOnly === '/companion-dev-target') {
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify({ mode: worker.mode, host: worker.hostname }));
+    return;
+  }
   if (req.url.startsWith('/companion-api')) {
-    const proxy = httpRequest(
+    const proxy = worker.request(
       {
-        hostname: '127.0.0.1',
-        port: workerPort,
+        hostname: worker.hostname,
+        port: worker.port,
         path: proxyPath(req.url),
         method: req.method,
-        headers: { ...req.headers, host: `127.0.0.1:${workerPort}` },
+        headers: proxyHeaders(req.headers),
       },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
@@ -68,7 +111,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const pathOnly = (req.url || '/').split('?')[0];
   const requested = pathOnly === '/' ? '/index.html' : pathOnly;
   const filePath = localPath(requested);
   if (!filePath) {
@@ -92,12 +134,12 @@ server.on('upgrade', (req, socket, head) => {
     socket.destroy();
     return;
   }
-  const proxy = httpRequest({
-    hostname: '127.0.0.1',
-    port: workerPort,
+  const proxy = worker.request({
+    hostname: worker.hostname,
+    port: worker.port,
     path: proxyPath(req.url),
     method: 'GET',
-    headers: { ...req.headers, host: `127.0.0.1:${workerPort}` },
+    headers: proxyHeaders(req.headers),
   });
   proxy.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
     const lines = [`HTTP/1.1 101 ${proxyRes.statusMessage || 'Switching Protocols'}`];

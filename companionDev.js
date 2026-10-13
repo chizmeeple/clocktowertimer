@@ -34,6 +34,7 @@ export function mountCompanionDev(locationObject = globalThis.location) {
     #companionDev p { margin: 4px 0; }
     #companionDev button, #companionDev a { margin: 8px 8px 0 0; }
     #companionDev code { font-size: 18px; letter-spacing: 0.08em; }
+    #companionDev.remote { border-color: #8a2b2b; background: #fff1ef; }
   `;
   document.head.appendChild(style);
 
@@ -41,7 +42,8 @@ export function mountCompanionDev(locationObject = globalThis.location) {
   panel.id = 'companionDev';
   panel.innerHTML = `
     <h2>Companion dev</h2>
-    <p>Local session only. Nothing here is on the public timer.</p>
+    <p id="companionDevTarget">Checking worker…</p>
+    <p>Nothing here is on the public timer.</p>
     <p>Code <code id="companionDevCode">—</code></p>
     <p id="companionDevStatus">Idle</p>
     <p id="companionDevDelivery"></p>
@@ -52,6 +54,20 @@ export function mountCompanionDev(locationObject = globalThis.location) {
     <a id="companionDevOpen" href="companion-dev.html" target="_blank" rel="noopener">Open companion</a>
   `;
   document.body.appendChild(panel);
+
+  const targetNode = panel.querySelector('#companionDevTarget');
+  fetch('/companion-dev-target')
+    .then((response) => (response.ok ? response.json() : null))
+    .then((info) => {
+      const remote = info?.mode === 'remote';
+      panel.classList.toggle('remote', remote);
+      targetNode.textContent = remote
+        ? `Remote worker ${info.host}`
+        : 'Local worker';
+    })
+    .catch(() => {
+      targetNode.textContent = 'Worker target unknown';
+    });
 
   const codeNode = panel.querySelector('#companionDevCode');
   const statusNode = panel.querySelector('#companionDevStatus');

@@ -21,6 +21,11 @@ import {
 } from '../src/protocol.js';
 
 const ORIGIN = 'http://companion.local';
+const BROWSER_ORIGIN = 'http://127.0.0.1:8006';
+
+function browserHeaders(extra = {}) {
+  return { Origin: BROWSER_ORIGIN, ...extra };
+}
 
 afterEach(async () => {
   setCodeSequence(null);
@@ -105,17 +110,20 @@ function listen(ws) {
   };
 }
 
-async function postSession() {
+async function postSession(extraHeaders = {}) {
   const response = await exports.default.fetch(
-    new Request(`${ORIGIN}/sessions`, { method: 'POST' })
+    new Request(`${ORIGIN}/sessions`, {
+      method: 'POST',
+      headers: browserHeaders(extraHeaders),
+    })
   );
   return { response, body: await response.json() };
 }
 
-async function openSocket(path) {
+async function openSocket(path, extraHeaders = {}) {
   return exports.default.fetch(
     new Request(`${ORIGIN}${path}`, {
-      headers: { Upgrade: 'websocket' },
+      headers: browserHeaders({ Upgrade: 'websocket', ...extraHeaders }),
     })
   );
 }
@@ -722,8 +730,104 @@ describe('companion sessions', () => {
 
   it('does not list sessions', async () => {
     await postSession();
-    const response = await exports.default.fetch(new Request(`${ORIGIN}/sessions`));
+    const response = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions`, { headers: browserHeaders() })
+    );
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: 'not-found' });
+  });
+
+  it('allows the configured browser origins and rejects the others', async () => {
+    const missing = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions`, { method: 'POST' })
+    );
+    expect(missing.status).toBe(403);
+    expect(await missing.json()).toEqual({ error: 'origin-rejected' });
+
+    const foreign = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions`, {
+        method: 'POST',
+        headers: { Origin: 'https://evil.example' },
+      })
+    );
+    expect(foreign.status).toBe(403);
+    expect(foreign.headers.get('access-control-allow-origin')).toBeNull();
+
+    const preflight = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions`, {
+        method: 'OPTIONS',
+        headers: {
+          Origin: BROWSER_ORIGIN,
+          'Access-Control-Request-Method': 'POST',
+        },
+      })
+    );
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get('access-control-allow-origin')).toBe(BROWSER_ORIGIN);
+    expect(preflight.headers.get('access-control-allow-methods')).toContain('POST');
+    expect(preflight.headers.get('access-control-allow-origin')).not.toBe('*');
+
+    const blockedPreflight = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions`, {
+        method: 'OPTIONS',
+        headers: { Origin: 'https://evil.example' },
+      })
+    );
+    expect(blockedPreflight.status).toBe(403);
+
+    const created = await postSession();
+    expect(created.response.headers.get('access-control-allow-origin')).toBe(BROWSER_ORIGIN);
+
+    const socket = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions/${created.body.code}/storyteller`, {
+        headers: { Upgrade: 'websocket', Origin: 'https://evil.example' },
+      })
+    );
+    expect(socket.status).toBe(403);
+    expect(await socket.json()).toEqual({ error: 'origin-rejected' });
+
+    const health = await exports.default.fetch(new Request(`${ORIGIN}/health`));
+    expect(health.status).toBe(200);
+    expect(await health.json()).toEqual({ ok: true });
+  });
+
+  it('does not reissue a retired code', async () => {
+    setCodeSequence(['ABCDEF']);
+    const first = await postSession();
+    const storyteller = await connectStoryteller(first.body.code, first.body.writeToken);
+    storyteller.ws.send(JSON.stringify({ type: 'end' }));
+    expect(await storyteller.inbox.next()).toEqual({
+      type: 'session-ended',
+      reason: 'ended',
+    });
+
+    setCodeSequence(['ABCDEF', 'GHJKMN']);
+    const second = await postSession();
+    expect(second.response.status).toBe(201);
+    expect(second.body.code).toBe('GHJKMN');
+  });
+
+  it('limits session creation and missed codes from one address', async () => {
+    const creator = { 'CF-Connecting-IP': '203.0.113.20' };
+    for (let index = 0; index < 10; index += 1) {
+      const created = await postSession(creator);
+      expect(created.response.status).toBe(201);
+    }
+    const blocked = await postSession(creator);
+    expect(blocked.response.status).toBe(429);
+    expect(blocked.body).toEqual({ error: 'create-rate' });
+
+    const guesser = { 'CF-Connecting-IP': '203.0.113.30' };
+    let limited = false;
+    for (let index = 0; index < 70; index += 1) {
+      const response = await openSocket('/sessions/ABCDEF', guesser);
+      if (response.status === 429) {
+        limited = true;
+        expect(await response.json()).toEqual({ error: 'join-limit' });
+        break;
+      }
+      expect(response.status).toBe(404);
+    }
+    expect(limited).toBe(true);
   });
 });
