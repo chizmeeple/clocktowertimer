@@ -102,21 +102,19 @@
             <span>Leave session</span>
           </button>
         </div>
-        <details class="options">
-          <summary>Options</summary>
+        <div class="options">
+          <h3 id="optionsHeading">Options</h3>
           <label class="option" id="alertOption">
-            <input id="alerts" type="checkbox" />
+            <input id="alerts" type="checkbox" aria-describedby="alertNote" />
             Warn me near the end
           </label>
-          <p class="option-note">
-            A short sound, and vibration where the phone allows it. This only works while the page is open and the phone is unlocked.
-          </p>
+          <p id="alertNote" class="option-note">A short sound and vibration, while this page is open and unlocked.</p>
           <label class="option" id="wakeOption">
             <input id="wake" type="checkbox" aria-describedby="wakeNote" />
             Keep screen on
           </label>
           <p id="wakeNote" class="option-note" hidden></p>
-        </details>
+        </div>
       </section>
     </main>
     <footer class="companion-footer">

@@ -315,13 +315,16 @@
 .options {
   border-top: 1px solid var(--colour-border);
   padding-top: 0.75rem;
+  gap: 0.45rem;
 }
 
-.options summary {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
+.options h3 {
+  margin: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--colour-text-muted);
 }
 
 .option {
@@ -404,14 +407,11 @@
 
   .options {
     padding-top: 0.25rem;
+    gap: 0.3rem;
   }
 
-  .options summary,
   .session-actions button {
     min-height: 2.25rem;
-  }
-
-  .session-actions button {
     flex-direction: row;
     gap: 0.4rem;
     padding: 0.35rem 0.55rem;

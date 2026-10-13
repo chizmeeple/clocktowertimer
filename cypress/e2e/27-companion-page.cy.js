@@ -117,8 +117,18 @@ describe('Companion page', () => {
     cy.get('.character-type').eq(3).should('have.css', 'background-color', 'rgba(211, 47, 47, 0.7)');
     cy.get('.character-type.traveller').should('have.css', 'background-color', 'rgba(198, 93, 0, 0.9)');
     cy.get('#status').should('have.text', 'Live');
-    cy.get('#alerts').should('not.be.checked');
-    cy.get('#wake').should('not.be.checked');
+    cy.get('#optionsHeading')
+      .should('be.visible')
+      .and('have.text', 'Options')
+      .and('have.prop', 'tagName', 'H3')
+      .and('not.have.attr', 'tabindex');
+    cy.get('.options summary, .options details, .options button').should('not.exist');
+    cy.get('#optionsHeading').click().should('not.be.focused');
+    cy.get('#alertOption').should('be.visible').and('contain', 'Warn me near the end');
+    cy.get('#alerts').should('be.visible').and('not.be.checked');
+    cy.get('#alertNote').should('be.visible');
+    cy.get('#wakeOption').should('be.visible').and('contain', 'Keep screen on');
+    cy.get('#wake').should('be.visible').and('not.be.checked');
 
     show({ timerStatus: 'paused', displaySeconds: 90 });
     cy.get('#headline').should('have.text', '01:30');
@@ -207,7 +217,9 @@ describe('Companion page', () => {
         });
       });
       cy.get('#traveller').should('be.visible');
-      cy.get('.options summary').should('exist');
+      cy.get('#optionsHeading').should('be.visible').and('have.text', 'Options');
+      cy.get('#alerts').should('be.visible');
+      cy.get('#wake').should('be.visible');
       cy.get('.companion-footer').should('be.visible');
       cy.get('.character-type .label').each(($label) => {
         expect($label.text().trim().length).to.be.greaterThan(0);
@@ -259,8 +271,7 @@ describe('Companion page', () => {
     });
     show({});
     cy.get('#headline').should('have.text', '04:45');
-    cy.get('.options summary').click();
-    cy.get('#wakeOption').should('contain', 'Keep screen on');
+    cy.get('#wakeOption').should('be.visible').and('contain', 'Keep screen on');
     cy.get('#wake').should('not.be.checked').and('not.be.disabled');
     cy.get('#wake').check();
     cy.get('#wakeNote').should('be.visible').and('contain', 'did not keep the screen on');
@@ -304,8 +315,7 @@ describe('Companion page', () => {
       expect(read()).to.equal(1);
     });
     show({});
-    cy.get('.options summary').click();
-    cy.get('#wake').check();
+    cy.get('#wake').should('be.visible').check();
     cy.window().its('__wakeRequests').should('have.length', 1);
     cy.document().then((doc) => {
       doc.dispatchEvent(new Event('visibilitychange'));
@@ -346,8 +356,7 @@ describe('Companion page', () => {
       },
     });
     show({});
-    cy.get('.options summary').click();
-    cy.get('#wake').should('be.disabled').and('not.be.checked');
+    cy.get('#wake').should('be.visible').and('be.disabled').and('not.be.checked');
     cy.get('#wakeNote').should('be.visible').and('contain', 'cannot keep the screen on');
     show({});
     cy.get('#headline').should('have.text', '04:45');

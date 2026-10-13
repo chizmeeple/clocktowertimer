@@ -218,7 +218,10 @@ describe('companion page policy', () => {
     assert.match(page, /href="https:\/\/arcane-scripts\.net"/);
     assert.match(page, /rel="noopener noreferrer"/);
     assert.match(page, />Arcane Scripts</);
+    assert.match(page, /<h3 id="optionsHeading">Options<\/h3>/);
+    assert.match(page, /Warn me near the end/);
     assert.match(page, /Keep screen on/);
+    assert.doesNotMatch(page, /<details|<summary/);
     assert.match(page, /Show QR code/);
     assert.match(page, /Join this game/);
     assert.doesNotMatch(timer, /companion-footer/);
