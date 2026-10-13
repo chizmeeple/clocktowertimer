@@ -248,4 +248,28 @@ describe('companion dev proxy', () => {
     assert.equal(await plain.text(), 'ok');
     assert.equal(plain.headers.get('alt-svc'), null);
   });
+
+  it('serves the companion page for /c, /c/ and /c/index.html', async () => {
+    const home = await fetch(`http://127.0.0.1:${proxyPort}/`);
+    assert.equal(home.status, 200);
+    assert.match(await home.text(), /id="startBtn"/);
+
+    for (const path of ['/c', '/c/', '/c/index.html', '/c?code=ABC123']) {
+      const response = await fetch(`http://127.0.0.1:${proxyPort}${path}`);
+      assert.equal(response.status, 200, path);
+      assert.match(response.headers.get('content-type') || '', /text\/html/);
+      const body = await response.text();
+      assert.match(body, /Companion · Tower Timer/);
+      assert.match(body, /\.\.\/css\/companion\.css\?v=/);
+      assert.match(body, /\.\.\/js\/companion-page\.js\?v=/);
+      assert.match(body, /clocktower-companion\.redmeeple\.workers\.dev/);
+    }
+
+    const stylesheet = await fetch(`http://127.0.0.1:${proxyPort}/css/companion.css`);
+    assert.equal(stylesheet.status, 200);
+    const script = await fetch(`http://127.0.0.1:${proxyPort}/js/companion-page.js`);
+    assert.equal(script.status, 200);
+    const removed = await fetch(`http://127.0.0.1:${proxyPort}/companion.html`);
+    assert.equal(removed.status, 404);
+  });
 });

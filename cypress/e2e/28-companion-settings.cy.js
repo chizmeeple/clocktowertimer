@@ -1,6 +1,6 @@
 import { visitGameplay } from '../support/gameplay.js';
 
-const SESSION_URL = 'https://timer.arcane-scripts.net/companion.html?code=WH8X2P';
+const SESSION_URL = 'https://timer.arcane-scripts.net/c?code=WH8X2P';
 const WRITE_TOKEN = 'storyteller-write-token-value';
 
 function installClosingSocket(win) {
@@ -271,7 +271,7 @@ describe('Companion settings', () => {
     cy.get('#companionDevStart').click();
     cy.get('#companionDevCode').should('have.text', 'WH8X2P');
     cy.get('#companionDevOpen')
-      .should('have.attr', 'href', 'companion.html?code=WH8X2P')
+      .should('have.attr', 'href', 'c?code=WH8X2P')
       .and('have.attr', 'target', '_blank');
     cy.get('#companionDevDiagnostics').should(
       'have.attr',

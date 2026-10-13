@@ -5,7 +5,7 @@
 import { createServer } from 'node:http';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
@@ -26,6 +26,23 @@ const types = {
   '.woff2': 'font/woff2',
   '.webmanifest': 'application/manifest+json',
 };
+
+async function staticFile(urlPath) {
+  const requested = urlPath === '/' ? '/index.html' : urlPath;
+  const filePath = localPath(requested);
+  if (!filePath) return null;
+  try {
+    if ((await stat(filePath)).isDirectory()) {
+      const indexPath = requested.endsWith('/')
+        ? `${requested}index.html`
+        : `${requested}/index.html`;
+      return localPath(indexPath);
+    }
+  } catch {
+    // A missing file is reported as 404 when it is read.
+  }
+  return filePath;
+}
 
 function localPath(urlPath) {
   let decoded;
@@ -180,8 +197,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const requested = pathOnly === '/' ? '/index.html' : pathOnly;
-  const filePath = localPath(requested);
+  const filePath = await staticFile(pathOnly);
   if (!filePath) {
     res.writeHead(400);
     res.end();

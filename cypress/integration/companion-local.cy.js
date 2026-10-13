@@ -34,7 +34,7 @@ function companionSeconds() {
 function openCompanion() {
   cy.get('#companionDevCode').invoke('text').then((code) => {
     cy.get('#companionDevOpen')
-      .should('have.attr', 'href', `companion.html?code=${code}`)
+      .should('have.attr', 'href', `c?code=${code}`)
       .and('have.attr', 'target', '_blank')
       .and('have.attr', 'rel', 'noopener');
     cy.get('#companionDevDiagnostics')
@@ -59,6 +59,7 @@ describe('Local companion session', () => {
   afterEach(() => {
     cy.window().then((win) => {
       win.__companionDevClient?.close();
+      win.__companionPlayer?.close();
     });
   });
 
@@ -235,6 +236,37 @@ describe('Local companion session', () => {
     cy.get('#startBtn .button-text').should('have.text', '⏸️ Pause Day');
     expectCompanion('#connection', (text) => {
       expect(text).to.equal('ended');
+    });
+  });
+
+  it('connects the player page to the live session', () => {
+    visitDev();
+    cy.get('#companionDevStart').click();
+    cy.get('#companionDevStatus', { timeout: 10000 }).should('have.text', 'live');
+    cy.get('#companionDevCode').invoke('text').then((code) => {
+      cy.window().then((win) => {
+        const nativeOpen = win.open.bind(win);
+        cy.stub(win, 'open').callsFake((href, name) => {
+          const child = nativeOpen(href, name);
+          if (name === 'companionPlayer') win.__companionPlayer = child;
+          return child;
+        });
+      });
+      cy.get('#companionDevOpen')
+        .should('have.attr', 'href', `c?code=${code}`)
+        .click();
+    });
+    cy.window({ timeout: 10000 }).should((win) => {
+      const player = win.__companionPlayer;
+      expect(player && !player.closed, 'player window').to.equal(true);
+      const href = player.location.href;
+      expect(new URL(href).pathname).to.match(/^\/c\/?$/);
+      expect(new URL(href).searchParams.get('code')).to.equal(
+        win.document.querySelector('#companionDevCode').textContent
+      );
+      expect(href).to.not.contain('companion.html');
+      expect(href).to.not.contain('writeToken');
+      expect(player.document.querySelector('#status').textContent).to.equal('Live');
     });
   });
 });

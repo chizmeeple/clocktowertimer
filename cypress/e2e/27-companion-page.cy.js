@@ -30,15 +30,50 @@ function expectNoHorizontalScroll() {
   });
 }
 
+function expectCompanionShell() {
+  cy.title().should('eq', 'Companion · Tower Timer');
+  cy.get('#joinForm').should('be.visible');
+  cy.get('link[href*="css/companion.css"]').should(($link) => {
+    expect($link[0].sheet, 'companion stylesheet').to.not.equal(null);
+    expect($link[0].sheet.cssRules.length).to.be.greaterThan(0);
+  });
+  cy.get('script[src*="js/companion-page.js"]').should('exist');
+  cy.window().its('__companionTest.show').should('be.a', 'function');
+}
+
 describe('Companion page', () => {
+  ['/c', '/c/', '/c/index.html'].forEach((path) => {
+    it(`loads at ${path} with its stylesheet and script`, () => {
+      cy.visit(path);
+      expectCompanionShell();
+      cy.get('link[rel="stylesheet"], script[src]').then(($nodes) => {
+        const urls = [...$nodes]
+          .map((node) => node.href || node.src)
+          .filter((url) => url.startsWith(Cypress.config('baseUrl')));
+        expect(urls.some((url) => url.includes('/css/companion.css'))).to.equal(true);
+        expect(urls.some((url) => url.includes('/js/companion-page.js'))).to.equal(true);
+        for (const url of urls) {
+          cy.request(url).its('status').should('eq', 200);
+        }
+      });
+    });
+  });
+
+  it('keeps a direct session code on /c', () => {
+    cy.visit('/c?code=ABC123');
+    cy.location('pathname').should('match', /^\/c\/?$/);
+    cy.location('search').should('eq', '?code=ABC123');
+    cy.get('#code').should('have.value', 'ABC123');
+    cy.get('#session').should('be.visible');
+    cy.get('#status').invoke('text').should('match', /Joining|Offline/);
+  });
+
   it('joins from the address, rejects a bad code, and can leave', () => {
-    // The local static server redirects companion.html and drops the query, so
-    // these visits use the clean path. GitHub Pages serves companion.html directly.
-    cy.visit('/companion?code=not-a-code');
+    cy.visit('/c?code=not-a-code');
     cy.get('#codeError').should('be.visible').and('contain', 'not valid');
     cy.get('#session').should('not.be.visible');
 
-    cy.visit('/companion?code=ab-c1o2');
+    cy.visit('/c?code=ab-c1o2');
     cy.get('#code').should('have.value', 'ABC102');
     cy.get('#session').should('be.visible');
     cy.get('#status').invoke('text').should('match', /Joining|Offline/);
@@ -52,7 +87,7 @@ describe('Companion page', () => {
   });
 
   it('renders the public countdown and all five counts', () => {
-    cy.visit('/companion');
+    cy.visit('/c');
     show({});
     cy.get('#headline').should('have.text', '04:45');
     cy.get('#kicker').should('have.text', 'Day 1');
@@ -125,7 +160,7 @@ describe('Companion page', () => {
   ].forEach(([width, height]) => {
     it(`fits a ${width} by ${height} screen`, () => {
       cy.viewport(width, height);
-      cy.visit('/companion');
+      cy.visit('/c');
       show({ displaySeconds: 285 });
       cy.get('#headline').should('be.visible');
       cy.get('#traveller').should('be.visible');

@@ -120,8 +120,8 @@ Cypress finishes. `npm run test:open` starts the same server and launches
 interactive Cypress. `npm run test:unit` does not need that server. To use
 another supported browser, pass `--browser` to Cypress, which overrides the
 default. `npm run stamp-release` writes the current version into the entry
-page and release manifest; use it only when preparing or updating a release,
-not during ordinary testing.
+page, the companion page at `c/index.html`, and the release manifest; use it
+only when preparing or updating a release, not during ordinary testing.
 
 ```bash
 npm ci
@@ -144,6 +144,6 @@ and every local module use that version:
 npm run stamp-release
 ```
 
-Commit `index.html` and `release.json` with the version change. The node tests
+Commit `index.html`, `c/index.html` and `release.json` with the version change. The node tests
 check that those files match `APP_VERSION` and that local module imports are
 covered. GitHub Pages does not support custom cache headers.

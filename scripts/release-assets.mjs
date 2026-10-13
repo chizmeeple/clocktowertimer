@@ -6,6 +6,12 @@ import { APP_VERSION } from '../js/changelog.js';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STYLESHEET = 'css/styles.css';
 const ENTRY_SCRIPT = 'js/script.js';
+const COMPANION_HTML = 'c/index.html';
+const COMPANION_ASSETS = [
+  '../css/styles.css',
+  '../css/companion.css',
+  '../js/companion-page.js',
+];
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -126,6 +132,37 @@ export function stampHtml(html, version, specifiers) {
   return next;
 }
 
+export function stampCompanionHtml(html, version) {
+  let next = html;
+  for (const asset of COMPANION_ASSETS) {
+    const pattern = new RegExp(
+      `((?:href|src)=")${escapeRegExp(asset)}(?:\\?[^"]*)?"`,
+      'g'
+    );
+    if (!pattern.test(next)) {
+      throw new Error(`Could not find ${asset}`);
+    }
+    pattern.lastIndex = 0;
+    next = next.replace(pattern, `$1${versionedUrl(asset, version)}"`);
+  }
+  return next;
+}
+
+export function companionAssetProblems(html, version) {
+  const problems = [];
+  for (const asset of COMPANION_ASSETS) {
+    const versioned = `="${versionedUrl(asset, version)}"`;
+    const count = html.split(versioned).length - 1;
+    if (count !== 1) {
+      problems.push(`expected 1 ${asset} reference, found ${count}`);
+    }
+    if (new RegExp(`(?:href|src)="${escapeRegExp(asset)}"`).test(html)) {
+      problems.push(`unversioned ${asset}`);
+    }
+  }
+  return problems;
+}
+
 export function releaseManifest(version) {
   return `${JSON.stringify({ version }, null, 2)}\n`;
 }
@@ -186,10 +223,18 @@ function writeReleaseAssets() {
   const htmlPath = resolve(root, 'index.html');
   const html = stampHtml(readFileSync(htmlPath, 'utf8'), APP_VERSION, specifiers);
   const problems = releaseAssetProblems(html, APP_VERSION, specifiers);
-  if (problems.length > 0) {
-    throw new Error(problems.join('\n'));
+  const companionPath = resolve(root, COMPANION_HTML);
+  const companion = stampCompanionHtml(
+    readFileSync(companionPath, 'utf8'),
+    APP_VERSION
+  );
+  const companionProblems = companionAssetProblems(companion, APP_VERSION);
+  const all = [...problems, ...companionProblems];
+  if (all.length > 0) {
+    throw new Error(all.join('\n'));
   }
   writeFileSync(htmlPath, html);
+  writeFileSync(companionPath, companion);
   writeFileSync(
     resolve(root, 'release.json'),
     releaseManifest(APP_VERSION)

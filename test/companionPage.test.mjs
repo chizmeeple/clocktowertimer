@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { COMPANION_WARNING_SECONDS, nextCompanionAlert } from '../js/companionAlerts.js';
 import { companionBaseUrl, isSessionCode, normaliseSessionCode, sessionCodeFromLocation } from '../js/companionCode.js';
@@ -146,9 +147,10 @@ describe('companion alerts', () => {
 
 describe('companion page policy', () => {
   it('allows only the deployed worker on the companion page', () => {
-    const page = readFileSync(new URL('../companion.html', import.meta.url), 'utf8');
+    const page = readFileSync(new URL('../c/index.html', import.meta.url), 'utf8');
     const timer = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-    assert.match(page, new RegExp(`css/companion\\.css\\?v=${APP_VERSION}`));
+    assert.match(page, new RegExp(`\\.\\./css/companion\\.css\\?v=${APP_VERSION}`));
+    assert.match(page, new RegExp(`\\.\\./js/companion-page\\.js\\?v=${APP_VERSION}`));
     assert.match(page, /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
     assert.match(page, /wss:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
     assert.doesNotMatch(page, /connect-src[^;]*\*/);
@@ -158,5 +160,32 @@ describe('companion page policy', () => {
     assert.equal(timerPolicy.match(/wss:\/\//g).length, 1);
     assert.doesNotMatch(timerPolicy, /\*\.workers\.dev/);
     assert.doesNotMatch(timerPolicy, /wss:\/\/\*/);
+  });
+
+  it('resolves companion assets from /c, /c/ and /c/index.html', () => {
+    const page = readFileSync(new URL('../c/index.html', import.meta.url), 'utf8');
+    const refs = [...page.matchAll(/(?:href|src)="(\.\.\/[^"]+)"/g)].map((match) => (
+      match[1].split('?')[0]
+    ));
+    assert.deepEqual(refs, [
+      '../favicon.svg',
+      '../css/styles.css',
+      '../css/companion.css',
+      '../index.html',
+      '../js/companion-page.js',
+    ]);
+    for (const base of [
+      'http://127.0.0.1:8006/c',
+      'http://127.0.0.1:8006/c/',
+      'http://127.0.0.1:8006/c/index.html',
+      'http://127.0.0.1:8006/c?code=ABC123',
+    ]) {
+      for (const ref of refs) {
+        const url = new URL(ref, base);
+        assert.equal(url.pathname.startsWith('/c/'), false);
+        assert.equal(existsSync(fileURLToPath(new URL(`..${url.pathname}`, import.meta.url))), true);
+      }
+    }
+    assert.equal(existsSync(fileURLToPath(new URL('../companion.html', import.meta.url))), false);
   });
 });

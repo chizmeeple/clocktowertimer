@@ -35,13 +35,15 @@ flowchart TB
     CF <--> DO
 ```
 
-Production connections go **directly from browsers to Cloudflare** using HTTPS and `wss://`. No GitHub Pages server or production reverse proxy is needed. Both `companion.html` and the Storyteller page allow that exact worker origin in `connect-src` (HTTPS and WSS, with no wildcard). The Worker allows the site's exact Origin.
+Production connections go **directly from browsers to Cloudflare** using HTTPS and `wss://`. No GitHub Pages server or production reverse proxy is needed. Both the companion page and the Storyteller page allow that exact worker origin in `connect-src` (HTTPS and WSS, with no wildcard). The Worker allows the site's exact Origin.
 
 ### Production endpoint
 
 - Worker: `https://clocktower-companion.redmeeple.workers.dev`
 - Storyteller application: `https://timer.arcane-scripts.net`
-- Player-facing companion: `https://timer.arcane-scripts.net/companion.html?code=ABC123`
+- Player-facing companion: `https://timer.arcane-scripts.net/c`
+- Direct session link: `https://timer.arcane-scripts.net/c?code=ABC123`
+- The static file is `c/index.html`. Generated links use `/c` with no trailing slash. GitHub Pages may redirect `/c` to `/c/`; the page still loads, and a `code` query is preserved.
 - A valid code in the address is normalised and joined automatically. Without a code, the page asks for one. The diagnostic client remains at `companion-dev.html`.
 
 The `redmeeple` portion is the account-wide `workers.dev` subdomain; `clocktower-companion` is this Worker's name.
@@ -102,7 +104,7 @@ While a session is live, the timer shows that session's six-character join code 
 
 In Settings, the six-character code is shown while that session is connecting, live, or reconnecting. On the timer it appears only once the session is live, and it remains during reconnect. **Copy link** and **Show QR code** use the public player URL:
 
-`https://timer.arcane-scripts.net/companion.html?code=<SESSION_CODE>`
+`https://timer.arcane-scripts.net/c?code=<SESSION_CODE>`
 
 The link and the QR code contain the code and nothing else. The write token is not in the link, the QR image, the page, or the logs. The QR code can be closed without ending the session.
 
@@ -145,7 +147,7 @@ The server wraps snapshots in a revisioned envelope with server timing informati
 | Backend | `npm run dev:worker` or remote Cloudflare Worker | Remote Cloudflare Worker |
 | Browser API/WebSocket URL | Same-origin `/companion-api` development proxy | Direct HTTPS / `wss://` Worker endpoint |
 | Why a proxy? | Local pages call same-origin `/companion-api`, including when `COMPANION_WORKER_URL` selects the deployed Worker | Not needed; the Storyteller page connects to the Worker directly |
-| Player page | `companion.html` on the local server, still via `/companion-api` | `companion.html` connects directly to the deployed worker |
+| Player page | `c/index.html`, served at `/c`, `/c/` and `/c/index.html`, still via `/companion-api` | `/c` connects directly to the deployed worker |
 | Publishing UI | Settings tab and the timer join code while a session is live, plus the development panel at `?companionDev=1` | Settings tab, off until enabled. The timer shows the join code only while a session is live |
 
 For a local Worker:
@@ -164,7 +166,7 @@ COMPANION_WORKER_URL='https://clocktower-companion.redmeeple.workers.dev' \
 
 Then visit `http://127.0.0.1:8006/?companionDev=1`. After a session starts, **Open companion** opens the player page and **Open diagnostics** opens the diagnostic client. Both use the current code and are not links once that session has ended. The panel and the Settings tab share one session controller, so they cannot start two sessions for the same page. The panel remains a localhost diagnostic tool. While the timer is showing the join code, the panel does not repeat that code. Its stop and drop actions are local diagnostic controls; **Stop sharing** in Settings is what tells the Worker to end the session for players.
 
-`companion.html` allows connections only to itself and `clocktower-companion.redmeeple.workers.dev` (HTTPS and WSS). On localhost it still uses the `/companion-api` proxy, so the same page works with a local worker or `COMPANION_WORKER_URL`. The Storyteller page allows the same worker host, for HTTPS and WSS only, and uses it when the page is not served from localhost.
+The companion page at `/c` allows connections only to itself and `clocktower-companion.redmeeple.workers.dev` (HTTPS and WSS). On localhost it still uses the `/companion-api` proxy, so the same page works with a local worker or `COMPANION_WORKER_URL`. The Storyteller page allows the same worker host, for HTTPS and WSS only, and uses it when the page is not served from localhost. Locally, `http://127.0.0.1:8006/c`, `http://127.0.0.1:8006/c/` and `http://127.0.0.1:8006/c/index.html` all serve that page. A direct link is `http://127.0.0.1:8006/c?code=ABC123`.
 
 The companion can play a short sound and vibrate about 30 seconds before a running countdown reaches zero, and again at zero. Both are off until the player opts in, and only while the page is open and the phone is unlocked. "Keep the screen awake" is also off until asked for, and the browser may refuse it. Neither feature runs in the background.
 
@@ -203,7 +205,7 @@ Expected: session code, `Published revision 1`, and `Session ended`.
 - `/health` returned HTTP 200 with `{"ok":true}`.
 - Remote smoke test created a session, published revision 1, and ended the session.
 - Remote two-window browser test confirmed Storyteller publishing and companion reception, with matching revisions.
-- The player page is `companion.html`. It joins with a code and talks to the deployed worker when it is not served from localhost.
+- The player page is `c/index.html`, published at `/c`. It joins with a code and talks to the deployed worker when it is not served from localhost.
 - Storytellers turn sharing on from Settings. The timer face has no Companion Mode controls. While a session is live it shows the join code above the bottom-right controls. Sharing stays off until both the setting and a session exist.
 
 The `curl --max-time` timeout during a successful WebSocket upgrade is expected: WebSockets remain open. Receiving snapshot frames before that timeout demonstrates data delivery for that diagnostic connection, **not** a completed browser end-to-end test.
@@ -240,7 +242,7 @@ npx wrangler rollback --config worker/wrangler.jsonc
 - `js/companionClock.js` — client-side countdown projection.
 - `js/companionPublish.js` — opt-in publishing adapter.
 - `js/companionTransport.js`, `js/companionClient.js`, `js/companionSync.js` — transport and synchronisation.
-- `companion.html`, `css/companion.css`, `js/companion-page.js` — player page.
+- `c/index.html`, `css/companion.css`, `js/companion-page.js` — player page. The public URL is `/c`.
 - `js/companionCode.js`, `js/companionDisplay.js`, `js/companionAlerts.js` — code entry, presentation and foreground warnings.
 - `js/companionSession.js` — the single Storyteller session used by Settings and the development panel.
 - `js/companionDev.js`, `companion-dev.html`, `js/companion-dev-page.js` — development harness.

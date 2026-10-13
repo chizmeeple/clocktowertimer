@@ -13,7 +13,7 @@ export function companionDevHrefs(status) {
   }
   const query = new URLSearchParams({ code }).toString();
   return {
-    companion: `companion.html?${query}`,
+    companion: `c?${query}`,
     diagnostics: `companion-dev.html?${query}`,
   };
 }

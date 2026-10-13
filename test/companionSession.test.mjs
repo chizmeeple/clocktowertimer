@@ -16,13 +16,18 @@ describe('companion sharing presentation', () => {
   it('builds a public player link and a high-contrast QR url', () => {
     const playerUrl = companionPlayerUrl('WH8X2P');
     const qrUrl = companionQrImageUrl(playerUrl);
-    assert.equal(playerUrl, 'https://timer.arcane-scripts.net/companion.html?code=WH8X2P');
+    assert.equal(playerUrl, 'https://timer.arcane-scripts.net/c?code=WH8X2P');
+    assert.equal(new URL(playerUrl).pathname, '/c');
+    assert.equal(
+      companionPlayerUrl('A B&C'),
+      'https://timer.arcane-scripts.net/c?code=A+B%26C'
+    );
     assert.match(qrUrl, /^https:\/\/api\.qrserver\.com\/v1\/create-qr-code\/\?/);
     assert.match(qrUrl, /size=360x360/);
     assert.match(qrUrl, /qzone=2/);
     assert.match(qrUrl, /color=000000/);
     assert.match(qrUrl, /bgcolor=ffffff/);
-    assert.match(decodeURIComponent(qrUrl), /https:\/\/timer\.arcane-scripts\.net\/companion\.html\?code=WH8X2P/);
+    assert.match(decodeURIComponent(qrUrl), /https:\/\/timer\.arcane-scripts\.net\/c\?code=WH8X2P/);
     assert.equal(qrUrl.includes(TOKEN), false);
     assert.equal(qrUrl.includes('writeToken'), false);
   });

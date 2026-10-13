@@ -317,7 +317,7 @@ describe('Companion join code', () => {
     cy.get('#companionDevStatus').should('have.text', 'live');
     cy.get('#companionDevDelivery').should('be.visible');
     cy.get('#companionDevOpen')
-      .should('have.attr', 'href', 'companion.html?code=WH8X2P')
+      .should('have.attr', 'href', 'c?code=WH8X2P')
       .and('not.have.attr', 'aria-disabled');
     cy.get('#companionDevDiagnostics').should(
       'have.attr',
@@ -352,6 +352,54 @@ describe('Companion join code', () => {
         'companionJoinValue',
       ]);
     });
+  });
+
+  it('lets a click through the join code reach a covered day preset', () => {
+    installSessionReplies(['WH8X2P']);
+    visitGameplay({
+      settings: { companionEnabled: true },
+      onBeforeLoad: installHeldSocket,
+    });
+    openCompanionTab();
+    startAndGoLive('WH8X2P');
+    cy.get('#closeSettings').click();
+    cy.viewport(1024, 500);
+    dismissPortraitWarningIfShown();
+
+    cy.window().should((win) => {
+      const panel = win.document.getElementById('companionJoin');
+      const join = panel.getBoundingClientRect();
+      expect(win.getComputedStyle(panel).pointerEvents).to.equal('none');
+      for (const node of panel.querySelectorAll('*')) {
+        expect(win.getComputedStyle(node).pointerEvents).to.equal('none');
+      }
+
+      const covered = [...win.document.querySelectorAll('.clocktower-btn')].find((btn) => {
+        const rect = btn.getBoundingClientRect();
+        const overlapX = Math.min(join.right, rect.right) - Math.max(join.left, rect.left);
+        const overlapY = Math.min(join.bottom, rect.bottom) - Math.max(join.top, rect.top);
+        return overlapX > 8 && overlapY > 8;
+      });
+      expect(covered, 'day preset under the join code').to.exist;
+      const rect = covered.getBoundingClientRect();
+      const x = (Math.max(join.left, rect.left) + Math.min(join.right, rect.right)) / 2;
+      const y = (Math.max(join.top, rect.top) + Math.min(join.bottom, rect.bottom)) / 2;
+      const hit = win.document.elementFromPoint(x, y);
+      expect(panel.contains(hit), 'join code receives the click').to.equal(false);
+      expect(covered.contains(hit), 'day preset receives the click').to.equal(true);
+      win.__coveredPreset = {
+        day: covered.dataset.day,
+        offsetX: x - rect.left,
+        offsetY: y - rect.top,
+      };
+    });
+
+    cy.window().then((win) => {
+      const { day, offsetX, offsetY } = win.__coveredPreset;
+      cy.get(`.clocktower-btn[data-day="${day}"]`).click(offsetX, offsetY);
+    });
+    cy.get('#startBtn .button-text').should('have.text', '⏸️ Pause Day');
+    cy.get('#companionJoinValue').should('have.text', 'WH8X2P');
   });
 
   it('stays clear of the countdown and controls at representative sizes', () => {

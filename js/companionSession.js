@@ -9,7 +9,7 @@ import {
 } from './companionPublish.js';
 import { createStorytellerTransport } from './companionTransport.js';
 
-const PLAYER_PAGE = 'https://timer.arcane-scripts.net/companion.html';
+const PLAYER_PAGE = 'https://timer.arcane-scripts.net/c';
 const SHARING = new Set(['connecting', 'live', 'reconnecting']);
 
 const IDLE_STATUS = {

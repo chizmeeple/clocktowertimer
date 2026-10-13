@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { APP_VERSION } from '../js/changelog.js';
@@ -12,9 +12,11 @@ import {
 } from '../js/releaseCheck.js';
 import {
   collectModuleSpecifiers,
+  companionAssetProblems,
   releaseAssetProblems,
   releaseAssetUrls,
   releaseManifest,
+  stampCompanionHtml,
   stampHtml,
   versionedUrl,
 } from '../scripts/release-assets.mjs';
@@ -108,6 +110,44 @@ describe('release asset versions', () => {
     assert.ok(specifiers.includes('./js/gameState.js'));
     assert.ok(specifiers.includes('./js/changelog.js'));
     assert.ok(specifiers.includes('./js/releaseCheck.js'));
+  });
+
+  it('stamps the nested companion page and leaves the storyteller page alone', () => {
+    const bare = [
+      '<link rel="stylesheet" href="../css/styles.css" />',
+      '<link rel="stylesheet" href="../css/companion.css?v=0.0.1" />',
+      '<script type="module" src="../js/companion-page.js"></script>',
+    ].join('\n');
+    const stamped = stampCompanionHtml(bare, '2.0.0');
+    assert.equal(companionAssetProblems(stamped, '2.0.0').join('\n'), '');
+    assert.equal(stamped.includes('href="../css/styles.css"'), false);
+    assert.equal(stamped.includes('companion.html'), false);
+    const next = stampCompanionHtml(stamped, '2.0.1');
+    assert.equal(next.includes('?v=2.0.0'), false);
+    assert.equal(companionAssetProblems(next, '2.0.1').join('\n'), '');
+    assert.equal(stampCompanionHtml(next, '2.0.1'), next);
+
+    const page = readFileSync(new URL('../c/index.html', import.meta.url), 'utf8');
+    assert.equal(companionAssetProblems(page, APP_VERSION).join('\n'), '');
+    assert.equal(stampCompanionHtml(page, APP_VERSION), page);
+    assert.equal(existsSync(fileURLToPath(new URL('../companion.html', import.meta.url))), false);
+
+    const pageDir = fileURLToPath(new URL('../c/', import.meta.url));
+    const entry = resolve(pageDir, '../js/companion-page.js');
+    const modules = collectModuleSpecifiers(entry, readFileSync, root);
+    assert.ok(modules.includes('./js/companionClient.js'));
+    assert.ok(modules.includes('./js/companionCode.js'));
+    for (const specifier of modules) {
+      assert.equal(existsSync(resolve(root, specifier)), true);
+    }
+    assert.equal(existsSync(resolve(pageDir, '../css/companion.css')), true);
+    assert.equal(existsSync(resolve(pageDir, '../css/styles.css')), true);
+
+    const releaseSource = readFileSync(new URL('../scripts/release-assets.mjs', import.meta.url), 'utf8');
+    assert.equal(releaseSource.includes('companion.html'), false);
+    assert.match(releaseSource, /c\/index\.html/);
+    assert.equal(releaseAssetProblems(indexHtml, APP_VERSION, specifiers).join('\n'), '');
+    assert.equal(stampHtml(indexHtml, APP_VERSION, specifiers), indexHtml);
   });
 });
 
