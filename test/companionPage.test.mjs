@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { COMPANION_WARNING_SECONDS, nextCompanionAlert } from '../companionAlerts.js';
-import { companionBaseUrl, isSessionCode, normaliseSessionCode, sessionCodeFromLocation } from '../companionCode.js';
-import { formatCountdown, presentCompanion } from '../companionDisplay.js';
-import { APP_VERSION } from '../changelog.js';
+import { COMPANION_WARNING_SECONDS, nextCompanionAlert } from '../js/companionAlerts.js';
+import { companionBaseUrl, isSessionCode, normaliseSessionCode, sessionCodeFromLocation } from '../js/companionCode.js';
+import { formatCountdown, presentCompanion } from '../js/companionDisplay.js';
+import { APP_VERSION } from '../js/changelog.js';
 
 function view(overrides) {
   return {
@@ -148,7 +148,7 @@ describe('companion page policy', () => {
   it('allows only the deployed worker on the companion page', () => {
     const page = readFileSync(new URL('../companion.html', import.meta.url), 'utf8');
     const timer = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-    assert.match(page, new RegExp(`companion.css\\?v=${APP_VERSION}`));
+    assert.match(page, new RegExp(`css/companion\\.css\\?v=${APP_VERSION}`));
     assert.match(page, /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
     assert.match(page, /wss:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
     assert.doesNotMatch(page, /connect-src[^;]*\*/);

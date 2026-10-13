@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
-import { orientationUtils } from '../helper.js';
+import { orientationUtils } from '../js/helper.js';
 
 const PORTRAIT_QUERY = '(orientation: portrait)';
 

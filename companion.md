@@ -133,7 +133,7 @@ Protocol version 1 is a public projection, not the full internal game state. Exa
 }
 ```
 
-The server wraps snapshots in a revisioned envelope with server timing information. The public schema and validation are implemented in `companionState.js`; countdown projection is in `companionClock.js`. Avoid sending full internal state or private information.
+The server wraps snapshots in a revisioned envelope with server timing information. The public schema and validation are implemented in `js/companionState.js`; countdown projection is in `js/companionClock.js`. Avoid sending full internal state or private information.
 
 ## Local development versus production
 
@@ -234,14 +234,14 @@ npx wrangler rollback --config worker/wrangler.jsonc
 
 ## Useful source files
 
-- `companionState.js` — public state projection and validation.
-- `companionClock.js` — client-side countdown projection.
-- `companionPublish.js` — opt-in publishing adapter.
-- `companionTransport.js`, `companionClient.js`, `companionSync.js` — transport and synchronisation.
-- `companion.html`, `companion.css`, `companion-page.js` — player page.
-- `companionCode.js`, `companionDisplay.js`, `companionAlerts.js` — code entry, presentation and foreground warnings.
-- `companionSession.js` — the single Storyteller session used by Settings and the development panel.
-- `companionDev.js`, `companion-dev.html`, `companion-dev-page.js` — development harness.
+- `js/companionState.js` — public state projection and validation.
+- `js/companionClock.js` — client-side countdown projection.
+- `js/companionPublish.js` — opt-in publishing adapter.
+- `js/companionTransport.js`, `js/companionClient.js`, `js/companionSync.js` — transport and synchronisation.
+- `companion.html`, `css/companion.css`, `js/companion-page.js` — player page.
+- `js/companionCode.js`, `js/companionDisplay.js`, `js/companionAlerts.js` — code entry, presentation and foreground warnings.
+- `js/companionSession.js` — the single Storyteller session used by Settings and the development panel.
+- `js/companionDev.js`, `companion-dev.html`, `js/companion-dev-page.js` — development harness.
 - `scripts/dev-server.mjs` — local frontend server and `/companion-api` proxy.
 - `scripts/companion-smoke.mjs` — remote smoke test.
 - `worker/` — Cloudflare Worker, Durable Objects, Wrangler config and tests.

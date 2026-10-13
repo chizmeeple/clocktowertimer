@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { characterAmounts } from '../helper.js';
+import { characterAmounts } from '../js/helper.js';
 import {
   decideRevision,
   isSnapshotStale,
   projectCompanionState,
   validateCompanionState,
-} from '../companionState.js';
+} from '../js/companionState.js';
 
 function game(overrides = {}) {
   return {

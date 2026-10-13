@@ -202,22 +202,22 @@ body::before {
 
 /* Background theme classes */
 body[data-theme='gothic-city']::before {
-  background-image: url('images/backgrounds/gothic-city.png');
+  background-image: url('../images/backgrounds/gothic-city.png');
 }
 body[data-theme='medieval-cartoon']::before {
-  background-image: url('images/backgrounds/medieval-cartoon.png');
+  background-image: url('../images/backgrounds/medieval-cartoon.png');
 }
 body[data-theme='tower-in-forest']::before {
-  background-image: url('images/backgrounds/tower-in-forest.png');
+  background-image: url('../images/backgrounds/tower-in-forest.png');
 }
 body[data-theme='infested-city']::before {
-  background-image: url('images/backgrounds/infested-city.png');
+  background-image: url('../images/backgrounds/infested-city.png');
 }
 body[data-theme='circle-of-people']::before {
-  background-image: url('images/backgrounds/circle-of-people.png');
+  background-image: url('../images/backgrounds/circle-of-people.png');
 }
 body[data-theme='large-clock-face']::before {
-  background-image: url('images/backgrounds/large-clock-face.png');
+  background-image: url('../images/backgrounds/large-clock-face.png');
 }
 
 /* The day image stays on ::before. This plate covers it with the same
@@ -231,7 +231,7 @@ body[data-theme='large-clock-face']::before {
   background-color: var(--colour-bg);
   background-image:
     linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.85)),
-    url('images/backgrounds/night-sky.jpg');
+    url('../images/backgrounds/night-sky.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

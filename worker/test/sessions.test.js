@@ -6,7 +6,7 @@ import {
   runInDurableObject,
 } from 'cloudflare:test';
 import { afterEach, describe, expect, it } from 'vitest';
-import { validateCompanionState } from '../../companionState.js';
+import { validateCompanionState } from '../../js/companionState.js';
 import { setCodeSequence } from '../src/codes.js';
 import { DIRECTORY_NAME } from '../src/directory.js';
 import {

@@ -6,8 +6,8 @@ import {
   createCompanionSessionController,
   presentCompanionSharing,
   resolveCompanionEnabledChange,
-} from '../companionSession.js';
-import { createStorytellerTransport } from '../companionTransport.js';
+} from '../js/companionSession.js';
+import { createStorytellerTransport } from '../js/companionTransport.js';
 
 const TOKEN = 'storyteller-write-token-value';
 

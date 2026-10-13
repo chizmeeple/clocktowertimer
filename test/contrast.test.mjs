@@ -8,7 +8,7 @@ import {
   parseColor,
 } from './contrast.mjs';
 
-const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../css/styles.css', import.meta.url), 'utf8');
 const settingsGroup = '#343434';
 
 function variable(name) {

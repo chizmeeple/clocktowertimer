@@ -8,7 +8,7 @@ import {
   referenceTimeForSnapshot,
   serverNowFromMono,
   slewOffset,
-} from '../companionSync.js';
+} from '../js/companionSync.js';
 
 describe('clock samples', () => {
   it('estimates the server offset from the middle of the round trip', () => {

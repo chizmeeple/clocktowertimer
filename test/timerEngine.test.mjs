@@ -5,7 +5,7 @@ import {
   NORMAL_COUNTDOWN_MS_PER_REAL_MS,
   createTimerEngine,
   displaySeconds,
-} from '../timerEngine.js';
+} from '../js/timerEngine.js';
 
 function installClock(start = 0) {
   let current = start;

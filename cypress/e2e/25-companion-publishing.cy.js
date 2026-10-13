@@ -1,4 +1,4 @@
-import { validateCompanionState } from '../../companionState.js';
+import { validateCompanionState } from '../../js/companionState.js';
 import {
   advance,
   expectTimer,
@@ -27,7 +27,7 @@ function companionModule() {
     const script = win.document.createElement('script');
     script.type = 'module';
     script.textContent =
-      "import * as publishing from './companionPublish.js'; globalThis.__companionPublishing = publishing;";
+      "import * as publishing from './js/companionPublish.js'; globalThis.__companionPublishing = publishing;";
     win.document.head.appendChild(script);
     const started = Date.now();
     return new win.Promise((resolve, reject) => {

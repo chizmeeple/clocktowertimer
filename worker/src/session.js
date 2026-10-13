@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { validateCompanionState } from '../../companionState.js';
+import { validateCompanionState } from '../../js/companionState.js';
 import { directoryStub } from './directory.js';
 import {
   AUTH_TIMEOUT_MS,

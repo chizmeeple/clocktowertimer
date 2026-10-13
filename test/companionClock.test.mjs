@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { readCompanionCountdown } from '../companionClock.js';
-import { projectCompanionState } from '../companionState.js';
-import { displaySeconds } from '../timerEngine.js';
+import { readCompanionCountdown } from '../js/companionClock.js';
+import { projectCompanionState } from '../js/companionState.js';
+import { displaySeconds } from '../js/timerEngine.js';
 
 function countdown(snapshot, times = {}) {
   return readCompanionCountdown({

@@ -4,12 +4,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { APP_VERSION } from '../changelog.js';
+import { APP_VERSION } from '../js/changelog.js';
 import {
   navigateToNewerRelease,
   releaseNavigationUrl,
   shouldNavigateToRelease,
-} from '../releaseCheck.js';
+} from '../js/releaseCheck.js';
 import {
   collectModuleSpecifiers,
   releaseAssetProblems,
@@ -19,9 +19,10 @@ import {
   versionedUrl,
 } from '../scripts/release-assets.mjs';
 
-const entryPath = fileURLToPath(new URL('../script.js', import.meta.url));
+const root = fileURLToPath(new URL('..', import.meta.url));
+const entryPath = fileURLToPath(new URL('../js/script.js', import.meta.url));
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const specifiers = collectModuleSpecifiers(entryPath);
+const specifiers = collectModuleSpecifiers(entryPath, readFileSync, root);
 
 describe('release asset versions', () => {
   it('versions the whole local module graph', () => {
@@ -54,8 +55,8 @@ describe('release asset versions', () => {
 
   it('keeps one version across the entry script, modules, and CSS', () => {
     const urls = releaseAssetUrls(APP_VERSION, specifiers);
-    assert.ok(urls.includes(`styles.css?v=${APP_VERSION}`));
-    assert.ok(urls.includes(`script.js?v=${APP_VERSION}`));
+    assert.ok(urls.includes(`css/styles.css?v=${APP_VERSION}`));
+    assert.ok(urls.includes(`js/script.js?v=${APP_VERSION}`));
     for (const specifier of specifiers) {
       assert.ok(urls.includes(versionedUrl(specifier, APP_VERSION)));
     }
@@ -65,19 +66,25 @@ describe('release asset versions', () => {
 
   it('stamps stylesheet, entry script, and module imports', () => {
     const bare = [
-      '<link rel="preload" href="styles.css" as="style" />',
-      '<link rel="stylesheet" href="styles.css" />',
-      '<script src="script.js" type="module"></script>',
+      '<link rel="preload" href="css/styles.css" as="style" />',
+      '<link rel="stylesheet" href="css/styles.css" />',
+      '<script src="js/script.js" type="module"></script>',
     ].join('\n');
-    const stamped = stampHtml(bare, '2.0.0', ['./helper.js', './leaf.js']);
-    assert.equal(releaseAssetProblems(stamped, '2.0.0', ['./helper.js', './leaf.js']).join('\n'), '');
-    assert.equal(stamped.includes('href="styles.css"'), false);
-    assert.equal(stamped.includes('src="script.js"'), false);
+    const stamped = stampHtml(bare, '2.0.0', ['./js/helper.js', './js/leaf.js']);
+    assert.equal(
+      releaseAssetProblems(stamped, '2.0.0', ['./js/helper.js', './js/leaf.js']).join('\n'),
+      ''
+    );
+    assert.equal(stamped.includes('href="css/styles.css"'), false);
+    assert.equal(stamped.includes('src="js/script.js"'), false);
 
-    const next = stampHtml(stamped, '2.0.1', ['./helper.js', './leaf.js']);
+    const next = stampHtml(stamped, '2.0.1', ['./js/helper.js', './js/leaf.js']);
     assert.equal(next.includes('?v=2.0.0'), false);
-    assert.equal(releaseAssetProblems(next, '2.0.1', ['./helper.js', './leaf.js']).join('\n'), '');
-    assert.equal(stampHtml(next, '2.0.1', ['./helper.js', './leaf.js']), next);
+    assert.equal(
+      releaseAssetProblems(next, '2.0.1', ['./js/helper.js', './js/leaf.js']).join('\n'),
+      ''
+    );
+    assert.equal(stampHtml(next, '2.0.1', ['./js/helper.js', './js/leaf.js']), next);
   });
 
   it('publishes one consistent release', () => {
@@ -96,11 +103,11 @@ describe('release asset versions', () => {
     assert.equal(releaseManifest(APP_VERSION), `${JSON.stringify(manifest, null, 2)}\n`);
     assert.equal(releaseAssetProblems(indexHtml, APP_VERSION, specifiers).join('\n'), '');
     assert.equal(stampHtml(indexHtml, APP_VERSION, specifiers), indexHtml);
-    assert.ok(specifiers.includes('./helper.js'));
-    assert.ok(specifiers.includes('./timerEngine.js'));
-    assert.ok(specifiers.includes('./gameState.js'));
-    assert.ok(specifiers.includes('./changelog.js'));
-    assert.ok(specifiers.includes('./releaseCheck.js'));
+    assert.ok(specifiers.includes('./js/helper.js'));
+    assert.ok(specifiers.includes('./js/timerEngine.js'));
+    assert.ok(specifiers.includes('./js/gameState.js'));
+    assert.ok(specifiers.includes('./js/changelog.js'));
+    assert.ok(specifiers.includes('./js/releaseCheck.js'));
   });
 });
 

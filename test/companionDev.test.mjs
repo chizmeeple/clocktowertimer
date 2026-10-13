@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { companionDevHrefs } from '../companionDev.js';
+import { companionDevHrefs } from '../js/companionDev.js';
 
 describe('companion dev links', () => {
   it('points both pages at the current code and drops them when the session closes', () => {

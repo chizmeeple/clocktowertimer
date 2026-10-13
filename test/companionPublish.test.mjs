@@ -4,8 +4,8 @@ import {
   HEARTBEAT_MS,
   createCompanionPublishing,
   enableCompanionPublishing,
-} from '../companionPublish.js';
-import { projectCompanionState } from '../companionState.js';
+} from '../js/companionPublish.js';
+import { projectCompanionState } from '../js/companionState.js';
 
 function idleSnapshot(day = 1) {
   return projectCompanionState({

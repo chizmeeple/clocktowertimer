@@ -1,5 +1,5 @@
-import { APP_VERSION } from '../../changelog.js';
-import { HEARTBEAT_MS } from '../../companionPublish.js';
+import { APP_VERSION } from '../../js/changelog.js';
+import { HEARTBEAT_MS } from '../../js/companionPublish.js';
 
 export const COUNTDOWN_REFRESH_MS = 50;
 

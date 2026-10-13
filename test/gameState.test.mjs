@@ -12,11 +12,11 @@ import {
   nominationsDelaySeconds,
   presetForDay,
   stepNominationsCountdown,
-} from '../gameState.js';
+} from '../js/gameState.js';
 import {
   NORMAL_COUNTDOWN_MS_PER_REAL_MS,
   createTimerEngine,
-} from '../timerEngine.js';
+} from '../js/timerEngine.js';
 
 function presetMap(presets) {
   return Object.fromEntries(

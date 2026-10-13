@@ -134,7 +134,7 @@ npm run stamp-release
 ## Releasing
 
 GitHub Pages publishes the `main` branch from the repository root. There is no
-generated site directory. `APP_VERSION` in `changelog.js` is the application
+generated site directory. `APP_VERSION` in `js/changelog.js` is the application
 version.
 
 When it changes, update the entry page and release manifest so the stylesheet
