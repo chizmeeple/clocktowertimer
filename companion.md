@@ -91,7 +91,7 @@ A companion page should use the latest authoritative snapshot, account for measu
 
 ## Storyteller settings
 
-Companion Mode is configured in the main timer's Settings dialog, on the **Companion Mode** tab. Nothing is added to the timer face. Both settings are off until the Storyteller turns them on, and they are stored with the other timer settings.
+Companion Mode is configured in the main timer's Settings dialog, on the **Companion** tab. Nothing is added to the timer face. Both settings are off until the Storyteller turns them on, and they are stored with the other timer settings.
 
 - **Enable Companion Mode** is the master switch. While it is off, the timer does not create a session, connect to the Worker, or publish. The session controls stay unavailable. Turning it off during an active session asks for confirmation, because players lose access. Cancelling that confirmation leaves the session running.
 - **Start automatically** starts one sharing session when Tower Timer opens. It does nothing unless Companion Mode is also on. It runs once per page load, without opening Settings, and a failure leaves the timer playable so the Storyteller can press **Start sharing**. Starting a new game, resetting the day, or changing player or traveller counts does not create another session. Reloading the page does not reuse the previous write token; a new page load can receive a new code.

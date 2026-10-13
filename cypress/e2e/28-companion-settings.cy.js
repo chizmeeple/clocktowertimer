@@ -67,7 +67,7 @@ describe('Companion settings', () => {
     cy.get('#playerCountQrWrapper').should('exist');
     cy.get('#startBtn').should('be.enabled');
     openCompanionTab();
-    cy.get('.tab-button[data-tab="companion"]').should('contain', 'Companion Mode');
+    cy.get('.tab-button[data-tab="companion"]').invoke('text').invoke('trim').should('eq', 'Companion');
     cy.get('.settings-panel[data-panel="companion"]').should(
       'contain',
       'Let players follow the timer and public character counts on their own devices.'
