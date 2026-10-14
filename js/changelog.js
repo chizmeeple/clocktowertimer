@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.3.3';
+export const APP_VERSION = '1.3.4';
 
 export const CHANGELOG = {
+  '1.3.4': {
+    date: '2026-10-14',
+    changes: {
+      improvements: [
+        'Companion session code and token are now persisted in session storage, so they are not lost when the page is refreshed.',
+      ],
+    },
+  },
   '1.3.3': {
     date: '2026-10-14',
     changes: {
