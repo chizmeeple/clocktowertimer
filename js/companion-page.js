@@ -167,7 +167,11 @@ function openQr() {
 }
 
 function playAlert(kind) {
-  if (canVibrate) navigator.vibrate(kind === 'zero' ? [90, 40, 90] : 50);
+  if (canVibrate) {
+    navigator.vibrate(
+      kind === 'zero' ? [300, 150, 300, 150, 500] : [200, 100, 200, 100, 200]
+    );
+  }
   sounds?.play(kind);
 }
 

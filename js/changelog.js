@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.3.1';
 
 export const CHANGELOG = {
+  '1.3.1': {
+    date: '2026-10-14',
+    changes: {
+      improvements: [
+        'Companion vibration alerts are now more noticeable, with three distinct pulses at 30 seconds remaining and a stronger urgent pattern when the timer reaches zero.',
+      ],
+    },
+  },
   '1.3.0': {
     date: '2026-10-13',
     changes: {
