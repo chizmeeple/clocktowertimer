@@ -28,7 +28,9 @@ function show(overrides) {
 
 function expectNoHorizontalScroll() {
   cy.document().then((doc) => {
-    expect(doc.documentElement.scrollWidth).to.be.at.most(doc.documentElement.clientWidth + 1);
+    expect(doc.documentElement.scrollWidth).to.be.at.most(
+      doc.documentElement.clientWidth + 1,
+    );
   });
 }
 
@@ -40,7 +42,9 @@ function expectOnFirstScreen(selector) {
     expect(rect.height, `${selector} height`).to.be.greaterThan(8);
     expect(rect.top, `${selector} top`).to.be.at.least(-1);
     expect(rect.left, `${selector} left`).to.be.at.least(-1);
-    expect(rect.bottom, `${selector} bottom`).to.be.at.most(view.innerHeight + 1);
+    expect(rect.bottom, `${selector} bottom`).to.be.at.most(
+      view.innerHeight + 1,
+    );
     expect(rect.right, `${selector} right`).to.be.at.most(view.innerWidth + 1);
   });
 }
@@ -65,8 +69,12 @@ describe('Companion page', () => {
         const urls = [...$nodes]
           .map((node) => node.href || node.src)
           .filter((url) => url.startsWith(Cypress.config('baseUrl')));
-        expect(urls.some((url) => url.includes('/css/companion.css'))).to.equal(true);
-        expect(urls.some((url) => url.includes('/js/companion-page.js'))).to.equal(true);
+        expect(urls.some((url) => url.includes('/css/companion.css'))).to.equal(
+          true,
+        );
+        expect(
+          urls.some((url) => url.includes('/js/companion-page.js')),
+        ).to.equal(true);
         for (const url of urls) {
           cy.request(url).its('status').should('eq', 200);
         }
@@ -80,7 +88,9 @@ describe('Companion page', () => {
     cy.location('search').should('eq', '?code=ABC123');
     cy.get('#code').should('have.value', 'ABC123');
     cy.get('#session').should('be.visible');
-    cy.get('#status').invoke('text').should('match', /Joining|Offline/);
+    cy.get('#status')
+      .invoke('text')
+      .should('match', /Joining|Offline/);
   });
 
   it('joins from the address, rejects a bad code, and can leave', () => {
@@ -91,7 +101,9 @@ describe('Companion page', () => {
     cy.visit('/c?code=ab-c1o2');
     cy.get('#code').should('have.value', 'ABC102');
     cy.get('#session').should('be.visible');
-    cy.get('#status').invoke('text').should('match', /Joining|Offline/);
+    cy.get('#status')
+      .invoke('text')
+      .should('match', /Joining|Offline/);
     cy.get('#leave').click();
     cy.get('#joinPanel').should('be.visible');
     cy.location('search').should('eq', '');
@@ -111,11 +123,23 @@ describe('Companion page', () => {
     cy.get('#minion').should('have.text', '2');
     cy.get('#demon').should('have.text', '1');
     cy.get('#traveller').should('have.text', '0');
-    cy.get('.character-type').eq(0).should('have.css', 'background-color', 'rgba(25, 118, 210, 0.7)');
-    cy.get('.character-type').eq(1).should('have.css', 'background-color', 'rgba(25, 118, 210, 0.7)');
-    cy.get('.character-type').eq(2).should('have.css', 'background-color', 'rgba(211, 47, 47, 0.7)');
-    cy.get('.character-type').eq(3).should('have.css', 'background-color', 'rgba(211, 47, 47, 0.7)');
-    cy.get('.character-type.traveller').should('have.css', 'background-color', 'rgba(198, 93, 0, 0.9)');
+    cy.get('.character-type')
+      .eq(0)
+      .should('have.css', 'background-color', 'rgba(25, 118, 210, 0.7)');
+    cy.get('.character-type')
+      .eq(1)
+      .should('have.css', 'background-color', 'rgba(25, 118, 210, 0.7)');
+    cy.get('.character-type')
+      .eq(2)
+      .should('have.css', 'background-color', 'rgba(211, 47, 47, 0.7)');
+    cy.get('.character-type')
+      .eq(3)
+      .should('have.css', 'background-color', 'rgba(211, 47, 47, 0.7)');
+    cy.get('.character-type.traveller').should(
+      'have.css',
+      'background-color',
+      'rgba(198, 93, 0, 0.9)',
+    );
     cy.get('#status').should('have.text', 'Live');
     cy.get('#optionsHeading')
       .should('be.visible')
@@ -124,7 +148,7 @@ describe('Companion page', () => {
       .and('not.have.attr', 'tabindex');
     cy.get('.options summary, .options details').should('not.exist');
     cy.get('#optionsHeading').click().should('not.be.focused');
-    cy.get('#alertOption').should('be.visible').and('contain', 'Warn me near the end');
+    cy.get('#alertOption').should('be.visible').and('contain', 'Enable alerts');
     cy.get('#alerts').should('be.visible').and('not.be.checked');
     cy.get('#alertNote').should('be.visible');
     cy.get('#testSound').should('be.visible').and('have.text', 'Test sound');
@@ -138,7 +162,12 @@ describe('Companion page', () => {
     show({ rate: 4, displaySeconds: 40 });
     cy.get('#message').should('contain', 'sped up');
 
-    show({ phase: 'pregame', timerStatus: 'idle', displaySeconds: null, kind: null });
+    show({
+      phase: 'pregame',
+      timerStatus: 'idle',
+      displaySeconds: null,
+      kind: null,
+    });
     cy.get('#headline').should('contain', 'ready');
 
     show({ phase: 'wake', kind: 'wake', displaySeconds: 8 });
@@ -157,7 +186,7 @@ describe('Companion page', () => {
     cy.get('body').should('have.class', 'game--night');
     cy.get('#kicker').should('have.text', 'Day 2');
     cy.get('#kicker').should('have.css', 'color', 'rgb(212, 175, 55)');
-    cy.get('#headline').should('have.text', 'Eyes closed');
+    cy.get('#headline').should('have.text', 'Back to Town');
     cy.get('#headline').should('not.have.text', '00:00');
 
     show({ displaySeconds: 0, locallyComplete: true });
@@ -192,15 +221,20 @@ describe('Companion page', () => {
       cy.viewport(width, height);
       cy.visit('/c');
       show({ displaySeconds: 285 });
-      cy.get('#kicker').should('be.visible').and('have.css', 'font-weight', '700');
+      cy.get('#kicker')
+        .should('be.visible')
+        .and('have.css', 'font-weight', '700');
       cy.get('#kicker').should(($kicker) => {
         const heading = parseFloat($kicker.css('font-size'));
         const countdown = parseFloat(
           $kicker[0].ownerDocument.querySelector('#headline').style.fontSize ||
-            getComputedStyle($kicker[0].ownerDocument.querySelector('#headline')).fontSize
+            getComputedStyle(
+              $kicker[0].ownerDocument.querySelector('#headline'),
+            ).fontSize,
         );
         const countdownSize = parseFloat(
-          getComputedStyle($kicker[0].ownerDocument.querySelector('#headline')).fontSize
+          getComputedStyle($kicker[0].ownerDocument.querySelector('#headline'))
+            .fontSize,
         );
         expect(heading, 'heading size').to.be.greaterThan(18);
         expect(countdownSize, 'countdown size').to.be.greaterThan(heading);
@@ -212,13 +246,23 @@ describe('Companion page', () => {
         cy.get('#leave').should(($leave) => {
           const qrBox = $qr[0].getBoundingClientRect();
           const leaveBox = $leave[0].getBoundingClientRect();
-          expect(leaveBox.left, 'leave sits beside show QR').to.be.greaterThan(qrBox.left);
-          expect(Math.abs(qrBox.top - leaveBox.top), 'shared row').to.be.lessThan(2);
-          expect(Math.abs(qrBox.height - leaveBox.height), 'matched height').to.be.lessThan(2);
+          expect(leaveBox.left, 'leave sits beside show QR').to.be.greaterThan(
+            qrBox.left,
+          );
+          expect(
+            Math.abs(qrBox.top - leaveBox.top),
+            'shared row',
+          ).to.be.lessThan(2);
+          expect(
+            Math.abs(qrBox.height - leaveBox.height),
+            'matched height',
+          ).to.be.lessThan(2);
         });
       });
       cy.get('#traveller').should('be.visible');
-      cy.get('#optionsHeading').should('be.visible').and('have.text', 'Options');
+      cy.get('#optionsHeading')
+        .should('be.visible')
+        .and('have.text', 'Options');
       cy.get('#alerts').should('be.visible');
       cy.get('#wake').should('be.visible');
       cy.get('.companion-footer').should('be.visible');
@@ -239,11 +283,17 @@ describe('Companion page', () => {
       .and('be.visible');
     cy.get('.companion-footer').should('contain', 'Made by');
     show({});
-    cy.get('#headline').invoke('css', 'font-size').then((countdown) => {
-      cy.get('.companion-footer').invoke('css', 'font-size').then((footer) => {
-        expect(parseFloat(countdown)).to.be.greaterThan(parseFloat(footer) * 3);
+    cy.get('#headline')
+      .invoke('css', 'font-size')
+      .then((countdown) => {
+        cy.get('.companion-footer')
+          .invoke('css', 'font-size')
+          .then((footer) => {
+            expect(parseFloat(countdown)).to.be.greaterThan(
+              parseFloat(footer) * 3,
+            );
+          });
       });
-    });
   });
 
   it('offers Keep screen on, and a refusal leaves the countdown running', () => {
@@ -264,7 +314,9 @@ describe('Companion page', () => {
                 addEventListener() {},
               };
               requests.push(sentinel);
-              return Promise.reject(new DOMException('denied', 'NotAllowedError'));
+              return Promise.reject(
+                new DOMException('denied', 'NotAllowedError'),
+              );
             },
           },
         });
@@ -275,7 +327,9 @@ describe('Companion page', () => {
     cy.get('#wakeOption').should('be.visible').and('contain', 'Keep screen on');
     cy.get('#wake').should('not.be.checked').and('not.be.disabled');
     cy.get('#wake').check();
-    cy.get('#wakeNote').should('be.visible').and('contain', 'did not keep the screen on');
+    cy.get('#wakeNote')
+      .should('be.visible')
+      .and('contain', 'did not keep the screen on');
     cy.get('#wake').should('be.checked');
     cy.get('#headline').should('have.text', '04:45');
     cy.get('#status').should('have.text', 'Live');
@@ -312,9 +366,11 @@ describe('Companion page', () => {
         });
       },
     });
-    cy.window().its('__visibilityListeners').should((read) => {
-      expect(read()).to.equal(1);
-    });
+    cy.window()
+      .its('__visibilityListeners')
+      .should((read) => {
+        expect(read()).to.equal(1);
+      });
     show({});
     cy.get('#wake').should('be.visible').check();
     cy.window().its('__wakeRequests').should('have.length', 1);
@@ -322,9 +378,11 @@ describe('Companion page', () => {
       doc.dispatchEvent(new Event('visibilitychange'));
     });
     cy.window().its('__wakeRequests').should('have.length', 1);
-    cy.window().its('__visibilityListeners').should((read) => {
-      expect(read()).to.equal(1);
-    });
+    cy.window()
+      .its('__visibilityListeners')
+      .should((read) => {
+        expect(read()).to.equal(1);
+      });
     cy.window().then((win) => {
       Object.defineProperty(win.document, 'visibilityState', {
         configurable: true,
@@ -357,8 +415,13 @@ describe('Companion page', () => {
       },
     });
     show({});
-    cy.get('#wake').should('be.visible').and('be.disabled').and('not.be.checked');
-    cy.get('#wakeNote').should('be.visible').and('contain', 'cannot keep the screen on');
+    cy.get('#wake')
+      .should('be.visible')
+      .and('be.disabled')
+      .and('not.be.checked');
+    cy.get('#wakeNote')
+      .should('be.visible')
+      .and('contain', 'cannot keep the screen on');
     show({});
     cy.get('#headline').should('have.text', '04:45');
   });
@@ -457,7 +520,12 @@ describe('Companion QR sharing', () => {
     cy.get('#qrCode').should('have.text', '');
     cy.focused().should('have.id', 'leave');
 
-    show({ connection: 'connecting', fresh: false, established: false, code: 'NEWCDE' });
+    show({
+      connection: 'connecting',
+      fresh: false,
+      established: false,
+      code: 'NEWCDE',
+    });
     cy.get('#showQr').should('not.be.visible');
     cy.get('#qrCode').should('have.text', '');
     show({
@@ -480,13 +548,25 @@ describe('Companion QR sharing', () => {
     cy.get('#showQr').should('not.be.visible');
     cy.get('#status').should('have.text', 'Expired');
 
-    show({ connection: 'live', fresh: true, stale: false, established: true, code: 'NEWCDE' });
+    show({
+      connection: 'live',
+      fresh: true,
+      stale: false,
+      established: true,
+      code: 'NEWCDE',
+    });
     cy.get('#showQr').should('be.visible');
     cy.get('#leave').click();
     cy.get('#joinPanel').should('be.visible');
     cy.get('#showQr').should('not.be.visible');
     cy.get('#qrDialog').should('not.have.attr', 'open');
-    show({ connection: 'live', fresh: true, stale: false, established: true, code: 'ABC123' });
+    show({
+      connection: 'live',
+      fresh: true,
+      stale: false,
+      established: true,
+      code: 'ABC123',
+    });
     cy.get('#showQr').click();
     cy.get('#qrCode').should('have.text', 'ABC123');
     cy.get('#qrCode').should('not.have.text', 'NEWCDE');
@@ -550,7 +630,9 @@ describe('Companion countdown sounds', () => {
     cy.window().should((win) => {
       const clips = audible(win);
       expect(clips.length).to.be.at.least(2);
-      expect(clips.every((item) => item.src.includes('warning-30sec.mp3'))).to.equal(true);
+      expect(
+        clips.every((item) => item.src.includes('warning-30sec.mp3')),
+      ).to.equal(true);
       expect(new Set(clips.map((item) => item.el)).size).to.equal(1);
     });
     cy.get('#alerts').should('not.be.checked');
@@ -615,7 +697,13 @@ describe('Companion countdown sounds', () => {
       expect(audible(win)).to.have.length(0);
     });
 
-    show({ fresh: false, stale: true, displaySeconds: 0, locallyComplete: true, rev: 3 });
+    show({
+      fresh: false,
+      stale: true,
+      displaySeconds: 0,
+      locallyComplete: true,
+      rev: 3,
+    });
     cy.window().should((win) => {
       expect(audible(win)).to.have.length(0);
     });
@@ -668,10 +756,13 @@ describe('Companion player preferences', () => {
     cy.visit('/c', {
       onBeforeLoad(win) {
         watchSounds(win);
-        win.localStorage.setItem('timer-companion', JSON.stringify({
-          warnNearEnd: true,
-          keepScreenOn: false,
-        }));
+        win.localStorage.setItem(
+          'timer-companion',
+          JSON.stringify({
+            warnNearEnd: true,
+            keepScreenOn: false,
+          }),
+        );
       },
     });
     cy.get('#alerts').should('be.checked');
@@ -700,7 +791,9 @@ describe('Companion player preferences', () => {
     cy.get('#alerts').check();
     cy.get('#wake').check();
     cy.window().then((win) => {
-      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+      expect(
+        JSON.parse(win.localStorage.getItem('timer-companion')),
+      ).to.deep.equal({
         warnNearEnd: true,
         keepScreenOn: true,
       });
@@ -712,7 +805,9 @@ describe('Companion player preferences', () => {
     show({});
     cy.get('#wake').uncheck();
     cy.window().then((win) => {
-      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+      expect(
+        JSON.parse(win.localStorage.getItem('timer-companion')),
+      ).to.deep.equal({
         warnNearEnd: true,
         keepScreenOn: false,
       });
@@ -727,10 +822,13 @@ describe('Companion player preferences', () => {
     cy.visit('/c', {
       onBeforeLoad(win) {
         grantWakeLock(win);
-        win.localStorage.setItem('timer-companion', JSON.stringify({
-          warnNearEnd: false,
-          keepScreenOn: true,
-        }));
+        win.localStorage.setItem(
+          'timer-companion',
+          JSON.stringify({
+            warnNearEnd: false,
+            keepScreenOn: true,
+          }),
+        );
       },
     });
     cy.get('#wake').should('be.checked').and('not.be.disabled');
@@ -742,15 +840,20 @@ describe('Companion player preferences', () => {
   it('keeps the saved wake choice when the browser refuses the lock', () => {
     cy.visit('/c', {
       onBeforeLoad(win) {
-        win.localStorage.setItem('timer-companion', JSON.stringify({
-          warnNearEnd: false,
-          keepScreenOn: true,
-        }));
+        win.localStorage.setItem(
+          'timer-companion',
+          JSON.stringify({
+            warnNearEnd: false,
+            keepScreenOn: true,
+          }),
+        );
         Object.defineProperty(win.navigator, 'wakeLock', {
           configurable: true,
           value: {
             request() {
-              return Promise.reject(new DOMException('denied', 'NotAllowedError'));
+              return Promise.reject(
+                new DOMException('denied', 'NotAllowedError'),
+              );
             },
           },
         });
@@ -758,10 +861,14 @@ describe('Companion player preferences', () => {
     });
     show({});
     cy.get('#wake').should('be.checked');
-    cy.get('#wakeNote').should('be.visible').and('contain', 'did not keep the screen on');
+    cy.get('#wakeNote')
+      .should('be.visible')
+      .and('contain', 'did not keep the screen on');
     cy.get('#headline').should('have.text', '04:45');
     cy.window().then((win) => {
-      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+      expect(
+        JSON.parse(win.localStorage.getItem('timer-companion')),
+      ).to.deep.equal({
         warnNearEnd: false,
         keepScreenOn: true,
       });
@@ -771,10 +878,13 @@ describe('Companion player preferences', () => {
   it('leaves a saved wake choice in place when the browser cannot keep the screen on', () => {
     cy.visit('/c', {
       onBeforeLoad(win) {
-        win.localStorage.setItem('timer-companion', JSON.stringify({
-          warnNearEnd: true,
-          keepScreenOn: true,
-        }));
+        win.localStorage.setItem(
+          'timer-companion',
+          JSON.stringify({
+            warnNearEnd: true,
+            keepScreenOn: true,
+          }),
+        );
         Object.defineProperty(win.navigator, 'wakeLock', {
           configurable: true,
           value: undefined,
@@ -783,10 +893,14 @@ describe('Companion player preferences', () => {
     });
     show({});
     cy.get('#wake').should('be.disabled').and('not.be.checked');
-    cy.get('#wakeNote').should('be.visible').and('contain', 'cannot keep the screen on');
+    cy.get('#wakeNote')
+      .should('be.visible')
+      .and('contain', 'cannot keep the screen on');
     cy.get('#alerts').should('be.checked');
     cy.window().then((win) => {
-      expect(JSON.parse(win.localStorage.getItem('timer-companion')).keepScreenOn).to.equal(true);
+      expect(
+        JSON.parse(win.localStorage.getItem('timer-companion')).keepScreenOn,
+      ).to.equal(true);
     });
   });
 
@@ -803,7 +917,9 @@ describe('Companion player preferences', () => {
     cy.get('#headline').should('have.text', '04:45');
     cy.get('#alerts').check();
     cy.window().then((win) => {
-      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+      expect(
+        JSON.parse(win.localStorage.getItem('timer-companion')),
+      ).to.deep.equal({
         warnNearEnd: true,
         keepScreenOn: false,
       });
@@ -814,11 +930,14 @@ describe('Companion player preferences', () => {
     cy.visit('/c', {
       onBeforeLoad(win) {
         grantWakeLock(win);
-        win.localStorage.setItem('timer-companion', JSON.stringify({
-          warnNearEnd: 'yes',
-          keepScreenOn: true,
-          code: 'ABC123',
-        }));
+        win.localStorage.setItem(
+          'timer-companion',
+          JSON.stringify({
+            warnNearEnd: 'yes',
+            keepScreenOn: true,
+            code: 'ABC123',
+          }),
+        );
       },
     });
     cy.get('#alerts').should('not.be.checked');
@@ -827,7 +946,9 @@ describe('Companion player preferences', () => {
     show({});
     cy.get('#alerts').check();
     cy.window().then((win) => {
-      expect(JSON.parse(win.localStorage.getItem('timer-companion'))).to.deep.equal({
+      expect(
+        JSON.parse(win.localStorage.getItem('timer-companion')),
+      ).to.deep.equal({
         warnNearEnd: true,
         keepScreenOn: true,
       });

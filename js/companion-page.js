@@ -10,7 +10,10 @@ import {
 } from './companionCode.js';
 import { createCompanionClient } from './companionClient.js';
 import { presentCompanion } from './companionDisplay.js';
-import { readCompanionPreferences, writeCompanionPreferences } from './companionPreferences.js';
+import {
+  readCompanionPreferences,
+  writeCompanionPreferences,
+} from './companionPreferences.js';
 import { createWakeLockController } from './companionWake.js';
 
 const joinPanel = document.querySelector('#joinPanel');
@@ -48,7 +51,9 @@ const canVibrate = typeof navigator.vibrate === 'function';
 if (!canSound) testSoundButton.hidden = true;
 if (!canSound && !canVibrate) alertOption.hidden = true;
 const sounds = canSound
-  ? createCompanionSounds({ hidden: () => document.visibilityState === 'hidden' })
+  ? createCompanionSounds({
+      hidden: () => document.visibilityState === 'hidden',
+    })
   : null;
 
 const client = createCompanionClient({ baseUrl: companionBaseUrl(location) });
@@ -56,6 +61,7 @@ let alertState = { previous: null, rev: null, phase: null, alert: null };
 let rendered = '';
 let currentView = null;
 let testView = null;
+let previousWakeState = null;
 
 const wake = createWakeLockController({
   supported: typeof navigator.wakeLock?.request === 'function',
@@ -105,7 +111,8 @@ function paint(view) {
   text(statusNode, status.label);
   text(statusDetail, status.detail || '');
   statusDetail.hidden = !status.detail;
-  if (status.detail) statusNode.setAttribute('aria-label', `${status.label}. ${status.detail}`);
+  if (status.detail)
+    statusNode.setAttribute('aria-label', `${status.label}. ${status.detail}`);
   else statusNode.removeAttribute('aria-label');
   text(kicker, presentation.kicker);
   text(headline, presentation.headline || '');
@@ -119,12 +126,43 @@ function paint(view) {
   const signature = JSON.stringify(presentation);
   if (signature !== rendered) rendered = signature;
 
+  const shouldPlayRooster =
+    previousWakeState?.phase !== 'wake' &&
+    previousWakeState !== null &&
+    view.phase === 'wake' &&
+    view.fresh &&
+    alertsInput.checked; //&&
+  //document.visibilityState === 'visible';
+
+  if (view.phase === 'wake') {
+    console.debug('Companion rooster', {
+      previousWakeState,
+      phase: view.phase,
+      fresh: view.fresh,
+      alertsEnabled: alertsInput.checked,
+      visibility: document.visibilityState,
+      shouldPlayRooster,
+    });
+  }
+
+  if (shouldPlayRooster) {
+    console.debug('Playing rooster');
+    sounds?.play('rooster');
+  }
+
+  previousWakeState = view.fresh ? { phase: view.phase, day: view.day } : null;
+
   if (alertsInput.checked) {
     const countdownShown = presentation.countdown != null;
     alertState = nextCompanionAlert(alertState, view, countdownShown);
     if (alertState.alert) playAlert(alertState.alert);
   } else {
-    alertState = { previous: view.displaySeconds, rev: view.rev, phase: view.phase, alert: null };
+    alertState = {
+      previous: view.displaySeconds,
+      rev: view.rev,
+      phase: view.phase,
+      alert: null,
+    };
   }
 }
 
@@ -169,9 +207,10 @@ function openQr() {
 function playAlert(kind) {
   if (canVibrate) {
     navigator.vibrate(
-      kind === 'zero' ? [300, 150, 300, 150, 500] : [200, 100, 200, 100, 200]
+      kind === 'zero' ? [300, 150, 300, 150, 500] : [200, 100, 200, 100, 200],
     );
   }
+  if (kind === 'warning' && currentView?.rate > 1) return;
   sounds?.play(kind);
 }
 
@@ -200,6 +239,7 @@ function join(raw) {
   }
   showCodeError('');
   alertState = { previous: null, rev: null, phase: null, alert: null };
+  previousWakeState = null;
   rememberCode(code);
   client.join(code);
 }
@@ -210,6 +250,7 @@ joinForm.addEventListener('submit', (event) => {
 });
 
 leaveButton.addEventListener('click', () => {
+  previousWakeState = null;
   testView = null;
   client.leave();
   rememberCode('');
@@ -256,6 +297,7 @@ wakeInput.addEventListener('change', () => {
 });
 
 document.addEventListener('visibilitychange', () => {
+  previousWakeState = null;
   if (document.visibilityState === 'visible') client.resume();
   else sounds?.stop();
   wake.onVisibilityChange();
@@ -265,7 +307,10 @@ const initial = sessionCodeFromLocation(location);
 if (initial) {
   codeInput.value = initial;
   if (isSessionCode(initial)) join(initial);
-  else showCodeError('That code is not valid. Ask the Storyteller for the six-character code.');
+  else
+    showCodeError(
+      'That code is not valid. Ask the Storyteller for the six-character code.',
+    );
 }
 
 setInterval(() => paint(testView || client.view()), 200);
