@@ -71,7 +71,8 @@ export function createStorytellerTransport({
   }
 
   function socketUrl(path) {
-    if (root.startsWith('ws://') || root.startsWith('wss://')) return `${root}${path}`;
+    if (root.startsWith('ws://') || root.startsWith('wss://'))
+      return `${root}${path}`;
     if (root.startsWith('http://') || root.startsWith('https://')) {
       return `${root.replace(/^http/, 'ws')}${path}`;
     }
@@ -142,7 +143,8 @@ export function createStorytellerTransport({
   }
 
   function flush() {
-    if (!authed || !socket || socket.readyState !== Socket.OPEN || !latest) return;
+    if (!authed || !socket || socket.readyState !== Socket.OPEN || !latest)
+      return;
     const body = {
       type: 'publish',
       state: latest.snapshot,
@@ -328,13 +330,22 @@ export function createStorytellerTransport({
     dropPublishing();
     closeSocket();
     token = null;
+    try {
+      sessionStorage.removeItem('towerTimerCompanionSession');
+    } catch {
+      // Storage unavailable.
+    }
     latest = null;
     status.delivery = 'idle';
     setConnection(connection);
   }
 
   async function start() {
-    if (token || status.connection === 'connecting' || status.connection === 'live') {
+    if (
+      token ||
+      status.connection === 'connecting' ||
+      status.connection === 'live'
+    ) {
       return { ...status };
     }
     intentional = false;
@@ -342,6 +353,25 @@ export function createStorytellerTransport({
     code = null;
     setConnection('connecting');
     let response;
+    let saved = null;
+    try {
+      saved = JSON.parse(
+        sessionStorage.getItem('towerTimerCompanionSession') || 'null',
+      );
+    } catch {
+      // Storage unavailable or invalid JSON.
+    }
+    if (
+      saved &&
+      typeof saved.code === 'string' &&
+      typeof saved.token === 'string'
+    ) {
+      code = saved.code;
+      token = saved.token;
+      connectSocket();
+      emitStatus();
+      return { ...status };
+    }
     try {
       response = await doFetch(`${root}/sessions`, { method: 'POST' });
     } catch {
@@ -365,6 +395,14 @@ export function createStorytellerTransport({
     }
     code = body.code;
     token = body.writeToken;
+    try {
+      sessionStorage.setItem(
+        'towerTimerCompanionSession',
+        JSON.stringify({ code, token }),
+      );
+    } catch {
+      // Storage unavailable; session works until refresh.
+    }
     connectSocket();
     emitStatus();
     return { ...status };
