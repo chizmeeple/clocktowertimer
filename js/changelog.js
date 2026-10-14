@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.3.2';
+export const APP_VERSION = '1.3.3';
 
 export const CHANGELOG = {
+  '1.3.3': {
+    date: '2026-10-14',
+    changes: {
+      improvements: [
+        'Companion page: The rooster sound plays when the day starts, if the player has enabled alerts.',
+      ],
+    },
+  },
   '1.3.2': {
     date: '2026-10-14',
     changes: {

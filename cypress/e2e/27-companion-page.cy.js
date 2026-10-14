@@ -148,9 +148,7 @@ describe('Companion page', () => {
       .and('not.have.attr', 'tabindex');
     cy.get('.options summary, .options details').should('not.exist');
     cy.get('#optionsHeading').click().should('not.be.focused');
-    cy.get('#alertOption')
-      .should('be.visible')
-      .and('contain', 'Warn me near the end');
+    cy.get('#alertOption').should('be.visible').and('contain', 'Enable alerts');
     cy.get('#alerts').should('be.visible').and('not.be.checked');
     cy.get('#alertNote').should('be.visible');
     cy.get('#testSound').should('be.visible').and('have.text', 'Test sound');

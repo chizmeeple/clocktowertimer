@@ -15,6 +15,11 @@ export const COMPANION_SOUNDS = {
     volume: 0.75,
     label: 'End of the countdown',
   },
+  rooster: {
+    file: '../sounds/wake-up/rooster-v2.mp3',
+    volume: 0.75,
+    label: 'New day',
+  },
 };
 
 export function companionSoundUrl(kind, base = import.meta.url) {
@@ -171,6 +176,7 @@ export function createCompanionSounds({
     unlock() {
       prime(clips.warning);
       prime(clips.zero);
+      prime(clips.rooster);
     },
     stop() {
       halt();

@@ -10,7 +10,7 @@ export function nextCompanionAlert(state, view, countdownShown) {
     view.fresh &&
     view.timerStatus === 'running' &&
     countdownShown &&
-    seconds != null
+    seconds != null,
   );
   if (!armed) {
     return { ...state, previous: seconds, alert: null };
@@ -20,9 +20,15 @@ export function nextCompanionAlert(state, view, countdownShown) {
     return { previous: seconds, rev: view.rev, phase: view.phase, alert: null };
   }
   let alert = null;
-  if (state.previous > COMPANION_WARNING_SECONDS && seconds <= COMPANION_WARNING_SECONDS && seconds > 0) {
+  if (
+    state.previous > COMPANION_WARNING_SECONDS &&
+    seconds <= COMPANION_WARNING_SECONDS &&
+    seconds > 0
+  ) {
     alert = 'warning';
   }
-  if (state.previous > 0 && seconds === 0) alert = 'zero';
+  if (view.phase === 'day' && state.previous > 0 && seconds === 0) {
+    alert = 'zero';
+  }
   return { previous: seconds, rev: view.rev, phase: view.phase, alert };
 }
