@@ -38,6 +38,8 @@ const qrDialog = document.querySelector('#qrDialog');
 const qrImage = document.querySelector('#qrImage');
 const qrCodeText = document.querySelector('#qrCode');
 const qrClose = document.querySelector('#qrClose');
+const footerSession = document.querySelector('#footerSession');
+const footerSessionCode = document.querySelector('#footerSessionCode');
 const countNodes = {
   townsfolk: document.querySelector('#townsfolk'),
   outsider: document.querySelector('#outsider'),
@@ -105,6 +107,8 @@ function paint(view) {
   document.body.classList.toggle('wallpaper-ready', presentation.night);
   joinPanel.hidden = presentation.showSession;
   session.hidden = !presentation.showSession;
+  footerSession.hidden = !presentation.showSession || !view.code;
+  text(footerSessionCode, view.code || '');
   const status = presentation.status;
   statusNode.hidden = !status.label;
   statusNode.className = `status ${status.tone}`;

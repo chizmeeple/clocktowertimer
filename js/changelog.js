@@ -7,6 +7,7 @@ export const CHANGELOG = {
     changes: {
       improvements: [
         'Companion session code and token are now persisted in session storage, so they are not lost when the page is refreshed.',
+        'Companion page: The session code is now displayed in the footer.',
       ],
     },
   },

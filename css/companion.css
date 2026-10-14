@@ -6,8 +6,7 @@
   overflow-x: hidden;
   min-height: 100vh;
   min-height: 100dvh;
-  padding:
-    calc(0.75rem + env(safe-area-inset-top))
+  padding: calc(0.75rem + env(safe-area-inset-top))
     calc(1rem + env(safe-area-inset-right))
     calc(0.5rem + env(safe-area-inset-bottom))
     calc(1rem + env(safe-area-inset-left));
@@ -470,6 +469,18 @@
   color: inherit;
   font-weight: 600;
   text-underline-offset: 0.15em;
+}
+
+.footer-session {
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--colour-text-muted);
+}
+
+.footer-session span {
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0.1em;
 }
 
 @media (orientation: landscape) and (max-height: 28rem) {
