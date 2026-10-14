@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.3.1';
+export const APP_VERSION = '1.3.2';
 
 export const CHANGELOG = {
+  '1.3.2': {
+    date: '2026-10-14',
+    changes: {
+      improvements: [
+        'Companion page: "Back to Town" is now the default headline when the day ends.',
+      ],
+    },
+  },
   '1.3.1': {
     date: '2026-10-14',
     changes: {

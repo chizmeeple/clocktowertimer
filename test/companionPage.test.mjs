@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { COMPANION_WARNING_SECONDS, nextCompanionAlert } from '../js/companionAlerts.js';
+import {
+  COMPANION_WARNING_SECONDS,
+  nextCompanionAlert,
+} from '../js/companionAlerts.js';
 import {
   companionBaseUrl,
   companionQrImageUrl,
@@ -41,7 +44,10 @@ describe('companion page codes', () => {
     assert.equal(isSessionCode(normaliseSessionCode('oiloiu')), false);
     assert.equal(isSessionCode('ABC123'), true);
     assert.equal(isSessionCode('ABCDEFG'), false);
-    assert.equal(sessionCodeFromLocation({ search: '?code=ab%20c12o' }), 'ABC120');
+    assert.equal(
+      sessionCodeFromLocation({ search: '?code=ab%20c12o' }),
+      'ABC120',
+    );
   });
 
   it('uses the local proxy at home and the deployed worker in production', () => {
@@ -49,7 +55,7 @@ describe('companion page codes', () => {
     assert.equal(companionBaseUrl({ hostname: 'localhost' }), '/companion-api');
     assert.equal(
       companionBaseUrl({ hostname: 'timer.arcane-scripts.net' }),
-      'https://clocktower-companion.redmeeple.workers.dev'
+      'https://clocktower-companion.redmeeple.workers.dev',
     );
   });
 });
@@ -64,7 +70,9 @@ describe('companion presentation', () => {
     assert.equal(running.counts.traveller, 0);
     assert.equal(running.night, false);
 
-    const paused = presentCompanion(view({ timerStatus: 'paused', displaySeconds: 120 }));
+    const paused = presentCompanion(
+      view({ timerStatus: 'paused', displaySeconds: 120 }),
+    );
     assert.equal(paused.headline, '02:00');
     assert.match(paused.message, /paused/i);
 
@@ -73,55 +81,75 @@ describe('companion presentation', () => {
   });
 
   it('keeps a local zero on the day and gives night its own message', () => {
-    const zero = presentCompanion(view({
-      displaySeconds: 0,
-      locallyComplete: true,
-    }));
+    const zero = presentCompanion(
+      view({
+        displaySeconds: 0,
+        locallyComplete: true,
+      }),
+    );
     assert.equal(zero.headline, '00:00');
     assert.equal(zero.night, false);
     assert.match(zero.message, /does not end the day/i);
 
-    const night = presentCompanion(view({
-      phase: 'night',
-      timerStatus: 'finished',
-      displaySeconds: 0,
-      confirmedComplete: true,
-      day: 3,
-    }));
-    assert.equal(night.headline, 'Eyes closed');
+    const night = presentCompanion(
+      view({
+        phase: 'night',
+        timerStatus: 'finished',
+        displaySeconds: 0,
+        confirmedComplete: true,
+        day: 3,
+      }),
+    );
+    assert.equal(night.headline, 'Back to Town');
     assert.equal(night.countdown, null);
     assert.equal(night.night, true);
     assert.equal(night.kicker, 'Day 3');
   });
 
   it('describes pregame, wake, expiry and an unsupported version', () => {
-    assert.match(presentCompanion(view({ phase: 'pregame', timerStatus: 'idle', displaySeconds: null })).headline, /ready/i);
-    const wake = presentCompanion(view({ phase: 'wake', kind: 'wake', displaySeconds: 10 }));
+    assert.match(
+      presentCompanion(
+        view({ phase: 'pregame', timerStatus: 'idle', displaySeconds: null }),
+      ).headline,
+      /ready/i,
+    );
+    const wake = presentCompanion(
+      view({ phase: 'wake', kind: 'wake', displaySeconds: 10 }),
+    );
     assert.equal(wake.kicker, 'Wake up');
     assert.equal(wake.headline, '00:10');
 
-    const expired = presentCompanion(view({ connection: 'expired', fresh: false, stale: true }));
+    const expired = presentCompanion(
+      view({ connection: 'expired', fresh: false, stale: true }),
+    );
     assert.match(expired.status.label, /expired/i);
     assert.equal(expired.showSession, true);
 
     const ended = presentCompanion(view({ connection: 'ended' }));
     assert.match(ended.status.label, /ended/i);
 
-    const unsupported = presentCompanion(view({ problem: 'unsupported-version', displaySeconds: 10 }));
+    const unsupported = presentCompanion(
+      view({ problem: 'unsupported-version', displaySeconds: 10 }),
+    );
     assert.match(unsupported.headline, /update/i);
     assert.equal(unsupported.countdown, null);
 
-    const reconnecting = presentCompanion(view({
-      connection: 'reconnecting',
-      fresh: false,
-      stale: true,
-      counts: null,
-    }));
+    const reconnecting = presentCompanion(
+      view({
+        connection: 'reconnecting',
+        fresh: false,
+        stale: true,
+        counts: null,
+      }),
+    );
     assert.equal(reconnecting.status.label, 'Offline');
     assert.match(reconnecting.status.detail, /can’t reach the session/i);
 
     assert.equal(formatCountdown(null), null);
-    assert.equal(presentCompanion(view({ connection: 'idle' })).showSession, false);
+    assert.equal(
+      presentCompanion(view({ connection: 'idle' })).showSession,
+      false,
+    );
   });
 });
 
@@ -141,20 +169,41 @@ describe('companion player sharing', () => {
     const live = share({});
     assert.equal(live.canShare, true);
     assert.equal(live.code, 'ABC123');
-    assert.equal(live.playerUrl, 'https://timer.arcane-scripts.net/c?code=ABC123');
+    assert.equal(
+      live.playerUrl,
+      'https://timer.arcane-scripts.net/c?code=ABC123',
+    );
     assert.equal(live.playerUrl.includes('/c/?'), false);
     const qr = companionQrImageUrl(live.playerUrl);
-    assert.match(decodeURIComponent(qr), /https:\/\/timer\.arcane-scripts\.net\/c\?code=ABC123/);
+    assert.match(
+      decodeURIComponent(qr),
+      /https:\/\/timer\.arcane-scripts\.net\/c\?code=ABC123/,
+    );
     assert.equal(qr.includes('writeToken'), false);
     assert.equal(share({ stale: true }).canShare, true);
   });
 
   it('hides the code until the session is established, and after it ends', () => {
-    assert.equal(share({ connection: 'idle', code: null, established: false }).canShare, false);
-    assert.equal(share({ connection: 'connecting', established: false }).playerUrl, '');
-    assert.equal(share({ connection: 'connecting', established: true }).canShare, false);
-    assert.equal(share({ connection: 'reconnecting', established: false }).canShare, false);
-    assert.equal(share({ connection: 'reconnecting', established: true }).playerUrl, 'https://timer.arcane-scripts.net/c?code=ABC123');
+    assert.equal(
+      share({ connection: 'idle', code: null, established: false }).canShare,
+      false,
+    );
+    assert.equal(
+      share({ connection: 'connecting', established: false }).playerUrl,
+      '',
+    );
+    assert.equal(
+      share({ connection: 'connecting', established: true }).canShare,
+      false,
+    );
+    assert.equal(
+      share({ connection: 'reconnecting', established: false }).canShare,
+      false,
+    );
+    assert.equal(
+      share({ connection: 'reconnecting', established: true }).playerUrl,
+      'https://timer.arcane-scripts.net/c?code=ABC123',
+    );
     for (const connection of ['ended', 'expired', 'idle']) {
       const closed = share({ connection, established: false });
       assert.equal(closed.canShare, false);
@@ -169,7 +218,10 @@ describe('companion player sharing', () => {
 
 describe('companion heading style', () => {
   it('enlarges the phase heading without overtaking the countdown', () => {
-    const css = readFileSync(new URL('../css/companion.css', import.meta.url), 'utf8');
+    const css = readFileSync(
+      new URL('../css/companion.css', import.meta.url),
+      'utf8',
+    );
     const kicker = css.match(/\.kicker\s*\{([^}]+)\}/)[1];
     const headline = css.match(/\.headline\s*\{([^}]+)\}/)[1];
     assert.match(kicker, /font-size:\s*clamp\(1\.75rem, 8vw, 2\.75rem\)/);
@@ -184,13 +236,25 @@ describe('companion alerts', () => {
     let state = { previous: null, rev: null, phase: null };
     state = nextCompanionAlert(state, view({ displaySeconds: 40 }), true);
     assert.equal(state.alert, null);
-    state = nextCompanionAlert(state, view({ displaySeconds: COMPANION_WARNING_SECONDS }), true);
+    state = nextCompanionAlert(
+      state,
+      view({ displaySeconds: COMPANION_WARNING_SECONDS }),
+      true,
+    );
     assert.equal(state.alert, 'warning');
     state = nextCompanionAlert(state, view({ displaySeconds: 20 }), true);
     assert.equal(state.alert, null);
-    state = nextCompanionAlert(state, view({ displaySeconds: 0, locallyComplete: true }), true);
+    state = nextCompanionAlert(
+      state,
+      view({ displaySeconds: 0, locallyComplete: true }),
+      true,
+    );
     assert.equal(state.alert, 'zero');
-    state = nextCompanionAlert(state, view({ displaySeconds: 0, locallyComplete: true }), true);
+    state = nextCompanionAlert(
+      state,
+      view({ displaySeconds: 0, locallyComplete: true }),
+      true,
+    );
     assert.equal(state.alert, null);
     state = nextCompanionAlert(state, view({ displaySeconds: 30 }), true);
     assert.equal(state.alert, null);
@@ -198,37 +262,46 @@ describe('companion alerts', () => {
     const skippedWarning = nextCompanionAlert(
       { previous: 40, rev: 1, phase: 'day' },
       view({ displaySeconds: 0, locallyComplete: true }),
-      true
+      true,
     );
     assert.equal(skippedWarning.alert, 'zero');
 
     const staleGap = nextCompanionAlert(
       { previous: 40, rev: 1, phase: 'day' },
       view({ fresh: false, stale: true, displaySeconds: 5 }),
-      true
+      true,
     );
     assert.equal(staleGap.alert, null);
 
     const stale = nextCompanionAlert(
       { previous: 40, rev: 1, phase: 'day' },
-      view({ fresh: false, stale: true, displaySeconds: 0, locallyComplete: true }),
-      true
+      view({
+        fresh: false,
+        stale: true,
+        displaySeconds: 0,
+        locallyComplete: true,
+      }),
+      true,
     );
     assert.equal(stale.alert, null);
-    const afterStale = nextCompanionAlert(stale, view({ displaySeconds: 0, locallyComplete: true }), true);
+    const afterStale = nextCompanionAlert(
+      stale,
+      view({ displaySeconds: 0, locallyComplete: true }),
+      true,
+    );
     assert.equal(afterStale.alert, null);
 
     const reconnected = nextCompanionAlert(
       { previous: 40, rev: 1, phase: 'day' },
       view({ rev: 2, displaySeconds: 5 }),
-      true
+      true,
     );
     assert.equal(reconnected.alert, null);
 
     const joinedAtZero = nextCompanionAlert(
       { previous: null, rev: null, phase: null },
       view({ displaySeconds: 0, locallyComplete: true }),
-      true
+      true,
     );
     assert.equal(joinedAtZero.alert, null);
   });
@@ -236,12 +309,27 @@ describe('companion alerts', () => {
 
 describe('companion page policy', () => {
   it('allows only the deployed worker on the companion page', () => {
-    const page = readFileSync(new URL('../c/index.html', import.meta.url), 'utf8');
-    const timer = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-    assert.match(page, new RegExp(`\\.\\./css/companion\\.css\\?v=${APP_VERSION}`));
-    assert.match(page, new RegExp(`\\.\\./js/companion-page\\.js\\?v=${APP_VERSION}`));
+    const page = readFileSync(
+      new URL('../c/index.html', import.meta.url),
+      'utf8',
+    );
+    const timer = readFileSync(
+      new URL('../index.html', import.meta.url),
+      'utf8',
+    );
+    assert.match(
+      page,
+      new RegExp(`\\.\\./css/companion\\.css\\?v=${APP_VERSION}`),
+    );
+    assert.match(
+      page,
+      new RegExp(`\\.\\./js/companion-page\\.js\\?v=${APP_VERSION}`),
+    );
     assert.match(page, /img-src 'self' https:\/\/api\.qrserver\.com/);
-    assert.match(page, /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
+    assert.match(
+      page,
+      /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/,
+    );
     assert.match(page, /href="https:\/\/arcane-scripts\.net"/);
     assert.match(page, /rel="noopener noreferrer"/);
     assert.match(page, />Arcane Scripts</);
@@ -257,18 +345,27 @@ describe('companion page policy', () => {
     assert.match(page, /wss:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
     assert.doesNotMatch(page, /connect-src[^;]*\*/);
     const timerPolicy = timer.match(/content="([^"]*connect-src[^"]*)"/)[1];
-    assert.match(timerPolicy, /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
-    assert.match(timerPolicy, /wss:\/\/clocktower-companion\.redmeeple\.workers\.dev/);
+    assert.match(
+      timerPolicy,
+      /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/,
+    );
+    assert.match(
+      timerPolicy,
+      /wss:\/\/clocktower-companion\.redmeeple\.workers\.dev/,
+    );
     assert.equal(timerPolicy.match(/wss:\/\//g).length, 1);
     assert.doesNotMatch(timerPolicy, /\*\.workers\.dev/);
     assert.doesNotMatch(timerPolicy, /wss:\/\/\*/);
   });
 
   it('resolves companion assets from /c, /c/ and /c/index.html', () => {
-    const page = readFileSync(new URL('../c/index.html', import.meta.url), 'utf8');
-    const refs = [...page.matchAll(/(?:href|src)="(\.\.\/[^"]+)"/g)].map((match) => (
-      match[1].split('?')[0]
-    ));
+    const page = readFileSync(
+      new URL('../c/index.html', import.meta.url),
+      'utf8',
+    );
+    const refs = [...page.matchAll(/(?:href|src)="(\.\.\/[^"]+)"/g)].map(
+      (match) => match[1].split('?')[0],
+    );
     assert.deepEqual(refs, [
       '../favicon.svg',
       '../css/styles.css',
@@ -285,9 +382,17 @@ describe('companion page policy', () => {
       for (const ref of refs) {
         const url = new URL(ref, base);
         assert.equal(url.pathname.startsWith('/c/'), false);
-        assert.equal(existsSync(fileURLToPath(new URL(`..${url.pathname}`, import.meta.url))), true);
+        assert.equal(
+          existsSync(
+            fileURLToPath(new URL(`..${url.pathname}`, import.meta.url)),
+          ),
+          true,
+        );
       }
     }
-    assert.equal(existsSync(fileURLToPath(new URL('../companion.html', import.meta.url))), false);
+    assert.equal(
+      existsSync(fileURLToPath(new URL('../companion.html', import.meta.url))),
+      false,
+    );
   });
 });

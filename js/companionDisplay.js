@@ -22,7 +22,10 @@ function countsOf(view) {
 
 function showsCountdown(view) {
   if (view.problem || view.displaySeconds == null) return false;
-  if (view.phase === 'day' && ['running', 'paused', 'ready'].includes(view.timerStatus)) {
+  if (
+    view.phase === 'day' &&
+    ['running', 'paused', 'ready'].includes(view.timerStatus)
+  ) {
     return true;
   }
   return view.phase === 'wake' && view.timerStatus === 'running';
@@ -34,7 +37,8 @@ function phaseCopy(view, countdown) {
     return {
       kicker: 'Companion',
       headline: 'Update needed',
-      message: 'This session is from a newer Tower Timer than this page understands.',
+      message:
+        'This session is from a newer Tower Timer than this page understands.',
       countdown: null,
     };
   }
@@ -50,14 +54,16 @@ function phaseCopy(view, countdown) {
     return {
       kicker: 'Wake up',
       headline: countdown || 'Wake up',
-      message: countdown ? 'The town is waking.' : 'Waiting for the Storyteller.',
+      message: countdown
+        ? 'The town is waking.'
+        : 'Waiting for the Storyteller.',
       countdown,
     };
   }
   if (view.phase === 'night' || view.confirmedComplete) {
     return {
       kicker: day || 'Night',
-      headline: 'Eyes closed',
+      headline: 'Back to Town',
       message: 'Waiting for the Storyteller.',
       countdown: null,
     };
@@ -67,7 +73,8 @@ function phaseCopy(view, countdown) {
       return {
         kicker: day || 'Day',
         headline: countdown,
-        message: 'Waiting for the Storyteller. Reaching zero here does not end the day.',
+        message:
+          'Waiting for the Storyteller. Reaching zero here does not end the day.',
         countdown,
       };
     }
@@ -104,13 +111,28 @@ function phaseCopy(view, countdown) {
 
 function statusCopy(view) {
   if (view.problem === 'unsupported-version') {
-    return { tone: 'problem', label: 'Update', detail: 'This page needs a newer version.', quiet: false };
+    return {
+      tone: 'problem',
+      label: 'Update',
+      detail: 'This page needs a newer version.',
+      quiet: false,
+    };
   }
   if (view.connection === 'ended') {
-    return { tone: 'problem', label: 'Ended', detail: 'The Storyteller ended this session.', quiet: false };
+    return {
+      tone: 'problem',
+      label: 'Ended',
+      detail: 'The Storyteller ended this session.',
+      quiet: false,
+    };
   }
   if (view.connection === 'expired') {
-    return { tone: 'problem', label: 'Expired', detail: 'This session has expired.', quiet: false };
+    return {
+      tone: 'problem',
+      label: 'Expired',
+      detail: 'This session has expired.',
+      quiet: false,
+    };
   }
   if (view.connection === 'connecting') {
     return { tone: 'pending', label: 'Joining', detail: '', quiet: false };
@@ -133,13 +155,20 @@ function statusCopy(view) {
     return { tone: 'live', label: 'Live', detail: '', quiet: true };
   }
   if (view.connection === 'live') {
-    return { tone: 'pending', label: 'Waiting', detail: 'Connected. Waiting for the first update.', quiet: false };
+    return {
+      tone: 'pending',
+      label: 'Waiting',
+      detail: 'Connected. Waiting for the first update.',
+      quiet: false,
+    };
   }
   return { tone: 'idle', label: '', detail: '', quiet: true };
 }
 
 export function presentCompanion(view) {
-  const countdown = showsCountdown(view) ? formatCountdown(view.displaySeconds) : null;
+  const countdown = showsCountdown(view)
+    ? formatCountdown(view.displaySeconds)
+    : null;
   const copy = phaseCopy(view, countdown);
   const night = view.phase === 'night' || view.confirmedComplete === true;
   return {
