@@ -19,6 +19,19 @@ import {
   stepNominationsCountdown,
 } from './gameState.js';
 import { navigateToNewerRelease } from './releaseCheck.js';
+import {
+  bindCompanionCapture,
+  publishCompanionSnapshot,
+} from './companionPublish.js';
+import { projectCompanionState } from './companionState.js';
+import { mountCompanionDev } from './companionDev.js';
+import {
+  companionQrImageUrl,
+  companionSession,
+  presentCompanionJoin,
+  presentCompanionSharing,
+  resolveCompanionEnabledChange,
+} from './companionSession.js';
 
 // Show timer digits only after Azeret Mono has loaded to prevent font flicker
 (function () {
@@ -983,6 +996,8 @@ const DEFAULT_PLAY_MUSIC = false;
 const DEFAULT_PLAY_MUSIC_AT_NIGHT = false;
 const DEFAULT_PLAY_SOUND_EFFECTS = true;
 const DEFAULT_KEEP_DISPLAY_ON = true;
+const DEFAULT_COMPANION_ENABLED = false;
+const DEFAULT_COMPANION_AUTO_START = false;
 const DEFAULT_SHOW_PLAYER_COUNT_QR = false;
 const DEFAULT_SHOW_CURRENT_TIME = true;
 const DEFAULT_SHOW_SESSION_COUNTDOWN = false;
@@ -1045,6 +1060,8 @@ let soundEffectsVolume = DEFAULT_SOUND_EFFECTS_VOLUME;
 let backgroundTheme = DEFAULT_BACKGROUND_THEME;
 let youtubePlaylistUrl = DEFAULT_YOUTUBE_PLAYLIST;
 let keepDisplayOn = DEFAULT_KEEP_DISPLAY_ON;
+let companionEnabled = DEFAULT_COMPANION_ENABLED;
+let companionAutoStart = DEFAULT_COMPANION_AUTO_START;
 let showPlayerCountQr = DEFAULT_SHOW_PLAYER_COUNT_QR;
 let showCurrentTime = DEFAULT_SHOW_CURRENT_TIME;
 let clockFormat = DEFAULT_CLOCK_FORMAT;
@@ -1074,6 +1091,19 @@ const DEFAULT_KEYBOARD_SHORTCUTS = {
 };
 
 let keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
+
+// Dormant until a caller enables publishing. Capture reads one monotonic instant.
+bindCompanionCapture(() => {
+  const timestamp = performance.now();
+  return projectCompanionState({
+    game: game.snapshot(),
+    timer: timer.snapshot(timestamp),
+    playerCount,
+    travellerCount,
+  });
+});
+
+mountCompanionDev();
 
 /** Maps shortcut input element ids to keyboardShortcuts keys */
 const SHORTCUT_INPUT_ID_TO_ACTION = {
@@ -1491,10 +1521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Add event listeners
   startBtn.addEventListener('click', startTimer);
-  resetBtn.addEventListener('click', () => {
-    resetTimer();
-    endGameSession();
-  });
+  resetBtn.addEventListener('click', resetDay);
   fullscreenBtn.addEventListener('click', toggleFullscreen);
   settingsBtn.addEventListener('click', openSettings);
   closeSettingsBtn.addEventListener('click', closeSettings);
@@ -1782,6 +1809,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize settings and update display before the portrait check.
   // The warning uses acceptedPortraitWarning, which loadSettings applies.
   loadSettings();
+  bindCompanionSettings();
   updateClocktowerPresets();
   updateDisplay();
 
@@ -1844,6 +1872,8 @@ const KNOWN_SETTINGS_KEYS = new Set([
   'autoOpenNominationsDelay',
   'acceptedPortraitWarning',
   'keyboardShortcuts',
+  'companionEnabled',
+  'companionAutoStart',
 ]);
 
 // Fields from a future version, kept so a later save does not drop them.
@@ -2057,6 +2087,8 @@ function applyInMemoryDefaultSettings() {
   autoOpenNominations = DEFAULT_AUTO_OPEN_NOMINATIONS;
   autoOpenNominationsDelay = DEFAULT_NOMINATION_OPEN_DELAY;
   acceptedPortraitWarning = DEFAULT_ACCEPTED_PORTRAIT_WARNING;
+  companionEnabled = DEFAULT_COMPANION_ENABLED;
+  companionAutoStart = DEFAULT_COMPANION_AUTO_START;
   keyboardShortcuts = { ...DEFAULT_KEYBOARD_SHORTCUTS };
   updateDayDisplay('', { persist: false });
 }
@@ -2196,6 +2228,14 @@ function applyParsedSettings(settings) {
     settings.acceptedPortraitWarning,
     DEFAULT_ACCEPTED_PORTRAIT_WARNING
   );
+  companionEnabled = readBooleanSetting(
+    settings.companionEnabled,
+    DEFAULT_COMPANION_ENABLED
+  );
+  companionAutoStart = readBooleanSetting(
+    settings.companionAutoStart,
+    DEFAULT_COMPANION_AUTO_START
+  );
 
   const shortcutResult = readKeyboardShortcuts(settings.keyboardShortcuts);
   keyboardShortcuts = shortcutResult.shortcuts;
@@ -2305,6 +2345,177 @@ function applySettingsToForm() {
     .closest('label')
     .classList.toggle('inactive', !playSoundEffects);
 
+  const companionEnabledInput = document.getElementById('companionEnabled');
+  const companionAutoStartInput = document.getElementById('companionAutoStart');
+  if (companionEnabledInput) companionEnabledInput.checked = companionEnabled;
+  if (companionAutoStartInput) {
+    companionAutoStartInput.checked = companionAutoStart;
+    companionAutoStartInput.disabled = !companionEnabled;
+  }
+  document
+    .getElementById('companionAutoStartLabel')
+    ?.classList.toggle('is-unavailable', !companionEnabled);
+  renderCompanionSettings();
+}
+
+function renderCompanionJoin() {
+  const panel = document.getElementById('companionJoin');
+  const value = document.getElementById('companionJoinValue');
+  const state = document.getElementById('companionJoinState');
+  if (!panel || !value || !state) return;
+
+  const join = presentCompanionJoin({
+    enabled: companionEnabled,
+    ...companionSession.status(),
+  });
+  panel.hidden = !join.visible;
+  panel.classList.toggle('is-reconnecting', join.reconnecting);
+  if (value.textContent !== join.code) value.textContent = join.code;
+  state.hidden = !join.reconnecting;
+}
+
+function renderCompanionSettings() {
+  renderCompanionJoin();
+  const sharing = presentCompanionSharing({
+    enabled: companionEnabled,
+    ...companionSession.status(),
+  });
+  const statusNode = document.getElementById('companionStatus');
+  const sessionNode = document.getElementById('companionSession');
+  if (!statusNode || !sessionNode) return;
+
+  statusNode.textContent = sharing.status;
+  sessionNode.hidden = !companionEnabled;
+  const detailNode = document.getElementById('companionStatusDetail');
+  if (detailNode) {
+    detailNode.textContent = sharing.detail;
+    detailNode.hidden = sharing.detail === '';
+  }
+
+  const codeRow = document.getElementById('companionCodeRow');
+  const codeNode = document.getElementById('companionCode');
+  if (codeRow) codeRow.hidden = !sharing.canShare;
+  if (codeNode) codeNode.textContent = sharing.code;
+
+  const startButton = document.getElementById('companionStart');
+  const stopButton = document.getElementById('companionStop');
+  const copyButton = document.getElementById('companionCopy');
+  const qrButton = document.getElementById('companionShowQr');
+  if (startButton) startButton.disabled = !sharing.canStart;
+  if (stopButton) stopButton.disabled = !sharing.canStop;
+  if (copyButton) copyButton.disabled = !sharing.canShare;
+  if (qrButton) qrButton.disabled = !sharing.canShare;
+
+  const feedback = document.getElementById('companionCopyFeedback');
+  if (feedback) {
+    if (!sharing.canShare) feedback.textContent = '';
+    feedback.hidden = feedback.textContent === '';
+  }
+
+  const qr = document.getElementById('companionQr');
+  const qrImage = document.getElementById('companionQrImage');
+  if (!sharing.canShare) {
+    if (qr) qr.hidden = true;
+    if (qrImage) qrImage.removeAttribute('src');
+    return;
+  }
+  if (qr && !qr.hidden && qrImage) {
+    const src = companionQrImageUrl(sharing.playerUrl);
+    if (qrImage.getAttribute('src') !== src) qrImage.src = src;
+    const qrCode = document.getElementById('companionQrCode');
+    if (qrCode) qrCode.textContent = sharing.code;
+  }
+}
+
+function bindCompanionSettings() {
+  const enableInput = document.getElementById('companionEnabled');
+  const autoInput = document.getElementById('companionAutoStart');
+  if (!enableInput || !autoInput || enableInput.dataset.bound === 'true') return;
+  enableInput.dataset.bound = 'true';
+
+  enableInput.addEventListener('change', () => {
+    const sharing = presentCompanionSharing({
+      enabled: true,
+      ...companionSession.status(),
+    }).canStop;
+    const decision = resolveCompanionEnabledChange({
+      nextEnabled: enableInput.checked,
+      sharing,
+      confirmed:
+        enableInput.checked || !sharing
+          ? true
+          : globalThis.confirm(
+              'Stop sharing? Players using this code will lose access.'
+            ),
+    });
+    enableInput.checked = decision.enabled;
+    companionEnabled = decision.enabled;
+    autoInput.disabled = !companionEnabled;
+    document
+      .getElementById('companionAutoStartLabel')
+      ?.classList.toggle('is-unavailable', !companionEnabled);
+    if (decision.endSession) companionSession.end();
+    renderCompanionSettings();
+    saveSettings();
+  });
+
+  autoInput.addEventListener('change', () => {
+    companionAutoStart = autoInput.checked;
+    saveSettings();
+  });
+
+  document.getElementById('companionStart').addEventListener('click', () => {
+    const sharing = presentCompanionSharing({
+      enabled: companionEnabled,
+      ...companionSession.status(),
+    });
+    if (!sharing.canStart) return;
+    companionSession.start();
+  });
+  document.getElementById('companionStop').addEventListener('click', () => {
+    const sharing = presentCompanionSharing({
+      enabled: companionEnabled,
+      ...companionSession.status(),
+    });
+    if (!sharing.canStop) return;
+    companionSession.end();
+  });
+  document.getElementById('companionCopy').addEventListener('click', async () => {
+    const sharing = presentCompanionSharing({
+      enabled: companionEnabled,
+      ...companionSession.status(),
+    });
+    const feedback = document.getElementById('companionCopyFeedback');
+    if (!sharing.playerUrl || !feedback) return;
+    try {
+      await navigator.clipboard.writeText(sharing.playerUrl);
+      feedback.hidden = false;
+      feedback.textContent = 'Link copied';
+    } catch {
+      feedback.hidden = false;
+      feedback.textContent = 'Could not copy the link';
+    }
+  });
+  document.getElementById('companionShowQr').addEventListener('click', () => {
+    const sharing = presentCompanionSharing({
+      enabled: companionEnabled,
+      ...companionSession.status(),
+    });
+    if (!sharing.canShare) return;
+    const qr = document.getElementById('companionQr');
+    const qrImage = document.getElementById('companionQrImage');
+    qr.hidden = false;
+    qrImage.src = companionQrImageUrl(sharing.playerUrl);
+    qrImage.alt = `QR code for companion session ${sharing.code}`;
+    document.getElementById('companionQrCode').textContent = sharing.code;
+  });
+  document.getElementById('companionQrClose').addEventListener('click', () => {
+    document.getElementById('companionQr').hidden = true;
+  });
+
+  companionSession.subscribe(() => {
+    renderCompanionSettings();
+  });
 }
 
 // Load settings from localStorage
@@ -2393,6 +2604,10 @@ function loadSettings() {
   document.body.classList.add('wallpaper-ready');
 
   initialSettingsApplied = true;
+  companionSession.maybeAutoStart({
+    enabled: companionEnabled,
+    autoStart: companionAutoStart,
+  });
   if (game.getPhase() === 'dusk' || game.getPhase() === 'dawn') {
     gameSessionActive = true;
   }
@@ -2449,6 +2664,8 @@ function saveSettings() {
     autoOpenNominationsDelay,
     acceptedPortraitWarning,
     keyboardShortcuts,
+    companionEnabled,
+    companionAutoStart,
   };
   try {
     writeStorageItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
@@ -2578,6 +2795,7 @@ function updatePlayerCount() {
   updateEstimatedGameLength();
   updatePlayerCountQr();
   saveSettings();
+  publishCompanionSnapshot();
 }
 
 // Update traveller count
@@ -2595,6 +2813,7 @@ function updateTravellerCount() {
     .classList.toggle('visible', travellerCount > 0);
   document.getElementById('travellerAmount').textContent = travellerCount;
   saveSettings();
+  publishCompanionSnapshot();
 }
 
 function openSettings() {
@@ -2850,6 +3069,9 @@ function finishDayCountdown(wasAccelerated) {
   if (autoOpenNominations && autoOpenNominationsDelay > 0) {
     startNominationsCountdown();
   }
+  if (game.getPhase() === 'dusk') {
+    publishCompanionSnapshot();
+  }
 }
 
 function finishWakeUpCountdown() {
@@ -2955,6 +3177,9 @@ function accelerateTime() {
   ensureCountdownLoop();
   // Disable accelerate button after use (do not reset label during accelerated countdown)
   accelerateBtn.disabled = true;
+  if (timer.isCountdownActive() && timer.getCountdownKind() === 'day') {
+    publishCompanionSnapshot();
+  }
 }
 
 // Start timer
@@ -2962,6 +3187,7 @@ function startTimer() {
   if (timer.isRunning()) {
     // Pause timer before touching music, so a dead player cannot block the click
     timerUtils.stop();
+    publishCompanionSnapshot();
     runYoutube((player) => {
       player.pauseVideo?.();
       setYoutubeControlButtonIcon(false);
@@ -3028,6 +3254,14 @@ function resetTimer() {
 
   // Update the display with the new time
   updateDisplay();
+}
+
+// The button and the shortcut both finish here. Wake Up calls resetTimer()
+// itself and must not publish the restored preset before its own countdown.
+function resetDay() {
+  resetTimer();
+  endGameSession();
+  publishCompanionSnapshot();
 }
 
 // Handle minutes preset selection
@@ -3127,6 +3361,9 @@ function playWakeUpSound() {
 
   timer.setCurrentInterval(timer.getNormalInterval());
   continueCountdownAt('wake-up', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
+  if (timer.isCountdownActive() && timer.getCountdownKind() === 'wake-up') {
+    publishCompanionSnapshot();
+  }
 
   // Sound comes last so a failed or stalled file cannot skip the countdown
   safePlaySound(wakeUpSound, { fallbackBeep: true });
@@ -3139,6 +3376,9 @@ function startCountdown() {
   timer.setCurrentInterval(timer.getNormalInterval());
   continueCountdownAt('day', NORMAL_COUNTDOWN_MS_PER_REAL_MS);
   updateDisplay();
+  if (timer.isCountdownActive() && timer.getCountdownKind() === 'day') {
+    publishCompanionSnapshot();
+  }
 
   // Music is best-effort and must not prevent the countdown from starting
   if (!game.isDusk()) {
@@ -3178,6 +3418,7 @@ function startNewGame() {
   saveSettings();
   closeSettings();
   endGameSession();
+  publishCompanionSnapshot();
 
   // Stop any playing video and reshuffle playlist. Failure must not undo the new game.
   runYoutube((player) => {
@@ -3899,9 +4140,16 @@ function showChangeHistory() {
     return;
   }
 
-  const versions = Object.entries(CHANGELOG).sort(
-    ([a], [b]) => Number.parseFloat(b) - Number.parseFloat(a)
-  );
+  const versions = Object.entries(CHANGELOG).sort(([a], [b]) => {
+    const aParts = a.split('.').map(Number);
+    const bParts = b.split('.').map(Number);
+    const length = Math.max(aParts.length, bParts.length);
+    for (let index = 0; index < length; index += 1) {
+      const difference = (bParts[index] || 0) - (aParts[index] || 0);
+      if (difference !== 0) return difference;
+    }
+    return 0;
+  });
 
   // Don't open dialog if there's no changelog data
   if (versions.length === 0) {
@@ -4013,8 +4261,7 @@ function tryHandleResetShortcut(e, currentKey) {
     return;
   }
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-  resetTimer();
-  endGameSession();
+  resetDay();
 }
 
 // Add keyboard navigation support

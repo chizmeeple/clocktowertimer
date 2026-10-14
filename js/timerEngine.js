@@ -122,6 +122,22 @@ export function createTimerEngine({ now = () => performance.now() } = {}) {
       return completeActive(timestamp);
     },
 
+    // One read of the countdown at `timestamp`. The segment, rate, and
+    // completion are left alone. `running` is the engine flag: Wake Up counts
+    // down with running false, because the page does not set that flag for it.
+    // A finished countdown and an idle timer look the same here. The page's
+    // day phase is what tells them apart.
+    snapshot(timestamp = now()) {
+      return {
+        remainingMs: readRemainingMs(timestamp),
+        running: isRunning,
+        reset: hasReset,
+        active: countdownActive,
+        kind: countdownKind,
+        rate: countdownActive ? segmentCountdownPerRealMs : 0,
+      };
+    },
+
     // `randomValue` is Math.random() in the browser. The rate matches the
     // previous time-per-tick acceleration: countdown seconds per refresh.
     accelerate(randomValue, timestamp = now()) {

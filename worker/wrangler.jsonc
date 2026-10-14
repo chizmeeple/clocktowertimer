@@ -1,0 +1,43 @@
+{
+  // Local companion session service. SQLite is declared with
+  // new_sqlite_classes, which is the supported Durable Object storage
+  // backend. The older new_classes key selects key-value storage and is
+  // not available on the Workers Free plan.
+  "name": "clocktower-companion",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-12",
+  "workers_dev": true,
+  // Exact browser origins. No wildcards and no account id.
+  // The public timer does not call this worker until a later UI.
+  "vars": {
+    "AUTH_TIMEOUT_MS": "5000",
+    "PUBLISH_LIMIT": "30",
+    "ALLOWED_ORIGINS": "https://timer.arcane-scripts.net,http://localhost:8006,http://127.0.0.1:8006"
+  },
+  // Workers Rate Limiting. Counters are per Cloudflare location, not global.
+  // A missing CF-Connecting-IP does not share one bucket across every caller.
+  "ratelimits": [
+    {
+      "name": "CREATE_BUDGET",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    {
+      "name": "GUESS_BUDGET",
+      "namespace_id": "1002",
+      "simple": { "limit": 60, "period": 60 }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "COMPANION_SESSION", "class_name": "CompanionSession" },
+      { "name": "SESSION_DIRECTORY", "class_name": "SessionDirectory" }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CompanionSession", "SessionDirectory"]
+    }
+  ]
+}

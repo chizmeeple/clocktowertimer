@@ -30,7 +30,7 @@
     />
 
     <!-- Preload critical resources -->
-    <link rel="preload" href="styles.css?v=1.2.1" as="style" />
+    <link rel="preload" href="css/styles.css?v=1.3.0" as="style" />
     <link
       rel="preload"
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Azeret+Mono:wght@600&display=swap"
@@ -82,12 +82,12 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Azeret+Mono:wght@600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=1.2.1" />
+    <link rel="stylesheet" href="css/styles.css?v=1.3.0" />
 
     <!-- Content Security Policy -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://api.qrserver.com https://img.youtube.com https://i.ytimg.com https://storage.ko-fi.com data:; media-src 'self'; frame-src https://www.youtube.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.youtube.com https://www.googleapis.com https://play.google.com;"
+      content="default-src 'self'; script-src 'self' https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://api.qrserver.com https://img.youtube.com https://i.ytimg.com https://storage.ko-fi.com data:; media-src 'self'; frame-src https://www.youtube.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.youtube.com https://www.googleapis.com https://play.google.com https://clocktower-companion.redmeeple.workers.dev wss://clocktower-companion.redmeeple.workers.dev;"
     />
 
     <!-- Google tag (gtag.js) -->
@@ -346,6 +346,14 @@
 
     <!-- Bottom Controls Container -->
     <div class="bottom-container">
+      <aside id="companionJoin" class="companion-join" hidden>
+        <p class="companion-join-label" aria-hidden="true">Companion</p>
+        <p id="companionJoinCode" class="companion-join-code">
+          <span class="visually-hidden">Companion join code </span
+          ><span id="companionJoinValue"></span>
+        </p>
+        <p id="companionJoinState" class="companion-join-state" hidden>Reconnecting</p>
+      </aside>
       <div class="left-buttons">
         <button id="settingsBtn" aria-label="Settings">
           <svg
@@ -433,6 +441,9 @@
           </button>
           <button class="tab-button" data-tab="shortcuts" aria-pressed="false">
             Shortcuts
+          </button>
+          <button class="tab-button" data-tab="companion" aria-pressed="false">
+            Companion
           </button>
         </div>
 
@@ -885,6 +896,68 @@
               </div>
             </div>
           </div>
+
+          <div class="settings-panel" data-panel="companion">
+            <div class="setting-group">
+              <h3>Companion Mode</h3>
+              <p class="companion-intro">
+                Let players follow the timer and public character counts on their own devices.
+              </p>
+              <label>
+                <span>Enable Companion Mode</span>
+                <input type="checkbox" id="companionEnabled" />
+              </label>
+              <label id="companionAutoStartLabel" class="is-unavailable">
+                <span>Start automatically</span>
+                <input
+                  type="checkbox"
+                  id="companionAutoStart"
+                  aria-describedby="companionAutoHint"
+                  disabled
+                />
+              </label>
+              <p id="companionAutoHint" class="companion-hint">
+                Start a sharing session when Tower Timer opens.
+              </p>
+              <p id="companionStatus" role="status" aria-live="polite">Disabled</p>
+              <div id="companionSession" hidden>
+                <p id="companionStatusDetail" class="companion-hint"></p>
+                <p id="companionCodeRow" hidden>
+                  <span>Session code</span>
+                  <strong id="companionCode"></strong>
+                </p>
+                <div class="companion-actions">
+                  <button type="button" id="companionStart" class="primary-btn">
+                    Start sharing
+                  </button>
+                  <button type="button" id="companionStop" class="secondary-btn">
+                    Stop sharing
+                  </button>
+                  <button type="button" id="companionCopy" class="secondary-btn">
+                    Copy link
+                  </button>
+                  <button type="button" id="companionShowQr" class="secondary-btn">
+                    Show QR code
+                  </button>
+                </div>
+                <p id="companionCopyFeedback" role="status" aria-live="polite"></p>
+                <div id="companionQr" hidden>
+                  <div class="companion-qr-card">
+                    <img
+                      id="companionQrImage"
+                      alt="QR code for the player companion link"
+                      width="360"
+                      height="360"
+                    />
+                    <p id="companionQrCode"></p>
+                  </div>
+                  <button type="button" id="companionQrClose" class="secondary-btn">
+                    Close QR code
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="dialog-buttons">
@@ -1024,14 +1097,21 @@
     <script type="importmap">
       {
         "imports": {
-          "./changelog.js": "./changelog.js?v=1.2.1",
-          "./gameState.js": "./gameState.js?v=1.2.1",
-          "./helper.js": "./helper.js?v=1.2.1",
-          "./releaseCheck.js": "./releaseCheck.js?v=1.2.1",
-          "./timerEngine.js": "./timerEngine.js?v=1.2.1"
+          "./js/changelog.js": "./js/changelog.js?v=1.3.0",
+          "./js/companionCode.js": "./js/companionCode.js?v=1.3.0",
+          "./js/companionDev.js": "./js/companionDev.js?v=1.3.0",
+          "./js/companionPublish.js": "./js/companionPublish.js?v=1.3.0",
+          "./js/companionSession.js": "./js/companionSession.js?v=1.3.0",
+          "./js/companionState.js": "./js/companionState.js?v=1.3.0",
+          "./js/companionSync.js": "./js/companionSync.js?v=1.3.0",
+          "./js/companionTransport.js": "./js/companionTransport.js?v=1.3.0",
+          "./js/gameState.js": "./js/gameState.js?v=1.3.0",
+          "./js/helper.js": "./js/helper.js?v=1.3.0",
+          "./js/releaseCheck.js": "./js/releaseCheck.js?v=1.3.0",
+          "./js/timerEngine.js": "./js/timerEngine.js?v=1.3.0"
         }
       }
     </script>
-    <script src="script.js?v=1.2.1" type="module"></script>
+    <script src="js/script.js?v=1.3.0" type="module"></script>
   </body>
 </html>

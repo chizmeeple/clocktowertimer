@@ -202,22 +202,22 @@ body::before {
 
 /* Background theme classes */
 body[data-theme='gothic-city']::before {
-  background-image: url('images/backgrounds/gothic-city.png');
+  background-image: url('../images/backgrounds/gothic-city.png');
 }
 body[data-theme='medieval-cartoon']::before {
-  background-image: url('images/backgrounds/medieval-cartoon.png');
+  background-image: url('../images/backgrounds/medieval-cartoon.png');
 }
 body[data-theme='tower-in-forest']::before {
-  background-image: url('images/backgrounds/tower-in-forest.png');
+  background-image: url('../images/backgrounds/tower-in-forest.png');
 }
 body[data-theme='infested-city']::before {
-  background-image: url('images/backgrounds/infested-city.png');
+  background-image: url('../images/backgrounds/infested-city.png');
 }
 body[data-theme='circle-of-people']::before {
-  background-image: url('images/backgrounds/circle-of-people.png');
+  background-image: url('../images/backgrounds/circle-of-people.png');
 }
 body[data-theme='large-clock-face']::before {
-  background-image: url('images/backgrounds/large-clock-face.png');
+  background-image: url('../images/backgrounds/large-clock-face.png');
 }
 
 /* The day image stays on ::before. This plate covers it with the same
@@ -231,7 +231,7 @@ body[data-theme='large-clock-face']::before {
   background-color: var(--colour-bg);
   background-image:
     linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.85)),
-    url('images/backgrounds/night-sky.jpg');
+    url('../images/backgrounds/night-sky.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -877,8 +877,8 @@ html.fonts-ready .timer-display .time {
   padding: 0;
   background-color: var(--colour-surface-elevated);
   color: var(--colour-text);
-  max-width: 95vw;
-  width: 600px;
+  width: min(640px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   max-height: 90vh;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(16px);
@@ -971,6 +971,10 @@ html.fonts-ready .timer-display .time {
 .setting-group label span {
   font-size: 1rem;
   color: #fff;
+}
+
+.setting-group > label > span {
+  flex: none;
 }
 
 .info-display {
@@ -2549,6 +2553,8 @@ button:disabled {
 /* Settings Tabs */
 .settings-tabs {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
@@ -2556,12 +2562,16 @@ button:disabled {
 }
 
 .tab-button {
+  flex: 0 0 calc((100% - 1.5rem) / 4);
+  min-width: 0;
   background: none;
   border: none;
   color: var(--colour-text-muted);
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
   transition:
     background-color var(--transition-fast),
     color var(--transition-fast);
@@ -2615,6 +2625,93 @@ button:disabled {
   -webkit-backdrop-filter: blur(8px);
   border-top: 1px solid var(--colour-border);
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Read-only join code. It sits on the bar's padding box, so it stays just
+   above the controls as the bar's height changes. */
+.companion-join {
+  position: absolute;
+  z-index: 1;
+  right: 1rem;
+  bottom: calc(100% + 0.45rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+  width: max-content;
+  max-width: calc(100vw - 1.5rem);
+  margin: 0;
+  padding: 0.4rem 0.7rem 0.35rem;
+  text-align: center;
+  background: rgba(16, 14, 12, 0.94);
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* The badge is informational. Clicks pass through to any day preset it covers. */
+.companion-join,
+.companion-join * {
+  pointer-events: none;
+}
+
+.companion-join[hidden] {
+  display: none !important;
+}
+
+.companion-join.is-reconnecting {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.companion-join-label,
+.companion-join-state {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #f3ecda;
+}
+
+.companion-join-label {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.companion-join-state {
+  letter-spacing: 0.04em;
+}
+
+.companion-join-code {
+  margin: 0;
+  font-family: 'Azeret Mono', ui-monospace, 'Cascadia Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(1.35rem, 2.5vw, 2.15rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.14em;
+  line-height: 1.05;
+  color: var(--colour-gold-bright);
+  white-space: nowrap;
+}
+
+@media (max-width: 520px), (max-height: 480px) {
+  .companion-join {
+    right: 0.45rem;
+    bottom: calc(100% + 0.3rem);
+    gap: 0.08rem;
+    padding: 0.28rem 0.45rem 0.22rem;
+  }
+
+  .companion-join-label,
+  .companion-join-state {
+    font-size: 0.62rem;
+  }
+
+  .companion-join-code {
+    font-size: 1.2rem;
+    letter-spacing: 0.1em;
+  }
 }
 
 .left-buttons {
@@ -2793,16 +2890,120 @@ button:disabled {
   gap: 0.75rem;
 }
 
+#companionAutoStartLabel.is-unavailable {
+  opacity: 0.45;
+}
+
+.companion-intro,
+.companion-hint,
+#companionCopyFeedback {
+  margin: 0;
+  color: var(--colour-text-muted);
+  font-size: 0.9rem;
+}
+
+#companionStatus {
+  margin: 0;
+  font-weight: 600;
+}
+
+#companionCodeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+#companionCodeRow[hidden],
+#companionSession[hidden],
+#companionQr[hidden] {
+  display: none;
+}
+
+#companionCode,
+#companionQrCode {
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+#companionCode {
+  font-size: 1.75rem;
+  color: var(--colour-gold-bright);
+}
+
+.companion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.companion-actions button,
+#companionQrClose {
+  width: auto;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.companion-actions button.primary-btn {
+  background: var(--colour-accent-button);
+  border-color: transparent;
+}
+
+.companion-actions button:disabled,
+#companionQrClose:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.companion-actions button:focus-visible,
+#companionQrClose:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.4);
+}
+
+.companion-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+.companion-qr-card img {
+  width: min(16rem, 100%);
+  height: auto;
+  background: #fff;
+}
+
+#companionQrCode {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #111;
+}
+
 /* Responsive adjustments.
    Shorter height queries follow the taller ones, so both can match and the
    shorter query wins. Change History keeps its own size: the short-screen
    What's New rules used to be followed by Change History's base rules, which
    cancelled the shared dialog sizing. */
-@media (max-width: 640px) {
-  .settings-dialog {
-    width: 95vw;
+@media (max-width: 520px) {
+  .tab-button {
+    flex-basis: calc((100% - 0.5rem) / 2);
   }
+}
 
+@media (max-width: 640px) {
   .info-dialog {
     max-width: 95vw;
   }

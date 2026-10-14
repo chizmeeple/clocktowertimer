@@ -1,4 +1,5 @@
-import { APP_VERSION } from '../../changelog.js';
+import { APP_VERSION } from '../../js/changelog.js';
+import { HEARTBEAT_MS } from '../../js/companionPublish.js';
 
 export const COUNTDOWN_REFRESH_MS = 50;
 
@@ -62,38 +63,48 @@ export function installElapsedHarness(win) {
   let nowMs = 0;
   cy.stub(win.performance, 'now').callsFake(() => nowMs);
 
-  let countdownTick = null;
   const nativeSetInterval = win.setInterval.bind(win);
   const nativeClearInterval = win.clearInterval.bind(win);
   let nextFakeId = 1000000000;
-  const fakeIds = new Set();
+  const fakeTicks = new Map();
 
   cy.stub(win, 'setInterval').callsFake((fn, delay, ...args) => {
-    if (delay === COUNTDOWN_REFRESH_MS) {
+    if (delay === COUNTDOWN_REFRESH_MS || delay === HEARTBEAT_MS) {
       const id = nextFakeId;
       nextFakeId += 1;
-      fakeIds.add(id);
-      countdownTick = fn;
+      fakeTicks.set(id, {
+        kind: delay === COUNTDOWN_REFRESH_MS ? 'countdown' : 'heartbeat',
+        fn,
+      });
       return id;
     }
     return nativeSetInterval(fn, delay, ...args);
   });
 
   cy.stub(win, 'clearInterval').callsFake((id) => {
-    if (fakeIds.has(id)) {
-      fakeIds.delete(id);
-      countdownTick = null;
+    if (fakeTicks.has(id)) {
+      fakeTicks.delete(id);
       return undefined;
     }
     return nativeClearInterval(id);
   });
+
+  function ticks(kind) {
+    return [...fakeTicks.values()].filter((entry) => entry.kind === kind);
+  }
 
   win.__elapsed = {
     advance(ms) {
       nowMs += ms;
     },
     tick() {
-      if (countdownTick) countdownTick();
+      for (const entry of ticks('countdown')) entry.fn();
+    },
+    heartbeat() {
+      for (const entry of ticks('heartbeat')) entry.fn();
+    },
+    heartbeatCount() {
+      return ticks('heartbeat').length;
     },
   };
 }
@@ -140,10 +151,11 @@ export function visitGameplay({
   harness = true,
   randomValue = 0,
   audio = null,
+  path = '/',
   onBeforeLoad,
 } = {}) {
   ignoreExternalRequests();
-  cy.visit('/', {
+  cy.visit(path, {
     onBeforeLoad(win) {
       showTimerDigits(win);
       seedSettings(win, settings);

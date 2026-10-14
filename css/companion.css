@@ -1,0 +1,550 @@
+/* Player companion. Character colours come from styles.css:
+   Townsfolk and Outsiders use --colour-good, Minions and Demon use
+   --colour-evil, Travellers use .character-type.traveller. */
+
+.companion-page {
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding:
+    calc(0.75rem + env(safe-area-inset-top))
+    calc(1rem + env(safe-area-inset-right))
+    calc(0.5rem + env(safe-area-inset-bottom))
+    calc(1rem + env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+
+.companion-bar,
+.companion-main,
+.join-panel,
+.session {
+  width: min(100%, 40rem);
+}
+
+.companion-bar {
+  display: grid;
+  grid-template-columns: auto auto minmax(min-content, 1fr);
+  align-items: center;
+  column-gap: 0.5rem;
+  row-gap: 0.3rem;
+  margin-bottom: 0.75rem;
+}
+
+.companion-home {
+  grid-column: 1;
+  grid-row: 1;
+  color: var(--colour-gold-bright);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.companion-home:hover {
+  text-decoration: underline;
+}
+
+.companion-mark {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  margin: 0;
+  color: var(--colour-text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.join-panel h1,
+.kicker,
+.headline,
+.message,
+.status,
+.option-note {
+  margin: 0;
+}
+
+.join-panel h1 {
+  font-size: 1.75rem;
+}
+
+.join-panel p,
+.option-note {
+  color: var(--colour-text-muted);
+}
+
+.join-panel form,
+.options,
+.session {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.join-panel label,
+.option {
+  font-weight: 600;
+}
+
+#code,
+.join-panel button,
+#showQr,
+#leave,
+#qrClose,
+.option {
+  min-height: 44px;
+  font: inherit;
+}
+
+#code {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--colour-border-strong);
+  background: var(--colour-surface-elevated);
+  color: var(--colour-text);
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-size: 1.5rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.join-panel button,
+#qrClose {
+  border-radius: var(--radius-md);
+  border: 0;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+
+.session-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.session-actions:has(#showQr[hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.session-actions button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 0;
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.45rem;
+  font-size: clamp(0.82rem, 3.2vw, 1rem);
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+}
+
+.session-action-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+
+#showQr {
+  background: var(--colour-accent-button);
+  color: white;
+  border: 0;
+  font-weight: 700;
+}
+
+#showQr:hover {
+  background: var(--colour-accent-button-hover);
+}
+
+.join-panel button {
+  background: var(--colour-accent-button);
+  color: white;
+  font-weight: 700;
+}
+
+#leave {
+  background: transparent;
+  color: var(--colour-text);
+  border: 1px solid var(--colour-border-strong);
+  font-weight: 600;
+}
+
+.companion-page :focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.code-error {
+  color: var(--colour-blitz-text);
+}
+
+.status {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.22rem 0.45rem 0.22rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.status.live {
+  color: var(--colour-accent-text);
+  background: rgba(92, 191, 97, 0.16);
+  border-color: rgba(92, 191, 97, 0.55);
+}
+
+.status.pending {
+  color: var(--colour-text);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.status.problem {
+  color: var(--colour-gold-bright);
+  background: rgba(230, 197, 71, 0.14);
+  border-color: rgba(230, 197, 71, 0.55);
+}
+
+.status-detail {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--colour-gold-bright);
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.phase-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
+}
+
+.kicker {
+  max-width: 100%;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: clamp(1.75rem, 8vw, 2.75rem);
+  line-height: 1.05;
+  color: var(--colour-gold);
+}
+
+.headline {
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(3.5rem, 22vw, 7.5rem);
+  line-height: 0.95;
+  font-weight: 600;
+}
+
+.headline.words {
+  font-family: inherit;
+  font-size: clamp(2.4rem, 12vw, 4.5rem);
+  line-height: 1.05;
+}
+
+.message:empty {
+  display: none;
+}
+
+.companion-page .companion-counts {
+  height: auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.companion-page .companion-counts .character-type {
+  min-width: 0;
+  aspect-ratio: auto;
+  justify-content: center;
+  padding: 0.35rem 0.5rem 0.4rem;
+  list-style: none;
+}
+
+.companion-page .companion-counts .character-type .label {
+  margin-bottom: 0.1rem;
+}
+
+.companion-page .companion-counts .character-type .amount {
+  font-size: 2rem;
+}
+
+.companion-page .companion-counts .character-type.traveller {
+  display: flex;
+  grid-column: 1 / -1;
+  aspect-ratio: auto;
+  min-height: 0;
+}
+
+.options {
+  border-top: 1px solid var(--colour-border);
+  padding-top: 0.75rem;
+  gap: 0.45rem;
+}
+
+.options h3 {
+  margin: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--colour-text-muted);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.option input {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.sound-test {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+#testSound {
+  flex: none;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--colour-border-strong);
+  background: transparent;
+  color: var(--colour-text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+#testSound:hover {
+  background: var(--colour-button-secondary-hover);
+}
+
+#soundStatus:empty {
+  display: none;
+}
+
+@media (orientation: landscape), (min-width: 52rem) {
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .companion-page .companion-counts .character-type {
+    aspect-ratio: 5 / 4;
+    padding: 0.5rem;
+  }
+
+  .companion-page .companion-counts .character-type .amount {
+    font-size: 2.5rem;
+  }
+
+  .companion-page .companion-counts .character-type.traveller {
+    aspect-ratio: auto;
+    min-height: 4.75rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 28rem) {
+  .kicker {
+    font-size: clamp(1.15rem, 7vh, 1.45rem);
+  }
+
+  .phase-block {
+    gap: 0.25rem;
+  }
+
+  .headline {
+    font-size: clamp(2.6rem, 16vh, 4.5rem);
+  }
+
+  .companion-bar,
+  .stage,
+  .session {
+    gap: 0.4rem;
+  }
+
+  .companion-bar {
+    margin-bottom: 0.25rem;
+  }
+
+  .companion-page .companion-counts {
+    gap: 0.35rem;
+  }
+
+  .companion-page .companion-counts .character-type {
+    aspect-ratio: 6 / 5;
+  }
+
+  .companion-page .companion-counts .character-type .label {
+    margin-bottom: 0;
+    font-size: 0.8rem;
+  }
+
+  .companion-page .companion-counts .character-type .amount {
+    font-size: 1.6rem;
+  }
+
+  .companion-page .companion-counts .character-type.traveller {
+    min-height: 3.25rem;
+  }
+
+  .options {
+    padding-top: 0.25rem;
+    gap: 0.3rem;
+  }
+
+  .session-actions button {
+    min-height: 2.25rem;
+    flex-direction: row;
+    gap: 0.4rem;
+    padding: 0.35rem 0.55rem;
+  }
+
+  #testSound {
+    min-height: 2.25rem;
+  }
+
+  .session-action-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.companion-footer {
+  width: min(100%, 40rem);
+  margin: 0.85rem 0 0.15rem;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--colour-text-muted);
+}
+
+.companion-footer a {
+  color: inherit;
+  font-weight: 600;
+  text-underline-offset: 0.15em;
+}
+
+@media (orientation: landscape) and (max-height: 28rem) {
+  .companion-footer {
+    margin-top: 0.35rem;
+  }
+}
+
+.qr-dialog {
+  margin: auto;
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  background: var(--colour-surface-elevated);
+  color: var(--colour-text);
+  width: min(22rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 1.5rem);
+  overflow: auto;
+  text-align: center;
+}
+
+.qr-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.qr-dialog h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.qr-frame {
+  display: flex;
+  justify-content: center;
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+}
+
+.qr-frame img {
+  width: min(16rem, 100%, 46dvh);
+  height: auto;
+  background: #fff;
+}
+
+#qrCode {
+  margin: 0.75rem 0 0.15rem;
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-weight: 600;
+  font-size: clamp(1.35rem, 6vw, 1.75rem);
+  letter-spacing: 0.14em;
+}
+
+.qr-address {
+  margin: 0 0 0.85rem;
+  color: var(--colour-text-muted);
+  font-size: 0.9rem;
+}
+
+#qrClose {
+  width: 100%;
+  background: var(--colour-accent-button);
+  color: white;
+  font-weight: 700;
+}
+
+.companion-page [hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .companion-page *,
+  .companion-page *::before,
+  .companion-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

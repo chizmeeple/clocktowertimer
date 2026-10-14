@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Companion dev client</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
+    />
+    <style>
+      body { margin: 24px; font: 16px/1.4 system-ui, sans-serif; color: #1d1a17; }
+      h1 { font-size: 20px; }
+      #timer { font: 64px/1 ui-monospace, monospace; margin: 12px 0; }
+      label { display: block; margin: 12px 0; }
+      input { font: inherit; letter-spacing: 0.08em; }
+      dl { display: grid; grid-template-columns: 10em 1fr; gap: 4px 12px; }
+      dt { color: #5c5348; }
+    </style>
+  </head>
+  <body>
+    <h1>Companion dev client</h1>
+    <p>Read-only local test page. It cannot change the game.</p>
+    <form id="joinForm">
+      <label>
+        Session code
+        <input id="code" name="code" maxlength="6" autocomplete="off" />
+      </label>
+      <button type="submit">Join</button>
+      <button type="button" id="drop">Drop connection</button>
+      <button type="button" id="leave">Leave</button>
+    </form>
+    <p id="timer">—</p>
+    <dl>
+      <dt>Connection</dt><dd id="connection">idle</dd>
+      <dt>Freshness</dt><dd id="freshness">—</dd>
+      <dt>Phase</dt><dd id="phase">—</dd>
+      <dt>Day</dt><dd id="day">—</dd>
+      <dt>Townsfolk</dt><dd id="townsfolk">—</dd>
+      <dt>Outsider</dt><dd id="outsider">—</dd>
+      <dt>Minion</dt><dd id="minion">—</dd>
+      <dt>Demon</dt><dd id="demon">—</dd>
+      <dt>Traveller</dt><dd id="traveller">—</dd>
+      <dt>Revision</dt><dd id="rev">—</dd>
+      <dt>Timing</dt><dd id="timing">—</dd>
+    </dl>
+    <script type="module" src="./js/companion-dev-page.js"></script>
+  </body>
+</html>

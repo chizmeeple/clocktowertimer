@@ -1,4 +1,4 @@
-import { APP_VERSION } from '../../changelog.js';
+import { APP_VERSION } from '../../js/changelog.js';
 
 describe('General Behaviour', () => {
   beforeEach(() => {

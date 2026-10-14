@@ -462,6 +462,11 @@ tags
 # End of https://www.toptal.com/developers/gitignore/api/git,vim,node,ruby,go,terraform,python
 
 .DS_Store
+
+# Local Cloudflare worker state and credentials
+.wrangler/
+**/.wrangler/
+.dev.vars
 node_modules/
 *.log
 .env

@@ -1,9 +1,21 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APP_VERSION } from '../changelog.js';
+import { APP_VERSION } from '../js/changelog.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const STYLESHEET = 'css/styles.css';
+const ENTRY_SCRIPT = 'js/script.js';
+const COMPANION_HTML = 'c/index.html';
+const COMPANION_ASSETS = [
+  '../css/styles.css',
+  '../css/companion.css',
+  '../js/companion-page.js',
+];
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function stripComments(source) {
   return source
@@ -23,8 +35,12 @@ export function localImportSpecifiers(source) {
   return [...specifiers];
 }
 
-export function collectModuleSpecifiers(entryPath, readFile = readFileSync) {
-  const rootDir = dirname(resolve(entryPath));
+export function collectModuleSpecifiers(
+  entryPath,
+  readFile = readFileSync,
+  baseDir = dirname(resolve(entryPath))
+) {
+  const rootDir = resolve(baseDir);
   const seen = new Set();
   const specifiers = new Set();
 
@@ -63,8 +79,8 @@ export function buildImportMap(version, specifiers) {
 
 export function releaseAssetUrls(version, specifiers) {
   return [
-    versionedUrl('styles.css', version),
-    versionedUrl('script.js', version),
+    versionedUrl(STYLESHEET, version),
+    versionedUrl(ENTRY_SCRIPT, version),
     ...[...specifiers].sort().map((specifier) => versionedUrl(specifier, version)),
   ];
 }
@@ -87,17 +103,19 @@ const IMPORT_MAP_BLOCK =
   /(?:[ \t]*<!-- release-assets -->\n)?[ \t]*<script type="importmap">[\s\S]*?<\/script>\n?/;
 
 export function stampHtml(html, version, specifiers) {
+  const stylesheet = versionedUrl(STYLESHEET, version);
+  const entry = versionedUrl(ENTRY_SCRIPT, version);
   let next = html.replace(
-    /href="styles\.css(?:\?[^"]*)?"/g,
-    `href="styles.css?v=${version}"`
+    new RegExp(`href="${escapeRegExp(STYLESHEET)}(?:\\?[^"]*)?"`, 'g'),
+    `href="${stylesheet}"`
   );
   next = next.replace(
-    /src="script\.js(?:\?[^"]*)?"/g,
-    `src="script.js?v=${version}"`
+    new RegExp(`src="${escapeRegExp(ENTRY_SCRIPT)}(?:\\?[^"]*)?"`, 'g'),
+    `src="${entry}"`
   );
 
   const block = importMapBlock(version, specifiers);
-  const moduleTag = `<script src="script.js?v=${version}" type="module"></script>`;
+  const moduleTag = `<script src="${entry}" type="module"></script>`;
   const moduleLine = new RegExp(
     `^[ \\t]*${moduleTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[ \\t]*$`,
     'm'
@@ -112,6 +130,37 @@ export function stampHtml(html, version, specifiers) {
     next = next.replace(moduleLine, `${block}\n    ${moduleTag}`);
   }
   return next;
+}
+
+export function stampCompanionHtml(html, version) {
+  let next = html;
+  for (const asset of COMPANION_ASSETS) {
+    const pattern = new RegExp(
+      `((?:href|src)=")${escapeRegExp(asset)}(?:\\?[^"]*)?"`,
+      'g'
+    );
+    if (!pattern.test(next)) {
+      throw new Error(`Could not find ${asset}`);
+    }
+    pattern.lastIndex = 0;
+    next = next.replace(pattern, `$1${versionedUrl(asset, version)}"`);
+  }
+  return next;
+}
+
+export function companionAssetProblems(html, version) {
+  const problems = [];
+  for (const asset of COMPANION_ASSETS) {
+    const versioned = `="${versionedUrl(asset, version)}"`;
+    const count = html.split(versioned).length - 1;
+    if (count !== 1) {
+      problems.push(`expected 1 ${asset} reference, found ${count}`);
+    }
+    if (new RegExp(`(?:href|src)="${escapeRegExp(asset)}"`).test(html)) {
+      problems.push(`unversioned ${asset}`);
+    }
+  }
+  return problems;
 }
 
 export function releaseManifest(version) {
@@ -151,32 +200,41 @@ export function releaseAssetProblems(html, version, specifiers) {
     }
   }
 
-  const cssCount = html.split(`href="styles.css?v=${version}"`).length - 1;
+  const stylesheet = `href="${versionedUrl(STYLESHEET, version)}"`;
+  const cssCount = html.split(stylesheet).length - 1;
   if (cssCount !== 2) {
     problems.push(`expected 2 stylesheet references, found ${cssCount}`);
   }
-  if (/href="styles\.css"/.test(html)) {
+  if (new RegExp(`href="${escapeRegExp(STYLESHEET)}"`).test(html)) {
     problems.push('unversioned stylesheet reference');
   }
-  if (!html.includes(`src="script.js?v=${version}"`)) {
+  if (!html.includes(`src="${versionedUrl(ENTRY_SCRIPT, version)}"`)) {
     problems.push('entry script is not versioned');
   }
-  if (/src="script\.js"/.test(html)) {
+  if (new RegExp(`src="${escapeRegExp(ENTRY_SCRIPT)}"`).test(html)) {
     problems.push('unversioned entry script');
   }
   return problems;
 }
 
 function writeReleaseAssets() {
-  const entryPath = resolve(root, 'script.js');
-  const specifiers = collectModuleSpecifiers(entryPath);
+  const entryPath = resolve(root, ENTRY_SCRIPT);
+  const specifiers = collectModuleSpecifiers(entryPath, readFileSync, root);
   const htmlPath = resolve(root, 'index.html');
   const html = stampHtml(readFileSync(htmlPath, 'utf8'), APP_VERSION, specifiers);
   const problems = releaseAssetProblems(html, APP_VERSION, specifiers);
-  if (problems.length > 0) {
-    throw new Error(problems.join('\n'));
+  const companionPath = resolve(root, COMPANION_HTML);
+  const companion = stampCompanionHtml(
+    readFileSync(companionPath, 'utf8'),
+    APP_VERSION
+  );
+  const companionProblems = companionAssetProblems(companion, APP_VERSION);
+  const all = [...problems, ...companionProblems];
+  if (all.length > 0) {
+    throw new Error(all.join('\n'));
   }
   writeFileSync(htmlPath, html);
+  writeFileSync(companionPath, companion);
   writeFileSync(
     resolve(root, 'release.json'),
     releaseManifest(APP_VERSION)
