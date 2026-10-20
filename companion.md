@@ -91,6 +91,8 @@ sequenceDiagram
 
 A companion page should use the latest authoritative snapshot, account for measured clock offset, and render a smooth local countdown rather than waiting for a server message every second. On reconnect, it should recover the latest snapshot. A locally calculated zero is **not** automatically authoritative dusk/end-of-day confirmation.
 
+A refused WebSocket upgrade does not tell the browser why it failed. If a player's socket closes before it opens, the page sends `GET /sessions/:code/status`. `{ "status": "active" }` keeps the usual retry, and the next snapshot replaces whatever the page was showing. `{ "status": "unavailable" }` means the code is ended, expired, unknown, or malformed. The page stops retrying, shows Expired, and stops advancing the countdown. It does not start another session. A network failure, timeout, HTTP 429, or HTTP 5xx stays on Offline and retries. Leaving the page does not ask. A late reply cannot change a newer connection, a different code, or a session the player has already left. The status body is only `active` or `unavailable`. It does not include the write token, the internal session id, or a snapshot, and it does not say which of those unavailable cases it was.
+
 ## Storyteller settings
 
 Companion Mode is configured in the main timer's Settings dialog, on the **Companion** tab. Both settings are off until the Storyteller turns them on, and they are stored with the other timer settings.

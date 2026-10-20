@@ -12,6 +12,7 @@ export const CHANGELOG = {
         'Companion page: A warning or end-of-day alert is not played for a moment that passed while the page was hidden, paused, or out of date. Speeding up the countdown no longer vibrates at 30 seconds.',
         'Companion page: If the day ended while the page was away, the current phase is shown with a short note instead of an old sound.',
         'Companion page: A slow connection can still correct the clock, and a ping that is never answered reconnects. Keep screen on is requested again if the browser releases it while the page is visible.',
+        'Companion page: If the connection fails because the session has ended or expired, the page stops reconnecting instead of retrying forever.',
       ],
     },
   },

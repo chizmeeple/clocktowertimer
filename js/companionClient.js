@@ -21,6 +21,7 @@ export { STALE_AFTER_MS };
 export const PONG_TIMEOUT_MS = 5_000;
 export const PING_RETRY_MS = 2_000;
 export const PING_KEEPALIVE_MS = 15_000;
+export const STATUS_TIMEOUT_MS = 4_000;
 
 function trimBase(baseUrl) {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -29,6 +30,7 @@ function trimBase(baseUrl) {
 export function createCompanionClient({
   baseUrl = '/companion-api',
   WebSocket: Socket = globalThis.WebSocket,
+  fetch: fetchImpl = globalThis.fetch.bind(globalThis),
   now = () => Date.now(),
   mono = () => globalThis.performance.now(),
   random = Math.random,
@@ -57,6 +59,10 @@ export function createCompanionClient({
   let pingAttempts = 0;
   let resyncing = false;
   let holdExtrapolation = false;
+  let frozenServerNow = null;
+  let statusToken = 0;
+  let statusTimer = null;
+  let statusAbort = null;
   const viewState = {
     connection: 'idle',
     fresh: false,
@@ -75,6 +81,13 @@ export function createCompanionClient({
     locallyComplete: false,
     confirmedComplete: false,
   };
+
+  function httpUrl(path) {
+    if (root.startsWith('ws://') || root.startsWith('wss://')) {
+      return `${root.replace(/^ws/, 'http')}${path}`;
+    }
+    return `${root}${path}`;
+  }
 
   function socketUrl(path) {
     if (root.startsWith('http://') || root.startsWith('https://')) {
@@ -110,6 +123,19 @@ export function createCompanionClient({
       cancel(pingTimer);
       pingTimer = null;
     }
+  }
+
+  // A late status response must not touch a newer socket, another code, or a
+  // session the player has already left.
+  function invalidateStatus() {
+    statusToken += 1;
+    if (statusTimer != null) {
+      cancel(statusTimer);
+      statusTimer = null;
+    }
+    const abort = statusAbort;
+    statusAbort = null;
+    abort?.abort();
   }
 
   function closeSocket() {
@@ -188,6 +214,7 @@ export function createCompanionClient({
     if (decision === 'invalid' || decision === 'older') return;
     resyncing = false;
     holdExtrapolation = false;
+    frozenServerNow = null;
     if (decision === 'accept') {
       viewState.problem = null;
       heldRev = message.rev;
@@ -229,9 +256,11 @@ export function createCompanionClient({
       established = false;
       resyncing = false;
       holdExtrapolation = false;
+      frozenServerNow = null;
       code = null;
       clearRetry();
       clearPing();
+      invalidateStatus();
       closeSocket();
       setConnection(message.reason === 'ended' ? 'ended' : 'expired');
     }
@@ -272,31 +301,112 @@ export function createCompanionClient({
     schedulePing(gen, PONG_TIMEOUT_MS);
   }
 
+  function finishUnavailable() {
+    let frozen = null;
+    try {
+      frozen = estimatedServerNow(mono());
+    } catch {
+      frozen = null;
+    }
+    intentional = true;
+    established = false;
+    resyncing = false;
+    holdExtrapolation = false;
+    frozenServerNow = frozen;
+    code = null;
+    clearRetry();
+    clearPing();
+    pendingPing = null;
+    closeSocket();
+    setConnection('expired');
+  }
+
+  function applyAvailability(gen, sessionCode, outcome) {
+    if (gen !== generation || intentional || code !== sessionCode || socket) return;
+    if (outcome === 'unavailable') {
+      finishUnavailable();
+      return;
+    }
+    armRetry();
+  }
+
+  // The browser cannot see why an upgrade failed. Ask once, then retry only
+  // when the code is still active or the answer was inconclusive.
+  function confirmStillActive(gen, sessionCode) {
+    invalidateStatus();
+    const token = statusToken;
+    const controller = new AbortController();
+    statusAbort = controller;
+    statusTimer = schedule(() => controller.abort(), STATUS_TIMEOUT_MS);
+    const finish = (outcome) => {
+      if (token !== statusToken) return;
+      statusToken += 1;
+      if (statusTimer != null) {
+        cancel(statusTimer);
+        statusTimer = null;
+      }
+      statusAbort = null;
+      applyAvailability(gen, sessionCode, outcome);
+    };
+    let request;
+    try {
+      request = fetchImpl(httpUrl(`/sessions/${encodeURIComponent(sessionCode)}/status`), {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+    } catch (error) {
+      request = Promise.reject(error);
+    }
+    Promise.resolve(request)
+      .then(async (response) => {
+        if (response.status === 410) return 'unavailable';
+        if (!response.ok) return 'unknown';
+        try {
+          const body = await response.json();
+          if (body?.status === 'active') return 'active';
+          if (body?.status === 'unavailable') return 'unavailable';
+        } catch {
+          return 'unknown';
+        }
+        return 'unknown';
+      })
+      .then(finish, () => finish('unknown'));
+  }
+
   function connect() {
     if (intentional || !code || socket) return;
     const gen = generation + 1;
     generation = gen;
     pingAttempts = 0;
-    let opened;
+    let openedSocket;
     try {
-      opened = new Socket(socketUrl(`/sessions/${code}`));
+      openedSocket = new Socket(socketUrl(`/sessions/${code}`));
     } catch {
       armRetry();
       return;
     }
-    socket = opened;
-    opened.onopen = () => {
+    socket = openedSocket;
+    let sawOpen = false;
+    let settledClose = false;
+    openedSocket.onopen = () => {
+      sawOpen = true;
       if (gen === generation) sendPing(gen);
     };
-    opened.onmessage = (event) => onMessage(gen, event);
-    opened.onerror = () => {};
-    opened.onclose = () => {
-      if (gen !== generation) return;
+    openedSocket.onmessage = (event) => onMessage(gen, event);
+    openedSocket.onerror = () => {};
+    openedSocket.onclose = () => {
+      if (settledClose || gen !== generation) return;
+      settledClose = true;
       socket = null;
       pendingPing = null;
       clearPing();
       if (intentional) return;
       setConnection('reconnecting');
+      if (!sawOpen && code) {
+        confirmStillActive(gen, code);
+        return;
+      }
       armRetry();
     };
     if (
@@ -318,9 +428,11 @@ export function createCompanionClient({
         projected = readCompanionCountdown({
           snapshot,
           referenceTime: timing.referenceTime,
-          now: holdExtrapolation
-            ? timing.referenceTime
-            : estimatedServerNow(monoNow),
+          now: frozenServerNow != null
+            ? frozenServerNow
+            : holdExtrapolation
+              ? timing.referenceTime
+              : estimatedServerNow(monoNow),
           offsetMs: 0,
         });
       } catch {
@@ -394,8 +506,10 @@ export function createCompanionClient({
     intentional = false;
     resyncing = false;
     holdExtrapolation = false;
+    frozenServerNow = null;
     attempt = 0;
     code = nextCode;
+    invalidateStatus();
     clearRetry();
     clearPing();
     closeSocket();
@@ -424,6 +538,8 @@ export function createCompanionClient({
     established = false;
     resyncing = false;
     holdExtrapolation = false;
+    frozenServerNow = null;
+    invalidateStatus();
     clearRetry();
     clearPing();
     closeSocket();
@@ -449,9 +565,11 @@ export function createCompanionClient({
     }
     resyncing = true;
     holdExtrapolation = true;
+    frozenServerNow = null;
     monoBase = null;
     serverBase = null;
     pendingPing = null;
+    invalidateStatus();
     clearRetry();
     clearPing();
     closeSocket();

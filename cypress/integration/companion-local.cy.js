@@ -67,7 +67,7 @@ describe('Local companion session', () => {
     visitDev();
     cy.get('#companionDev').should('be.visible');
     cy.get('#companionDevCode').should('have.text', '—');
-    cy.get('#companionDevStatus').should('have.text', 'Idle');
+    cy.get('#companionDevStatus').should('have.text', 'idle');
     cy.get('#startBtn').should('exist');
 
     cy.get('#companionDevStart').click();
