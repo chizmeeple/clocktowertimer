@@ -576,6 +576,13 @@ describe('companion page policy', () => {
       page,
       /https:\/\/clocktower-companion\.redmeeple\.workers\.dev/,
     );
+    const script = readFileSync(
+      new URL('../js/companion-page.js', import.meta.url),
+      'utf8',
+    );
+    assert.match(page, /id="footerVersion"><\/span>\s*Made by/);
+    assert.match(script, /import \{ APP_VERSION \} from '\.\/changelog\.js'/);
+    assert.match(script, /footerVersion\.textContent = `v\$\{APP_VERSION\} ·`/);
     assert.match(page, /href="https:\/\/arcane-scripts\.net"/);
     assert.match(page, /rel="noopener noreferrer"/);
     assert.match(page, />Arcane Scripts</);

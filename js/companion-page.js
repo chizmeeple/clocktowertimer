@@ -1,3 +1,4 @@
+import { APP_VERSION } from './changelog.js';
 import { nextCompanionAlert, nextDayStart } from './companionAlerts.js';
 import { createCompanionSounds } from './companionSound.js';
 import {
@@ -42,6 +43,8 @@ const qrCodeText = document.querySelector('#qrCode');
 const qrClose = document.querySelector('#qrClose');
 const footerSession = document.querySelector('#footerSession');
 const footerSessionCode = document.querySelector('#footerSessionCode');
+const footerVersion = document.querySelector('#footerVersion');
+footerVersion.textContent = `v${APP_VERSION} ·`;
 const countNodes = {
   townsfolk: document.querySelector('#townsfolk'),
   outsider: document.querySelector('#outsider'),
