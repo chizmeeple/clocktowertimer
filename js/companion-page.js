@@ -31,6 +31,8 @@ const alertsInput = document.querySelector('#alerts');
 const alertOption = document.querySelector('#alertOption');
 const testSoundButton = document.querySelector('#testSound');
 const soundStatus = document.querySelector('#soundStatus');
+const testVibrationButton = document.querySelector('#testVibration');
+const vibrationStatus = document.querySelector('#vibrationStatus');
 const wakeInput = document.querySelector('#wake');
 const wakeNote = document.querySelector('#wakeNote');
 const showQrButton = document.querySelector('#showQr');
@@ -50,7 +52,6 @@ const countNodes = {
 
 const canSound = typeof Audio === 'function';
 const canVibrate = typeof navigator.vibrate === 'function';
-if (!canSound) testSoundButton.hidden = true;
 if (!canSound && !canVibrate) alertOption.hidden = true;
 const sounds = canSound
   ? createCompanionSounds({
@@ -246,6 +247,10 @@ function showSoundStatus(label) {
   text(soundStatus, label || '');
 }
 
+function showVibrationStatus(label) {
+  text(vibrationStatus, label || '');
+}
+
 function showCodeError(textValue) {
   codeError.hidden = !textValue;
   text(codeError, textValue || '');
@@ -310,7 +315,26 @@ alertsInput.addEventListener('change', () => {
 });
 
 testSoundButton.addEventListener('click', () => {
-  sounds?.preview(showSoundStatus);
+  if (!canSound) {
+    showSoundStatus('This browser cannot play sound.');
+    return;
+  }
+  sounds.preview(showSoundStatus);
+});
+
+testVibrationButton.addEventListener('click', () => {
+  if (!canVibrate) {
+    showVibrationStatus('This browser cannot vibrate.');
+    return;
+  }
+  try {
+    const accepted = navigator.vibrate([200, 100, 200, 100, 200]);
+    showVibrationStatus(
+      accepted ? 'Vibration requested.' : 'The browser did not vibrate.',
+    );
+  } catch {
+    showVibrationStatus('The browser did not vibrate.');
+  }
 });
 
 wakeInput.addEventListener('change', () => {

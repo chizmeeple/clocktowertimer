@@ -13,6 +13,7 @@ export const CHANGELOG = {
         'Companion page: If the day ended while the page was away, the current phase is shown with a short note instead of an old sound.',
         'Companion page: A slow connection can still correct the clock, and a ping that is never answered reconnects. Keep screen on is requested again if the browser releases it while the page is visible.',
         'Companion page: If the connection fails because the session has ended or expired, the page stops reconnecting instead of retrying forever.',
+        'Companion page: Test vibration requests a short pattern. Test sound and Test vibration stay available when the browser cannot play them, and explain why.',
       ],
     },
   },

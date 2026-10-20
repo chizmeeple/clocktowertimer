@@ -152,6 +152,10 @@ describe('Companion page', () => {
     cy.get('#alerts').should('be.visible').and('not.be.checked');
     cy.get('#alertNote').should('be.visible');
     cy.get('#testSound').should('be.visible').and('have.text', 'Test sound');
+    cy.get('#testVibration')
+      .should('be.visible')
+      .and('have.text', 'Test vibration');
+    cy.get('#vibrationStatus').should('have.attr', 'aria-live', 'polite');
     cy.get('#wakeOption').should('be.visible').and('contain', 'Keep screen on');
     cy.get('#wake').should('be.visible').and('not.be.checked');
 
@@ -747,6 +751,176 @@ describe('Companion countdown sounds', () => {
       expect(audible(win)).to.have.length(0);
     });
     cy.get('#headline').should('have.text', '00:00');
+  });
+});
+
+describe('Companion alert test buttons', () => {
+  function replaceVibrate(win, value) {
+    Object.defineProperty(win.navigator, 'vibrate', {
+      configurable: true,
+      writable: true,
+      value,
+    });
+  }
+
+  it('explains when sound is unavailable and keeps the button visible', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        Object.defineProperty(win, 'Audio', {
+          configurable: true,
+          writable: true,
+          value: undefined,
+        });
+        replaceVibrate(win, () => true);
+      },
+    });
+    show({});
+    cy.get('#testSound').should('be.visible').click();
+    cy.get('#soundStatus')
+      .should('be.visible')
+      .and('have.text', 'This browser cannot play sound.');
+    cy.get('#alertOption').should('be.visible');
+    cy.get('#testVibration').should('be.visible');
+  });
+
+  it('explains when vibration is unavailable and keeps the button visible', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        replaceVibrate(win, undefined);
+      },
+    });
+    show({});
+    cy.get('#testVibration').should('be.visible').click();
+    cy.get('#vibrationStatus')
+      .should('be.visible')
+      .and('have.attr', 'aria-live', 'polite')
+      .and('have.text', 'This browser cannot vibrate.');
+    cy.get('#testSound').should('be.visible');
+    cy.get('#alertOption').should('be.visible');
+  });
+
+  it('hides the alert preference only when neither sound nor vibration exists', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        Object.defineProperty(win, 'Audio', {
+          configurable: true,
+          writable: true,
+          value: undefined,
+        });
+        replaceVibrate(win, undefined);
+      },
+    });
+    show({});
+    cy.get('#alertOption').should('not.be.visible');
+    cy.get('#testSound').should('be.visible');
+    cy.get('#testVibration').should('be.visible');
+    cy.get('#testSound').click();
+    cy.get('#soundStatus').should(
+      'have.text',
+      'This browser cannot play sound.',
+    );
+    cy.get('#testVibration').click();
+    cy.get('#vibrationStatus').should(
+      'have.text',
+      'This browser cannot vibrate.',
+    );
+  });
+
+  it('requests a short pattern without claiming the device vibrated', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        const calls = [];
+        win.__vibrations = calls;
+        replaceVibrate(win, (pattern) => {
+          calls.push(Array.from(pattern));
+          return true;
+        });
+      },
+    });
+    show({});
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#testVibration').click();
+    cy.get('#vibrationStatus').should('have.text', 'Vibration requested.');
+    cy.get('#vibrationStatus').should('not.contain', 'device');
+    cy.get('#alerts').should('not.be.checked');
+    cy.get('#headline').should('have.text', '04:45');
+    cy.window().should((win) => {
+      expect(win.__vibrations).to.deep.equal([[200, 100, 200, 100, 200]]);
+    });
+  });
+
+  it('explains when the browser rejects the vibration request', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        const calls = [];
+        win.__vibrations = calls;
+        replaceVibrate(win, (pattern) => {
+          calls.push(Array.from(pattern));
+          return false;
+        });
+      },
+    });
+    show({});
+    cy.get('#testVibration').click();
+    cy.get('#vibrationStatus').should(
+      'have.text',
+      'The browser did not vibrate.',
+    );
+    cy.window()
+      .its('__vibrations')
+      .should('deep.equal', [[200, 100, 200, 100, 200]]);
+  });
+
+  it('explains when the vibration request throws', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        replaceVibrate(win, () => {
+          throw new Error('blocked');
+        });
+      },
+    });
+    show({});
+    cy.get('#testVibration').click();
+    cy.get('#vibrationStatus').should(
+      'have.text',
+      'The browser did not vibrate.',
+    );
+    cy.get('#headline').should('have.text', '04:45');
+  });
+
+  it('keeps the timer warning and zero vibration patterns', () => {
+    cy.visit('/c', {
+      onBeforeLoad(win) {
+        const calls = [];
+        win.__vibrations = calls;
+        win.HTMLAudioElement.prototype.play = function watchPlay() {
+          return Promise.resolve();
+        };
+        replaceVibrate(win, (pattern) => {
+          calls.push(Array.from(pattern));
+          return true;
+        });
+      },
+    });
+    show({ displaySeconds: 40 });
+    cy.get('#alerts').check();
+    show({ displaySeconds: 20 });
+    cy.window().should((win) => {
+      expect(win.__vibrations).to.deep.equal([[200, 100, 200, 100, 200]]);
+    });
+    show({ displaySeconds: 0, locallyComplete: true });
+    cy.window().should((win) => {
+      expect(win.__vibrations).to.deep.equal([
+        [200, 100, 200, 100, 200],
+        [300, 150, 300, 150, 500],
+      ]);
+    });
+    cy.get('#vibrationStatus').should('have.text', '');
+    cy.get('#testVibration').click();
+    cy.window().should((win) => {
+      expect(win.__vibrations[2]).to.deep.equal([200, 100, 200, 100, 200]);
+    });
+    cy.get('#vibrationStatus').should('have.text', 'Vibration requested.');
   });
 });
 

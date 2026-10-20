@@ -344,7 +344,7 @@
   gap: 0.35rem 0.75rem;
 }
 
-#testSound {
+.sound-test button {
   flex: none;
   min-height: 2.75rem;
   padding: 0.35rem 0.75rem;
@@ -359,11 +359,11 @@
   cursor: pointer;
 }
 
-#testSound:hover {
+.sound-test button:hover {
   background: var(--colour-button-secondary-hover);
 }
 
-#soundStatus:empty {
+.sound-test .option-note:empty {
   display: none;
 }
 
@@ -446,7 +446,7 @@
     padding: 0.35rem 0.55rem;
   }
 
-  #testSound {
+  .sound-test button {
     min-height: 2.25rem;
   }
 
