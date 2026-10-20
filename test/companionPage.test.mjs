@@ -5,6 +5,7 @@ import { describe, it } from 'node:test';
 import {
   COMPANION_WARNING_SECONDS,
   nextCompanionAlert,
+  nextDayStart,
 } from '../js/companionAlerts.js';
 import {
   companionBaseUrl,
@@ -269,6 +270,12 @@ describe('companion alerts', () => {
       true,
     );
     assert.equal(skippedWarning.alert, 'zero');
+    const skippedToTwelve = nextCompanionAlert(
+      { previous: 40, rev: 1, phase: 'day' },
+      view({ displaySeconds: 12 }),
+      true,
+    );
+    assert.equal(skippedToTwelve.alert, 'warning');
 
     const staleGap = nextCompanionAlert(
       { previous: 40, rev: 1, phase: 'day' },
@@ -360,6 +367,143 @@ describe('companion alerts', () => {
       true,
     );
     assert.equal(acceleratedZero.alert, 'zero');
+
+    const endedEarly = nextCompanionAlert(
+      { previous: 4, rev: 1, phase: 'day' },
+      view({
+        phase: 'night',
+        timerStatus: 'finished',
+        kind: null,
+        rate: 0,
+        displaySeconds: 0,
+        confirmedComplete: true,
+        rev: 2,
+      }),
+      false,
+    );
+    assert.equal(endedEarly.alert, 'zero');
+    assert.equal(
+      nextCompanionAlert(endedEarly, view({
+        phase: 'night',
+        timerStatus: 'finished',
+        kind: null,
+        rate: 0,
+        displaySeconds: 0,
+        confirmedComplete: true,
+        rev: 2,
+      }), false).alert,
+      null,
+    );
+  });
+});
+
+describe('companion day start', () => {
+  function remember(overrides) {
+    return nextDayStart(null, view(overrides), true).previous;
+  }
+
+  it('plays once for a preset start and once for wake up, not for a running edit', () => {
+    const waiting = remember({
+      phase: 'pregame',
+      timerStatus: 'idle',
+      kind: null,
+      displaySeconds: null,
+    });
+    const preset = nextDayStart(waiting, view({ displaySeconds: 285 }), true);
+    assert.equal(preset.started, true);
+    const ticking = nextDayStart(
+      preset.previous,
+      view({ displaySeconds: 280 }),
+      true,
+    );
+    assert.equal(ticking.started, false);
+    const edited = nextDayStart(
+      ticking.previous,
+      view({ displaySeconds: 600, rev: 2 }),
+      true,
+    );
+    assert.equal(edited.started, false);
+
+    const night = nextDayStart(
+      edited.previous,
+      view({
+        phase: 'night',
+        timerStatus: 'finished',
+        kind: null,
+        rate: 0,
+        displaySeconds: 0,
+        confirmedComplete: true,
+        rev: 3,
+      }),
+      true,
+    );
+    assert.equal(night.started, false);
+    const wake = nextDayStart(
+      night.previous,
+      view({
+        phase: 'wake',
+        kind: 'wake',
+        timerStatus: 'running',
+        displaySeconds: 6,
+        day: 2,
+        rev: 4,
+      }),
+      true,
+    );
+    assert.equal(wake.started, true);
+    const repeatedWake = nextDayStart(
+      wake.previous,
+      view({
+        phase: 'wake',
+        kind: 'wake',
+        timerStatus: 'running',
+        displaySeconds: 4,
+        day: 2,
+        rev: 4,
+      }),
+      true,
+    );
+    assert.equal(repeatedWake.started, false);
+    const dayAfterWake = nextDayStart(
+      wake.previous,
+      view({ displaySeconds: 285, day: 2, rev: 5 }),
+      true,
+    );
+    assert.equal(dayAfterWake.started, false);
+  });
+
+  it('stays quiet for the first sample, a resume, a hidden page, and a stale jump', () => {
+    assert.equal(
+      nextDayStart(null, view({ phase: 'wake', kind: 'wake', displaySeconds: 6 }), true)
+        .started,
+      false,
+    );
+    const paused = nextDayStart(
+      { phase: 'day', day: 1 },
+      view({ timerStatus: 'paused', displaySeconds: 40 }),
+      true,
+    );
+    assert.equal(paused.started, false);
+    assert.equal(
+      nextDayStart(paused.previous, view({ displaySeconds: 40, rev: 2 }), true)
+        .started,
+      false,
+    );
+    assert.equal(
+      nextDayStart(
+        { phase: 'night', day: 1 },
+        view({ phase: 'wake', kind: 'wake', displaySeconds: 6, rev: 2 }),
+        false,
+      ).started,
+      false,
+    );
+    const stale = nextDayStart(
+      { phase: 'night', day: 1 },
+      view({ fresh: false, stale: true, displaySeconds: 285 }),
+      true,
+    );
+    assert.equal(stale.started, false);
+    assert.equal(stale.previous, null);
   });
 });
 
