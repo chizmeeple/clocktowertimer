@@ -56,8 +56,9 @@ function harness({ supported = true, visibility = 'visible' } = {}) {
           released = true;
           return Promise.resolve();
         },
-        addEventListener() {
+        addEventListener(_type, fn) {
           requests[index].listeners += 1;
+          requests[index].onRelease = fn;
         },
       };
       requests[index].sentinel = sentinel;
@@ -136,6 +137,24 @@ describe('companion wake lock', () => {
     await pending;
     await env.controller.setEnabled(false);
     await env.controller.onVisibilityChange();
+  });
+
+  it('asks again when the browser releases the lock while the page is visible', async () => {
+    const env = harness();
+    const first = env.controller.setEnabled(true);
+    await flush();
+    env.grant();
+    await first;
+    env.requests[0].onRelease();
+    await flush();
+    assert.equal(env.requests.length, 2);
+    env.grant();
+    await flush();
+
+    env.visibility = 'hidden';
+    env.requests[1].onRelease();
+    await flush();
+    assert.equal(env.requests.length, 2);
   });
 
   it('drops a lock that arrives after the option was turned off', async () => {

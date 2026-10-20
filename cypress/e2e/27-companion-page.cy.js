@@ -425,6 +425,45 @@ describe('Companion page', () => {
     show({});
     cy.get('#headline').should('have.text', '04:45');
   });
+
+  it('notes a day that ended during a gap and stays quiet for a live change', () => {
+    cy.visit('/c');
+    show({ phase: 'day', day: 2, displaySeconds: 40 });
+    show({
+      phase: 'night',
+      day: 2,
+      confirmedComplete: true,
+      timerStatus: 'finished',
+      displaySeconds: 0,
+    });
+    cy.get('#headline').should('have.text', 'Back to Town');
+    cy.get('#message').should('not.contain', 'away');
+
+    show({ phase: 'day', day: 3, displaySeconds: 50 });
+    show({
+      connection: 'reconnecting',
+      fresh: false,
+      stale: true,
+      phase: 'day',
+      day: 3,
+    });
+    show({
+      connection: 'live',
+      fresh: true,
+      stale: false,
+      phase: 'night',
+      day: 3,
+      confirmedComplete: true,
+      timerStatus: 'finished',
+      displaySeconds: 0,
+    });
+    cy.get('#headline').should('have.text', 'Back to Town');
+    cy.get('#status').should('have.text', 'Live');
+    cy.get('#message').should(
+      'contain',
+      'The day ended while this page was away.',
+    );
+  });
 });
 
 describe('Companion QR sharing', () => {

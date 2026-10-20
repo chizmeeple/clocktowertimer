@@ -120,6 +120,15 @@ async function postSession(extraHeaders = {}) {
   return { response, body: await response.json() };
 }
 
+async function readStatus(code, extraHeaders = {}) {
+  const response = await exports.default.fetch(
+    new Request(`${ORIGIN}/sessions/${code}/status`, {
+      headers: browserHeaders(extraHeaders),
+    })
+  );
+  return { response, body: await response.json() };
+}
+
 async function openSocket(path, extraHeaders = {}) {
   return exports.default.fetch(
     new Request(`${ORIGIN}${path}`, {
@@ -805,6 +814,127 @@ describe('companion sessions', () => {
     const second = await postSession();
     expect(second.response.status).toBe(201);
     expect(second.body.code).toBe('GHJKMN');
+  });
+
+  it('reports an active session without private data', async () => {
+    const { body } = await postSession();
+    const storyteller = await connectStoryteller(body.code, body.writeToken);
+    storyteller.ws.send(JSON.stringify({
+      type: 'publish',
+      state: runningDay(42_000, 1),
+    }));
+    await storyteller.inbox.next();
+    const rows = await codeRows();
+    const { response, body: status } = await readStatus(body.code);
+    expect(response.status).toBe(200);
+    expect(status).toEqual({ status: 'active' });
+    expect(Object.keys(status)).toEqual(['status']);
+    expect(JSON.stringify(status)).not.toContain(body.writeToken);
+    expect(JSON.stringify(status)).not.toContain(rows[0].session_id);
+    expect(response.headers.get('cache-control')).toContain('no-store');
+    expect(response.headers.get('access-control-allow-origin')).toBe(BROWSER_ORIGIN);
+
+    const plain = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions/${body.code}`, { headers: browserHeaders() })
+    );
+    expect(plain.status).toBe(426);
+    const leaked = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions/${body.code}/status?token=${body.writeToken}`, {
+        headers: browserHeaders(),
+      })
+    );
+    expect(leaked.status).toBe(400);
+    expect(await leaked.json()).toEqual({ error: 'token-in-url' });
+
+    const reader = await connectReader(body.code);
+    expectSnapshot(reader.first, { rev: 1, remainingMs: 42_000, traveller: 1 });
+    expect(await codeRows()).toEqual(rows);
+  });
+
+  it('reports an ended session as unavailable and does not revive it', async () => {
+    const { body } = await postSession();
+    const storyteller = await connectStoryteller(body.code, body.writeToken);
+    storyteller.ws.send(JSON.stringify({ type: 'end' }));
+    expect(await storyteller.inbox.next()).toEqual({
+      type: 'session-ended',
+      reason: 'ended',
+    });
+    const first = await readStatus(body.code);
+    expect(first.response.status).toBe(200);
+    expect(first.body).toEqual({ status: 'unavailable' });
+    const second = await readStatus(body.code);
+    expect(second.body).toEqual({ status: 'unavailable' });
+    expect(await codeRows()).toEqual([
+      expect.objectContaining({ code: body.code, status: 'retired' }),
+    ]);
+    expect((await openSocket(`/sessions/${body.code}`)).status).toBe(404);
+  });
+
+  it('reports an expired session as unavailable', async () => {
+    const { body } = await postSession();
+    const stub = await sessionStub(body.code);
+    await runInDurableObject(stub, (_instance, state) => {
+      const past = Date.now() - IDLE_MS - 1000;
+      state.storage.sql.exec(
+        'UPDATE meta SET created_at = ?, last_publish_at = ? WHERE id = 1',
+        past,
+        past
+      );
+    });
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+    const { response, body: status } = await readStatus(body.code);
+    expect(response.status).toBe(200);
+    expect(status).toEqual({ status: 'unavailable' });
+    expect(await codeRows()).toEqual([
+      expect.objectContaining({ code: body.code, status: 'retired' }),
+    ]);
+  });
+
+  it('uses one unavailable answer for unknown and malformed codes', async () => {
+    const before = await codeRows();
+    for (const code of ['ABCDEF', 'IIIIII', 'nope', 'ABC', 'ABCDEFG']) {
+      const { response, body } = await readStatus(code);
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ status: 'unavailable' });
+      expect(Object.keys(body)).toEqual(['status']);
+    }
+    expect(await codeRows()).toEqual(before);
+  });
+
+  it('checks origin on a status read and allows a same-origin GET', async () => {
+    const { body } = await postSession();
+    const foreign = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions/${body.code}/status`, {
+        headers: { Origin: 'https://evil.example' },
+      })
+    );
+    expect(foreign.status).toBe(403);
+    expect(await foreign.json()).toEqual({ error: 'origin-rejected' });
+    expect(foreign.headers.get('access-control-allow-origin')).toBeNull();
+
+    const missing = await exports.default.fetch(
+      new Request(`${ORIGIN}/sessions/${body.code}/status`)
+    );
+    expect(missing.status).toBe(200);
+    expect(await missing.json()).toEqual({ status: 'active' });
+    expect(missing.headers.get('access-control-allow-origin')).toBeNull();
+  });
+
+  it('rate-limits status reads with the join budget', async () => {
+    const reader = { 'CF-Connecting-IP': '203.0.113.40' };
+    let limited = false;
+    for (let index = 0; index < 70; index += 1) {
+      const { response, body } = await readStatus('ABCDEF', reader);
+      if (response.status === 429) {
+        limited = true;
+        expect(body).toEqual({ error: 'join-limit' });
+        break;
+      }
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ status: 'unavailable' });
+    }
+    expect(limited).toBe(true);
+    expect(await codeRows()).toEqual([]);
   });
 
   it('limits session creation and missed codes from one address', async () => {

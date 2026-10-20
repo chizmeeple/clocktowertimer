@@ -74,6 +74,21 @@ export class SessionDirectory extends DurableObject {
     return { sessionId: rows[0].session_id };
   }
 
+  // Read-only. The session id is not returned, and nothing is inserted or
+  // revived. Retired, unknown, and malformed codes share one answer.
+  async availability(code) {
+    if (typeof code !== 'string' || !CODE_PATTERN.test(code)) {
+      return { availability: 'unavailable' };
+    }
+    const rows = this.ctx.storage.sql
+      .exec('SELECT status FROM codes WHERE code = ?', code)
+      .toArray();
+    if (rows.length === 1 && rows[0].status === 'active') {
+      return { availability: 'active' };
+    }
+    return { availability: 'unavailable' };
+  }
+
   // Idempotent. A repeated cleanup, or a cleanup whose session id does not
   // match, cannot retire a different live session.
   async retire(code, sessionId) {

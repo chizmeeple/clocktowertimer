@@ -159,7 +159,7 @@ The proxy answers a refused upgrade with that HTTP status and then closes the so
 - `http://localhost:8006`
 - `http://127.0.0.1:8006`
 
-There is no wildcard. `POST /sessions` and every WebSocket upgrade must send one of these `Origin` values. Anything else gets `403` `origin-rejected` and does not touch the directory. The response does not use `Access-Control-Allow-Origin: *`. A request with an allowed origin receives that origin back, plus `Vary: Origin`.
+There is no wildcard. `POST /sessions` and every WebSocket upgrade must send one of these `Origin` values. Anything else gets `403` `origin-rejected` and does not touch the directory. `GET /sessions/:code/status` rejects a present `Origin` that is not on the list, and answers when `Origin` is absent. The response does not use `Access-Control-Allow-Origin: *`. A request with an allowed origin receives that origin back, plus `Vary: Origin`.
 
 `OPTIONS /sessions` answers a preflight with `204`, `Access-Control-Allow-Methods: POST, OPTIONS`, and `Access-Control-Allow-Headers: Content-Type`. Credentials are not allowed. The write token is not a cookie.
 
@@ -184,7 +184,7 @@ Two Workers Rate Limiting bindings are in the Wrangler config. They do not requi
 | Binding | Limit | What it counts |
 | --- | --- | --- |
 | `CREATE_BUDGET` | 10 per 60 seconds | `POST /sessions` for one `CF-Connecting-IP` |
-| `GUESS_BUDGET` | 60 per 60 seconds | WebSocket joins for one `CF-Connecting-IP`, including joins that succeed |
+| `GUESS_BUDGET` | 60 per 60 seconds | WebSocket joins and `GET /sessions/:code/status` for one `CF-Connecting-IP` |
 
 Counters are per Cloudflare location, and they are eventually consistent. They are not a global exact total. The key is `CF-Connecting-IP`, which Cloudflare sets at the edge. The worker ignores any address the client types into another header. Calls with no platform address, which is the case in the local test runner, are not piled into one bucket.
 
@@ -201,8 +201,9 @@ Six Crockford characters is about a billion codes. Sixty guesses a minute from o
 - Codes come from `crypto.getRandomValues`. Each byte is masked to the 32-character alphabet, which is uniform.
 - Reserve is a read then an insert with no `await` between them, on a Durable Object that runs one request at a time. Two creates cannot take the same code.
 - A row is retired in place. Lookup only returns `active` rows. A retired code is never inserted again, so it cannot point at a later session.
-- There is no list of sessions. `GET /sessions` is 404. A well-formed code without a WebSocket upgrade is 426 and does not look the code up.
-- A failed join does not call `idFromName` and does not create a session object.
+- There is no list of sessions. `GET /sessions` is 404. A well-formed code without a WebSocket upgrade is 426 and does not look the code up, except `GET /sessions/:code/status`.
+- `GET /sessions/:code/status` reads the directory and returns `{ "status": "active" }` or `{ "status": "unavailable" }`. It does not create a session, wake one, or change a row. The body has no write token, session id, or snapshot. Retired, unknown, and malformed codes all return `unavailable`, so a retired code cannot be told from one that never existed and cannot be reused. A request that sends `Origin` must be on the allowlist. A same-origin GET often omits `Origin`; that request is still answered, because a cross-origin browser cannot omit it. Each read spends `GUESS_BUDGET`, the same limit as a join. HTTP 429 is `{ "error": "join-limit" }`.
+- A failed join does not call `idFromName` and does not create a session object. A malformed status read does not call the directory either.
 - End, idle expiry, and the 12-hour cap all clear the token hash, delete the snapshot, retire the directory row, and delete the alarm. Retire matches code and session id, and only an `active` row, so a repeated cleanup cannot retire a different live session.
 - After the object is evicted, the constructor arms the earliest remaining alarm again.
 

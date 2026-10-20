@@ -217,4 +217,30 @@ describe('storyteller transport', () => {
     socket.receive({ type: 'published', rev: 9, serverTime: 1 });
     assert.equal(transport.status.acceptedRev, null);
   });
+
+  it('uses a slow ping as a coarse offset and retries one that is slower still', async () => {
+    const coarse = harness();
+    await coarse.transport.start();
+    await Promise.resolve();
+    const socket = FakeSocket.sockets[0];
+    socket.receive({ type: 'authenticated' });
+    const first = socket.sent.find((message) => message.type === 'ping');
+    coarse.wall = 5_800;
+    socket.receive({ type: 'pong', id: first.id, serverTime: 5_400 });
+    assert.equal(socket.sent.filter((message) => message.type === 'ping').length, 1);
+    assert.equal(coarse.transport.status.offsetMs, 0);
+    assert.equal(coarse.republished, 1);
+
+    const slower = harness();
+    await slower.transport.start();
+    await Promise.resolve();
+    const again = FakeSocket.sockets.at(-1);
+    again.receive({ type: 'authenticated' });
+    const ping = again.sent.find((message) => message.type === 'ping');
+    slower.wall = 9_500;
+    again.receive({ type: 'pong', id: ping.id, serverTime: 7_000 });
+    assert.equal(again.sent.filter((message) => message.type === 'ping').length, 2);
+    assert.equal(slower.transport.status.offsetMs, null);
+    assert.equal(slower.clock.pending.length, 0);
+  });
 });

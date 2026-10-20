@@ -7,6 +7,7 @@ import { readCompanionCountdown } from './companionClock.js';
 import {
   STALE_AFTER_MS,
   acceptSample,
+  COARSE_RTT_MS,
   measureRoundTrip,
   nextRetryDelay,
   offsetFromSamples,
@@ -17,6 +18,11 @@ import {
 
 export { STALE_AFTER_MS };
 
+export const PONG_TIMEOUT_MS = 5_000;
+export const PING_RETRY_MS = 2_000;
+export const PING_KEEPALIVE_MS = 15_000;
+export const STATUS_TIMEOUT_MS = 4_000;
+
 function trimBase(baseUrl) {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 }
@@ -24,6 +30,7 @@ function trimBase(baseUrl) {
 export function createCompanionClient({
   baseUrl = '/companion-api',
   WebSocket: Socket = globalThis.WebSocket,
+  fetch: fetchImpl = globalThis.fetch.bind(globalThis),
   now = () => Date.now(),
   mono = () => globalThis.performance.now(),
   random = Math.random,
@@ -48,6 +55,14 @@ export function createCompanionClient({
   let monoBase = null;
   let serverBase = null;
   let pendingPing = null;
+  let pingTimer = null;
+  let pingAttempts = 0;
+  let resyncing = false;
+  let holdExtrapolation = false;
+  let frozenServerNow = null;
+  let statusToken = 0;
+  let statusTimer = null;
+  let statusAbort = null;
   const viewState = {
     connection: 'idle',
     fresh: false,
@@ -66,6 +81,13 @@ export function createCompanionClient({
     locallyComplete: false,
     confirmedComplete: false,
   };
+
+  function httpUrl(path) {
+    if (root.startsWith('ws://') || root.startsWith('wss://')) {
+      return `${root.replace(/^ws/, 'http')}${path}`;
+    }
+    return `${root}${path}`;
+  }
 
   function socketUrl(path) {
     if (root.startsWith('http://') || root.startsWith('https://')) {
@@ -94,6 +116,26 @@ export function createCompanionClient({
       cancel(retryTimer);
       retryTimer = null;
     }
+  }
+
+  function clearPing() {
+    if (pingTimer != null) {
+      cancel(pingTimer);
+      pingTimer = null;
+    }
+  }
+
+  // A late status response must not touch a newer socket, another code, or a
+  // session the player has already left.
+  function invalidateStatus() {
+    statusToken += 1;
+    if (statusTimer != null) {
+      cancel(statusTimer);
+      statusTimer = null;
+    }
+    const abort = statusAbort;
+    statusAbort = null;
+    abort?.abort();
   }
 
   function closeSocket() {
@@ -132,25 +174,36 @@ export function createCompanionClient({
 
   function noteSample(message) {
     if (!pendingPing || pendingPing.id !== message.id) return;
-    const sample = measureRoundTrip({
+    const trip = {
       sentAt: pendingPing.sentAt,
       receivedAt: now(),
       serverTime: message.serverTime,
-    });
+    };
+    let sample = measureRoundTrip(trip);
+    if (!sample && offsetMs == null) sample = measureRoundTrip(trip, COARSE_RTT_MS);
     pendingPing = null;
     samples = acceptSample(samples, sample);
     const next = offsetFromSamples(samples);
-    if (next == null) return;
+    if (next == null) {
+      schedulePing(
+        generation,
+        pingAttempts >= 4 ? PING_KEEPALIVE_MS : PING_RETRY_MS,
+      );
+      return;
+    }
+    pingAttempts = 0;
     offsetMs = slewOffset(offsetMs, next);
     const monoNow = mono();
     serverBase = now() + offsetMs;
     monoBase = monoNow;
     emit();
+    schedulePing(generation, PING_KEEPALIVE_MS);
   }
 
   function applySnapshot(message) {
     const validated = validateCompanionState(message.state);
     if (!validated.ok) {
+      resyncing = false;
       if (validated.reason === 'unsupported-version') {
         viewState.problem = 'unsupported-version';
         emit();
@@ -159,6 +212,9 @@ export function createCompanionClient({
     }
     const decision = decideRevision(heldRev, message.rev);
     if (decision === 'invalid' || decision === 'older') return;
+    resyncing = false;
+    holdExtrapolation = false;
+    frozenServerNow = null;
     if (decision === 'accept') {
       viewState.problem = null;
       heldRev = message.rev;
@@ -190,6 +246,7 @@ export function createCompanionClient({
       return;
     }
     if (message.type === 'waiting') {
+      resyncing = false;
       receivedMono = mono();
       emit();
       return;
@@ -197,52 +254,167 @@ export function createCompanionClient({
     if (message.type === 'session-ended') {
       intentional = true;
       established = false;
+      resyncing = false;
+      holdExtrapolation = false;
+      frozenServerNow = null;
       code = null;
       clearRetry();
+      clearPing();
+      invalidateStatus();
       closeSocket();
       setConnection(message.reason === 'ended' ? 'ended' : 'expired');
     }
   }
 
+  function schedulePing(gen, delay) {
+    clearPing();
+    pingTimer = schedule(() => {
+      pingTimer = null;
+      if (gen !== generation || intentional || !socket) return;
+      if (pendingPing) {
+        pendingPing = null;
+        holdExtrapolation = true;
+        resyncing = true;
+        monoBase = null;
+        serverBase = null;
+        closeSocket();
+        if (!code) return;
+        setConnection('reconnecting');
+        armRetry();
+        return;
+      }
+      sendPing(gen);
+    }, delay);
+  }
+
   function sendPing(gen) {
-    if (gen !== generation || !socket) return;
+    if (gen !== generation || !socket || socket.readyState !== Socket.OPEN) return;
+    pingAttempts += 1;
     const id = `c${now().toString(36)}${Math.floor(random() * 1e6).toString(36)}`;
     pendingPing = { id, sentAt: now() };
     try {
       socket.send(JSON.stringify({ type: 'ping', id }));
     } catch {
       pendingPing = null;
+      return;
     }
+    schedulePing(gen, PONG_TIMEOUT_MS);
+  }
+
+  function finishUnavailable() {
+    let frozen = null;
+    try {
+      frozen = estimatedServerNow(mono());
+    } catch {
+      frozen = null;
+    }
+    intentional = true;
+    established = false;
+    resyncing = false;
+    holdExtrapolation = false;
+    frozenServerNow = frozen;
+    code = null;
+    clearRetry();
+    clearPing();
+    pendingPing = null;
+    closeSocket();
+    setConnection('expired');
+  }
+
+  function applyAvailability(gen, sessionCode, outcome) {
+    if (gen !== generation || intentional || code !== sessionCode || socket) return;
+    if (outcome === 'unavailable') {
+      finishUnavailable();
+      return;
+    }
+    armRetry();
+  }
+
+  // The browser cannot see why an upgrade failed. Ask once, then retry only
+  // when the code is still active or the answer was inconclusive.
+  function confirmStillActive(gen, sessionCode) {
+    invalidateStatus();
+    const token = statusToken;
+    const controller = new AbortController();
+    statusAbort = controller;
+    statusTimer = schedule(() => controller.abort(), STATUS_TIMEOUT_MS);
+    const finish = (outcome) => {
+      if (token !== statusToken) return;
+      statusToken += 1;
+      if (statusTimer != null) {
+        cancel(statusTimer);
+        statusTimer = null;
+      }
+      statusAbort = null;
+      applyAvailability(gen, sessionCode, outcome);
+    };
+    let request;
+    try {
+      request = fetchImpl(httpUrl(`/sessions/${encodeURIComponent(sessionCode)}/status`), {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+    } catch (error) {
+      request = Promise.reject(error);
+    }
+    Promise.resolve(request)
+      .then(async (response) => {
+        if (response.status === 410) return 'unavailable';
+        if (!response.ok) return 'unknown';
+        try {
+          const body = await response.json();
+          if (body?.status === 'active') return 'active';
+          if (body?.status === 'unavailable') return 'unavailable';
+        } catch {
+          return 'unknown';
+        }
+        return 'unknown';
+      })
+      .then(finish, () => finish('unknown'));
   }
 
   function connect() {
     if (intentional || !code || socket) return;
     const gen = generation + 1;
     generation = gen;
-    let opened;
+    pingAttempts = 0;
+    let openedSocket;
     try {
-      opened = new Socket(socketUrl(`/sessions/${code}`));
+      openedSocket = new Socket(socketUrl(`/sessions/${code}`));
     } catch {
       armRetry();
       return;
     }
-    socket = opened;
-    opened.onopen = () => {
+    socket = openedSocket;
+    let sawOpen = false;
+    let settledClose = false;
+    openedSocket.onopen = () => {
+      sawOpen = true;
       if (gen === generation) sendPing(gen);
     };
-    opened.onmessage = (event) => onMessage(gen, event);
-    opened.onerror = () => {};
-    opened.onclose = () => {
-      if (gen !== generation) return;
+    openedSocket.onmessage = (event) => onMessage(gen, event);
+    openedSocket.onerror = () => {};
+    openedSocket.onclose = () => {
+      if (settledClose || gen !== generation) return;
+      settledClose = true;
       socket = null;
       pendingPing = null;
+      clearPing();
       if (intentional) return;
       setConnection('reconnecting');
+      if (!sawOpen && code) {
+        confirmStillActive(gen, code);
+        return;
+      }
       armRetry();
     };
-    setConnection(viewState.connection === 'idle' ? 'connecting' : viewState.connection);
-    if (viewState.connection !== 'live') {
-      viewState.connection = attempt === 0 ? 'connecting' : 'reconnecting';
+    if (
+      viewState.connection !== 'ended' &&
+      viewState.connection !== 'expired' &&
+      viewState.connection !== 'reconnecting'
+    ) {
+      viewState.connection = 'connecting';
     }
   }
 
@@ -256,23 +428,35 @@ export function createCompanionClient({
         projected = readCompanionCountdown({
           snapshot,
           referenceTime: timing.referenceTime,
-          now: estimatedServerNow(monoNow),
+          now: frozenServerNow != null
+            ? frozenServerNow
+            : holdExtrapolation
+              ? timing.referenceTime
+              : estimatedServerNow(monoNow),
           offsetMs: 0,
         });
       } catch {
         projected = null;
       }
     }
-    const connected = viewState.connection === 'live' || (
-      socket && socket.readyState === Socket.OPEN
-    );
-    if (socket && socket.readyState === Socket.OPEN && viewState.connection !== 'ended' && viewState.connection !== 'expired') {
+    const socketOpen = Boolean(socket && socket.readyState === Socket.OPEN);
+    const connected = viewState.connection === 'live' || socketOpen;
+    if (
+      socketOpen &&
+      !resyncing &&
+      viewState.connection !== 'ended' &&
+      viewState.connection !== 'expired'
+    ) {
       viewState.connection = 'live';
       established = true;
     }
     let stale = false;
-    if (receivedMono == null || !connected) {
-      stale = viewState.connection !== 'idle';
+    if (viewState.connection === 'idle') {
+      stale = false;
+    } else if (!connected) {
+      stale = snapshot != null;
+    } else if (receivedMono == null) {
+      stale = false;
     } else {
       try {
         stale = isSnapshotStale({
@@ -320,15 +504,17 @@ export function createCompanionClient({
       serverBase = null;
     }
     intentional = false;
+    resyncing = false;
+    holdExtrapolation = false;
+    frozenServerNow = null;
     attempt = 0;
     code = nextCode;
+    invalidateStatus();
     clearRetry();
+    clearPing();
     closeSocket();
     viewState.connection = 'connecting';
     connect();
-    // connect() bumps attempt only on retry. The first connection uses attempt 0
-    // but connect sets generation. connection was set inside connect after attempt
-    // check. Force connecting for the first attempt.
     if (viewState.connection !== 'live') viewState.connection = 'connecting';
     emit();
   }
@@ -350,7 +536,12 @@ export function createCompanionClient({
   function leave() {
     intentional = true;
     established = false;
+    resyncing = false;
+    holdExtrapolation = false;
+    frozenServerNow = null;
+    invalidateStatus();
     clearRetry();
+    clearPing();
     closeSocket();
     code = null;
     heldRev = null;
@@ -365,21 +556,30 @@ export function createCompanionClient({
     setConnection('idle');
   }
 
+  // A hidden page can freeze its clock and miss publishes. Drop the socket,
+  // stop extrapolating, and take the next snapshot as authoritative.
   function resume() {
-    emit();
-    if (intentional || !code) return;
-    if (!socket || socket.readyState !== Socket.OPEN) {
-      closeSocket();
-      viewState.connection = 'reconnecting';
-      connect();
+    if (intentional || !code) {
+      emit();
       return;
     }
-    const current = view();
-    if (current.stale) {
-      closeSocket();
-      viewState.connection = 'reconnecting';
-      connect();
+    resyncing = true;
+    holdExtrapolation = true;
+    frozenServerNow = null;
+    monoBase = null;
+    serverBase = null;
+    pendingPing = null;
+    invalidateStatus();
+    clearRetry();
+    clearPing();
+    closeSocket();
+    attempt = 0;
+    viewState.connection = established ? 'reconnecting' : 'connecting';
+    connect();
+    if (viewState.connection !== 'ended' && viewState.connection !== 'expired') {
+      viewState.connection = established ? 'reconnecting' : 'connecting';
     }
+    emit();
   }
 
   return { join, leave, drop, resume, view };

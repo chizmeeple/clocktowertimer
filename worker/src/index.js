@@ -77,6 +77,20 @@ async function joinSession(request, env, code, origin) {
   return stub.fetch(request);
 }
 
+// A browser cannot read a refused WebSocket upgrade. This is a read of the
+// directory only: it does not create, wake, or change a session.
+async function sessionStatus(request, env, code, origin) {
+  if (!(await withinLimit(env.GUESS_BUDGET, clientKey(request)))) {
+    return json({ error: 'join-limit' }, 429, origin);
+  }
+  if (!CODE_PATTERN.test(code)) {
+    return json({ status: 'unavailable' }, 200, origin);
+  }
+  const found = await directoryStub(env).availability(code);
+  const status = found.availability === 'active' ? 'active' : 'unavailable';
+  return json({ status }, 200, origin);
+}
+
 async function route(request, env) {
   const url = new URL(request.url);
   if (hasTokenInUrl(url)) return json({ error: 'token-in-url' }, 400);
@@ -86,6 +100,17 @@ async function route(request, env) {
     (request.method === 'GET' || request.method === 'HEAD')
   ) {
     return json({ ok: true }, 200);
+  }
+
+  const statusMatch = url.pathname.match(/^\/sessions\/([^/]+)\/status$/);
+  if (statusMatch && request.method === 'GET') {
+    const origin = requestOrigin(request);
+    // A cross-origin browser always sends Origin. A same-origin GET often
+    // does not, and this read has no credential to steal.
+    if (origin && !originAllowed(request, env)) {
+      return json({ error: 'origin-rejected' }, 403);
+    }
+    return sessionStatus(request, env, statusMatch[1], origin);
   }
 
   const origin = requestOrigin(request);
