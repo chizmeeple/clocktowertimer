@@ -390,6 +390,25 @@ describe('missed companion events', () => {
   });
 });
 
+describe('companion alert test controls', () => {
+  it('keeps both test buttons available and explains a missing api', () => {
+    const page = readFileSync(
+      new URL('../js/companion-page.js', import.meta.url),
+      'utf8',
+    );
+    assert.doesNotMatch(page, /testSoundButton\.hidden\s*=/);
+    assert.doesNotMatch(page, /testVibrationButton\.hidden\s*=/);
+    assert.match(page, /if \(!canSound && !canVibrate\) alertOption\.hidden = true/);
+    assert.match(page, /This browser cannot play sound\./);
+    assert.match(page, /This browser cannot vibrate\./);
+    assert.match(page, /The browser did not vibrate\./);
+    assert.match(page, /Vibration requested\./);
+    assert.match(page, /navigator\.vibrate\(\[200, 100, 200, 100, 200\]\)/);
+    assert.match(page, /\[300, 150, 300, 150, 500\]/);
+    assert.doesNotMatch(page, /device vibrated/i);
+  });
+});
+
 describe('companion page policy', () => {
   it('allows only the deployed worker on the companion page', () => {
     const page = readFileSync(
@@ -419,6 +438,8 @@ describe('companion page policy', () => {
     assert.match(page, /<h3 id="optionsHeading">Options<\/h3>/);
     assert.match(page, /Enable alerts/);
     assert.match(page, /id="testSound"/);
+    assert.match(page, /id="testVibration"/);
+    assert.match(page, /id="vibrationStatus"[^>]*aria-live="polite"/);
     assert.match(page, /Keep screen on/);
     assert.doesNotMatch(page, /<details|<summary/);
     assert.match(page, /Show QR code/);
