@@ -752,6 +752,91 @@ describe('Companion countdown sounds', () => {
     });
     cy.get('#headline').should('have.text', '00:00');
   });
+
+  it('plays the rooster for a preset start and for wake up, once each', () => {
+    function roosters(win) {
+      return audible(win).filter((item) => item.src.includes('rooster-v2.mp3'));
+    }
+    function bells(win) {
+      return audible(win).filter((item) =>
+        item.src.includes('single-church-bell'),
+      );
+    }
+
+    cy.get('#alerts').check();
+    show({ displaySeconds: 600, rev: 2 });
+    cy.window().should((win) => {
+      expect(audible(win)).to.have.length(0);
+    });
+
+    show({
+      phase: 'pregame',
+      timerStatus: 'idle',
+      kind: null,
+      displaySeconds: null,
+      rev: 3,
+    });
+    show({
+      phase: 'day',
+      timerStatus: 'running',
+      kind: 'day',
+      displaySeconds: 285,
+      rev: 4,
+    });
+    cy.window().should((win) => {
+      expect(roosters(win)).to.have.length(1);
+    });
+    show({ displaySeconds: 280, rev: 4 });
+    cy.window().should((win) => {
+      expect(roosters(win)).to.have.length(1);
+      expect(bells(win)).to.have.length(0);
+    });
+
+    show({
+      phase: 'night',
+      timerStatus: 'finished',
+      kind: null,
+      rate: 0,
+      displaySeconds: 0,
+      confirmedComplete: true,
+      rev: 5,
+    });
+    cy.window().should((win) => {
+      expect(bells(win)).to.have.length(1);
+      expect(roosters(win)).to.have.length(1);
+    });
+    show({
+      phase: 'wake',
+      kind: 'wake',
+      timerStatus: 'running',
+      displaySeconds: 6,
+      day: 2,
+      rev: 6,
+    });
+    cy.window().should((win) => {
+      expect(roosters(win)).to.have.length(2);
+    });
+    show({
+      phase: 'wake',
+      kind: 'wake',
+      timerStatus: 'running',
+      displaySeconds: 4,
+      day: 2,
+      rev: 6,
+    });
+    show({
+      phase: 'day',
+      timerStatus: 'running',
+      kind: 'day',
+      displaySeconds: 285,
+      day: 2,
+      rev: 7,
+    });
+    cy.window().should((win) => {
+      expect(roosters(win)).to.have.length(2);
+      expect(bells(win)).to.have.length(1);
+    });
+  });
 });
 
 describe('Companion alert test buttons', () => {

@@ -14,6 +14,7 @@ export const CHANGELOG = {
         'Companion page: A slow connection can still correct the clock, and a ping that is never answered reconnects. Keep screen on is requested again if the browser releases it while the page is visible.',
         'Companion page: If the connection fails because the session has ended or expired, the page stops reconnecting instead of retrying forever.',
         'Companion page: Test vibration requests a short pattern. Test sound and Test vibration stay available when the browser cannot play them, and explain why.',
+        'Companion page: The day-start rooster plays when a preset starts the day as well as when Wake Up does. The end-of-day alert still plays if the day finishes before this phone reaches zero.',
       ],
     },
   },

@@ -1,4 +1,4 @@
-import { nextCompanionAlert } from './companionAlerts.js';
+import { nextCompanionAlert, nextDayStart } from './companionAlerts.js';
 import { createCompanionSounds } from './companionSound.js';
 import {
   companionBaseUrl,
@@ -135,17 +135,13 @@ function paint(view) {
   const signature = JSON.stringify(presentation);
   if (signature !== rendered) rendered = signature;
 
-  const shouldPlayRooster =
-    previousWakeState?.phase !== 'wake' &&
-    previousWakeState !== null &&
-    view.phase === 'wake' &&
-    view.fresh &&
-    alertsInput.checked &&
-    document.visibilityState !== 'hidden';
-
-  if (shouldPlayRooster) sounds?.play('rooster');
-
-  previousWakeState = view.fresh ? { phase: view.phase, day: view.day } : null;
+  const dayStart = nextDayStart(
+    previousWakeState,
+    view,
+    document.visibilityState !== 'hidden',
+  );
+  if (dayStart.started && alertsInput.checked) sounds?.play('rooster');
+  previousWakeState = dayStart.previous;
 
   if (alertsInput.checked) {
     const countdownShown = presentation.countdown != null;
