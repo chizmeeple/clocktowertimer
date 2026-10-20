@@ -2,6 +2,7 @@
 // Every timestamp is passed in. This module does not read a clock.
 
 export const MAX_RTT_MS = 500;
+export const COARSE_RTT_MS = 3_000;
 export const OFFSET_JUMP_MS = 150;
 export const SAMPLE_LIMIT = 5;
 export const STALE_AFTER_MS = 25_000;
@@ -12,16 +13,17 @@ export const STALE_AFTER_MS = 25_000;
  * The offset is server minus local, estimated at the midpoint of the trip.
  * A negative or very large trip is discarded rather than trusted.
  */
-export function measureRoundTrip({ sentAt, receivedAt, serverTime }) {
+export function measureRoundTrip({ sentAt, receivedAt, serverTime }, maxRtt = MAX_RTT_MS) {
   if (
     !Number.isFinite(sentAt) ||
     !Number.isFinite(receivedAt) ||
-    !Number.isFinite(serverTime)
+    !Number.isFinite(serverTime) ||
+    !Number.isFinite(maxRtt)
   ) {
     return null;
   }
   const rtt = receivedAt - sentAt;
-  if (rtt < 0 || rtt > MAX_RTT_MS) return null;
+  if (rtt < 0 || rtt > maxRtt) return null;
   return { rtt, offsetMs: serverTime - (sentAt + rtt / 2) };
 }
 

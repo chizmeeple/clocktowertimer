@@ -7,6 +7,7 @@ import { readCompanionCountdown } from './companionClock.js';
 import {
   STALE_AFTER_MS,
   acceptSample,
+  COARSE_RTT_MS,
   measureRoundTrip,
   nextRetryDelay,
   offsetFromSamples,
@@ -16,6 +17,10 @@ import {
 } from './companionSync.js';
 
 export { STALE_AFTER_MS };
+
+export const PONG_TIMEOUT_MS = 5_000;
+export const PING_RETRY_MS = 2_000;
+export const PING_KEEPALIVE_MS = 15_000;
 
 function trimBase(baseUrl) {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -48,6 +53,10 @@ export function createCompanionClient({
   let monoBase = null;
   let serverBase = null;
   let pendingPing = null;
+  let pingTimer = null;
+  let pingAttempts = 0;
+  let resyncing = false;
+  let holdExtrapolation = false;
   const viewState = {
     connection: 'idle',
     fresh: false,
@@ -96,6 +105,13 @@ export function createCompanionClient({
     }
   }
 
+  function clearPing() {
+    if (pingTimer != null) {
+      cancel(pingTimer);
+      pingTimer = null;
+    }
+  }
+
   function closeSocket() {
     const current = socket;
     socket = null;
@@ -132,25 +148,36 @@ export function createCompanionClient({
 
   function noteSample(message) {
     if (!pendingPing || pendingPing.id !== message.id) return;
-    const sample = measureRoundTrip({
+    const trip = {
       sentAt: pendingPing.sentAt,
       receivedAt: now(),
       serverTime: message.serverTime,
-    });
+    };
+    let sample = measureRoundTrip(trip);
+    if (!sample && offsetMs == null) sample = measureRoundTrip(trip, COARSE_RTT_MS);
     pendingPing = null;
     samples = acceptSample(samples, sample);
     const next = offsetFromSamples(samples);
-    if (next == null) return;
+    if (next == null) {
+      schedulePing(
+        generation,
+        pingAttempts >= 4 ? PING_KEEPALIVE_MS : PING_RETRY_MS,
+      );
+      return;
+    }
+    pingAttempts = 0;
     offsetMs = slewOffset(offsetMs, next);
     const monoNow = mono();
     serverBase = now() + offsetMs;
     monoBase = monoNow;
     emit();
+    schedulePing(generation, PING_KEEPALIVE_MS);
   }
 
   function applySnapshot(message) {
     const validated = validateCompanionState(message.state);
     if (!validated.ok) {
+      resyncing = false;
       if (validated.reason === 'unsupported-version') {
         viewState.problem = 'unsupported-version';
         emit();
@@ -159,6 +186,8 @@ export function createCompanionClient({
     }
     const decision = decideRevision(heldRev, message.rev);
     if (decision === 'invalid' || decision === 'older') return;
+    resyncing = false;
+    holdExtrapolation = false;
     if (decision === 'accept') {
       viewState.problem = null;
       heldRev = message.rev;
@@ -190,6 +219,7 @@ export function createCompanionClient({
       return;
     }
     if (message.type === 'waiting') {
+      resyncing = false;
       receivedMono = mono();
       emit();
       return;
@@ -197,28 +227,56 @@ export function createCompanionClient({
     if (message.type === 'session-ended') {
       intentional = true;
       established = false;
+      resyncing = false;
+      holdExtrapolation = false;
       code = null;
       clearRetry();
+      clearPing();
       closeSocket();
       setConnection(message.reason === 'ended' ? 'ended' : 'expired');
     }
   }
 
+  function schedulePing(gen, delay) {
+    clearPing();
+    pingTimer = schedule(() => {
+      pingTimer = null;
+      if (gen !== generation || intentional || !socket) return;
+      if (pendingPing) {
+        pendingPing = null;
+        holdExtrapolation = true;
+        resyncing = true;
+        monoBase = null;
+        serverBase = null;
+        closeSocket();
+        if (!code) return;
+        setConnection('reconnecting');
+        armRetry();
+        return;
+      }
+      sendPing(gen);
+    }, delay);
+  }
+
   function sendPing(gen) {
-    if (gen !== generation || !socket) return;
+    if (gen !== generation || !socket || socket.readyState !== Socket.OPEN) return;
+    pingAttempts += 1;
     const id = `c${now().toString(36)}${Math.floor(random() * 1e6).toString(36)}`;
     pendingPing = { id, sentAt: now() };
     try {
       socket.send(JSON.stringify({ type: 'ping', id }));
     } catch {
       pendingPing = null;
+      return;
     }
+    schedulePing(gen, PONG_TIMEOUT_MS);
   }
 
   function connect() {
     if (intentional || !code || socket) return;
     const gen = generation + 1;
     generation = gen;
+    pingAttempts = 0;
     let opened;
     try {
       opened = new Socket(socketUrl(`/sessions/${code}`));
@@ -236,13 +294,17 @@ export function createCompanionClient({
       if (gen !== generation) return;
       socket = null;
       pendingPing = null;
+      clearPing();
       if (intentional) return;
       setConnection('reconnecting');
       armRetry();
     };
-    setConnection(viewState.connection === 'idle' ? 'connecting' : viewState.connection);
-    if (viewState.connection !== 'live') {
-      viewState.connection = attempt === 0 ? 'connecting' : 'reconnecting';
+    if (
+      viewState.connection !== 'ended' &&
+      viewState.connection !== 'expired' &&
+      viewState.connection !== 'reconnecting'
+    ) {
+      viewState.connection = 'connecting';
     }
   }
 
@@ -256,23 +318,33 @@ export function createCompanionClient({
         projected = readCompanionCountdown({
           snapshot,
           referenceTime: timing.referenceTime,
-          now: estimatedServerNow(monoNow),
+          now: holdExtrapolation
+            ? timing.referenceTime
+            : estimatedServerNow(monoNow),
           offsetMs: 0,
         });
       } catch {
         projected = null;
       }
     }
-    const connected = viewState.connection === 'live' || (
-      socket && socket.readyState === Socket.OPEN
-    );
-    if (socket && socket.readyState === Socket.OPEN && viewState.connection !== 'ended' && viewState.connection !== 'expired') {
+    const socketOpen = Boolean(socket && socket.readyState === Socket.OPEN);
+    const connected = viewState.connection === 'live' || socketOpen;
+    if (
+      socketOpen &&
+      !resyncing &&
+      viewState.connection !== 'ended' &&
+      viewState.connection !== 'expired'
+    ) {
       viewState.connection = 'live';
       established = true;
     }
     let stale = false;
-    if (receivedMono == null || !connected) {
-      stale = viewState.connection !== 'idle';
+    if (viewState.connection === 'idle') {
+      stale = false;
+    } else if (!connected) {
+      stale = snapshot != null;
+    } else if (receivedMono == null) {
+      stale = false;
     } else {
       try {
         stale = isSnapshotStale({
@@ -320,15 +392,15 @@ export function createCompanionClient({
       serverBase = null;
     }
     intentional = false;
+    resyncing = false;
+    holdExtrapolation = false;
     attempt = 0;
     code = nextCode;
     clearRetry();
+    clearPing();
     closeSocket();
     viewState.connection = 'connecting';
     connect();
-    // connect() bumps attempt only on retry. The first connection uses attempt 0
-    // but connect sets generation. connection was set inside connect after attempt
-    // check. Force connecting for the first attempt.
     if (viewState.connection !== 'live') viewState.connection = 'connecting';
     emit();
   }
@@ -350,7 +422,10 @@ export function createCompanionClient({
   function leave() {
     intentional = true;
     established = false;
+    resyncing = false;
+    holdExtrapolation = false;
     clearRetry();
+    clearPing();
     closeSocket();
     code = null;
     heldRev = null;
@@ -365,21 +440,28 @@ export function createCompanionClient({
     setConnection('idle');
   }
 
+  // A hidden page can freeze its clock and miss publishes. Drop the socket,
+  // stop extrapolating, and take the next snapshot as authoritative.
   function resume() {
-    emit();
-    if (intentional || !code) return;
-    if (!socket || socket.readyState !== Socket.OPEN) {
-      closeSocket();
-      viewState.connection = 'reconnecting';
-      connect();
+    if (intentional || !code) {
+      emit();
       return;
     }
-    const current = view();
-    if (current.stale) {
-      closeSocket();
-      viewState.connection = 'reconnecting';
-      connect();
+    resyncing = true;
+    holdExtrapolation = true;
+    monoBase = null;
+    serverBase = null;
+    pendingPing = null;
+    clearRetry();
+    clearPing();
+    closeSocket();
+    attempt = 0;
+    viewState.connection = established ? 'reconnecting' : 'connecting';
+    connect();
+    if (viewState.connection !== 'ended' && viewState.connection !== 'expired') {
+      viewState.connection = established ? 'reconnecting' : 'connecting';
     }
+    emit();
   }
 
   return { join, leave, drop, resume, view };

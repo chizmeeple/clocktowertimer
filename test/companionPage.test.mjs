@@ -14,7 +14,11 @@ import {
   presentCompanionPlayerShare,
   sessionCodeFromLocation,
 } from '../js/companionCode.js';
-import { formatCountdown, presentCompanion } from '../js/companionDisplay.js';
+import {
+  formatCountdown,
+  missedCompanionNotice,
+  presentCompanion,
+} from '../js/companionDisplay.js';
 import { APP_VERSION } from '../js/changelog.js';
 
 function view(overrides) {
@@ -304,6 +308,85 @@ describe('companion alerts', () => {
       true,
     );
     assert.equal(joinedAtZero.alert, null);
+
+    const paused = nextCompanionAlert(
+      { previous: 40, rev: 1, phase: 'day' },
+      view({ timerStatus: 'paused', displaySeconds: 40 }),
+      true,
+    );
+    assert.equal(paused.alert, null);
+    const resumed = nextCompanionAlert(
+      paused,
+      view({ displaySeconds: 10, rev: 2 }),
+      true,
+    );
+    assert.equal(resumed.alert, null);
+
+    const staleThenLow = nextCompanionAlert(
+      { previous: 40, rev: 1, phase: 'day' },
+      view({ fresh: false, stale: true, displaySeconds: 40 }),
+      true,
+    );
+    assert.equal(
+      nextCompanionAlert(staleThenLow, view({ displaySeconds: 5 }), true).alert,
+      null,
+    );
+
+    const hidden = nextCompanionAlert(
+      { previous: 40, rev: 1, phase: 'day' },
+      view({ displaySeconds: 0, locallyComplete: true }),
+      true,
+      false,
+    );
+    assert.equal(hidden.alert, null);
+    assert.equal(hidden.previous, null);
+    const afterHidden = nextCompanionAlert(
+      hidden,
+      view({ displaySeconds: 0, locallyComplete: true }),
+      true,
+      true,
+    );
+    assert.equal(afterHidden.alert, null);
+
+    const accelerated = nextCompanionAlert(
+      { previous: 40, rev: 1, phase: 'day' },
+      view({ displaySeconds: 20, rate: 4 }),
+      true,
+    );
+    assert.equal(accelerated.alert, null);
+    const acceleratedZero = nextCompanionAlert(
+      { previous: 10, rev: 1, phase: 'day' },
+      view({ displaySeconds: 0, rate: 4, locallyComplete: true }),
+      true,
+    );
+    assert.equal(acceleratedZero.alert, 'zero');
+  });
+});
+
+describe('missed companion events', () => {
+  it('notes a day that ended or advanced while the page was away', () => {
+    const watching = { phase: 'day', day: 2 };
+    assert.equal(
+      missedCompanionNotice(watching, view({ phase: 'night', confirmedComplete: true })),
+      'The day ended while this page was away.',
+    );
+    assert.equal(
+      missedCompanionNotice(watching, view({ phase: 'wake', day: 3 })),
+      'The day ended while this page was away.',
+    );
+    assert.equal(
+      missedCompanionNotice(watching, view({ displaySeconds: 20 })),
+      '',
+    );
+    assert.equal(
+      missedCompanionNotice({ phase: 'night', day: 2 }, view({ phase: 'wake', day: 3 })),
+      '',
+    );
+    assert.equal(missedCompanionNotice(null, view({ phase: 'night' })), '');
+    assert.equal(
+      missedCompanionNotice(watching, view({ fresh: false, phase: 'night' })),
+      '',
+    );
   });
 });
 

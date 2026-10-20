@@ -9,7 +9,7 @@ import {
   sessionCodeFromLocation,
 } from './companionCode.js';
 import { createCompanionClient } from './companionClient.js';
-import { presentCompanion } from './companionDisplay.js';
+import { missedCompanionNotice, presentCompanion } from './companionDisplay.js';
 import {
   readCompanionPreferences,
   writeCompanionPreferences,
@@ -64,6 +64,9 @@ let rendered = '';
 let currentView = null;
 let testView = null;
 let previousWakeState = null;
+let lastFresh = null;
+let sawFresh = false;
+let missedNotice = '';
 
 const wake = createWakeLockController({
   supported: typeof navigator.wakeLock?.request === 'function',
@@ -121,7 +124,8 @@ function paint(view) {
   text(kicker, presentation.kicker);
   text(headline, presentation.headline || '');
   headline.classList.toggle('words', presentation.countdown == null);
-  text(message, presentation.message || '');
+  noteMissed(view);
+  text(message, [presentation.message, missedNotice].filter(Boolean).join(' '));
   const counts = presentation.counts;
   for (const key of Object.keys(countNodes)) {
     text(countNodes[key], counts ? String(counts[key]) : '–');
@@ -135,30 +139,21 @@ function paint(view) {
     previousWakeState !== null &&
     view.phase === 'wake' &&
     view.fresh &&
-    alertsInput.checked; //&&
-  //document.visibilityState === 'visible';
+    alertsInput.checked &&
+    document.visibilityState !== 'hidden';
 
-  if (view.phase === 'wake') {
-    console.debug('Companion rooster', {
-      previousWakeState,
-      phase: view.phase,
-      fresh: view.fresh,
-      alertsEnabled: alertsInput.checked,
-      visibility: document.visibilityState,
-      shouldPlayRooster,
-    });
-  }
-
-  if (shouldPlayRooster) {
-    console.debug('Playing rooster');
-    sounds?.play('rooster');
-  }
+  if (shouldPlayRooster) sounds?.play('rooster');
 
   previousWakeState = view.fresh ? { phase: view.phase, day: view.day } : null;
 
   if (alertsInput.checked) {
     const countdownShown = presentation.countdown != null;
-    alertState = nextCompanionAlert(alertState, view, countdownShown);
+    alertState = nextCompanionAlert(
+      alertState,
+      view,
+      countdownShown,
+      document.visibilityState !== 'hidden',
+    );
     if (alertState.alert) playAlert(alertState.alert);
   } else {
     alertState = {
@@ -208,13 +203,42 @@ function openQr() {
   qrClose.focus();
 }
 
+function noteMissed(view) {
+  const watching = view.fresh && document.visibilityState !== 'hidden';
+  if (!watching) {
+    sawFresh = false;
+    return;
+  }
+  if (!sawFresh && lastFresh) {
+    const notice = missedCompanionNotice(lastFresh, view);
+    if (notice) missedNotice = notice;
+  } else if (
+    sawFresh &&
+    lastFresh &&
+    (lastFresh.phase !== view.phase || lastFresh.day !== view.day)
+  ) {
+    missedNotice = '';
+  }
+  lastFresh = { phase: view.phase, day: view.day };
+  sawFresh = true;
+}
+
+function resetSessionMemory() {
+  alertState = { previous: null, rev: null, phase: null, alert: null };
+  previousWakeState = null;
+  lastFresh = null;
+  sawFresh = false;
+  missedNotice = '';
+}
+
 function playAlert(kind) {
+  if (document.visibilityState === 'hidden') return;
+  if (kind === 'warning' && currentView?.rate > 1) return;
   if (canVibrate) {
     navigator.vibrate(
       kind === 'zero' ? [300, 150, 300, 150, 500] : [200, 100, 200, 100, 200],
     );
   }
-  if (kind === 'warning' && currentView?.rate > 1) return;
   sounds?.play(kind);
 }
 
@@ -242,8 +266,7 @@ function join(raw) {
     return;
   }
   showCodeError('');
-  alertState = { previous: null, rev: null, phase: null, alert: null };
-  previousWakeState = null;
+  resetSessionMemory();
   rememberCode(code);
   client.join(code);
 }
@@ -254,7 +277,7 @@ joinForm.addEventListener('submit', (event) => {
 });
 
 leaveButton.addEventListener('click', () => {
-  previousWakeState = null;
+  resetSessionMemory();
   testView = null;
   client.leave();
   rememberCode('');
@@ -302,6 +325,7 @@ wakeInput.addEventListener('change', () => {
 
 document.addEventListener('visibilitychange', () => {
   previousWakeState = null;
+  sawFresh = false;
   if (document.visibilityState === 'visible') client.resume();
   else sounds?.stop();
   wake.onVisibilityChange();

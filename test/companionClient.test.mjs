@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { presentCompanionPlayerShare } from '../js/companionCode.js';
-import { createCompanionClient } from '../js/companionClient.js';
+import {
+  PING_KEEPALIVE_MS,
+  PING_RETRY_MS,
+  PONG_TIMEOUT_MS,
+  createCompanionClient,
+} from '../js/companionClient.js';
 
 class FakeSocket {
   static OPEN = 1;
@@ -276,5 +281,130 @@ describe('companion client', () => {
       presentCompanionPlayerShare(replacement).playerUrl,
       'https://timer.arcane-scripts.net/c?code=NEWCDE'
     );
+  });
+
+  it('counts down from the snapshot without a message every second', () => {
+    const env = harness();
+    env.client.join('ABCDEF');
+    const socket = FakeSocket.sockets[0];
+    socket.onopen?.();
+    const ping = socket.sent.find((message) => message.type === 'ping');
+    socket.receive({ type: 'pong', id: ping.id, serverTime: 10_000 });
+    socket.receive({
+      type: 'snapshot',
+      rev: 1,
+      serverTime: 10_000,
+      capturedAt: 10_000,
+      upstreamOffsetMs: 0,
+      state: day(60_000),
+    });
+    env.monoNow = 4_100;
+    assert.equal(env.client.view().remainingMs, 56_000);
+    assert.equal(env.client.view().fresh, true);
+    assert.equal(socket.sent.filter((message) => message.type === 'ping').length, 1);
+  });
+
+  it('drops a frozen clock when the page returns and takes the next snapshot', () => {
+    const env = harness();
+    env.client.join('ABCDEF');
+    const socket = FakeSocket.sockets[0];
+    socket.onopen?.();
+    const ping = socket.sent.find((message) => message.type === 'ping');
+    socket.receive({ type: 'pong', id: ping.id, serverTime: 10_000 });
+    socket.receive({
+      type: 'snapshot',
+      rev: 4,
+      serverTime: 10_000,
+      capturedAt: 10_000,
+      upstreamOffsetMs: 0,
+      state: day(60_000),
+    });
+    env.monoNow = 5_100;
+    assert.equal(env.client.view().remainingMs, 55_000);
+
+    env.wall = 70_000;
+    env.client.resume();
+    const returned = env.client.view();
+    assert.equal(returned.connection, 'reconnecting');
+    assert.equal(returned.fresh, false);
+    assert.equal(returned.remainingMs, 60_000);
+    assert.equal(FakeSocket.sockets.length, 2);
+    assert.equal(FakeSocket.sockets[0].readyState, FakeSocket.CLOSED);
+
+    const next = FakeSocket.sockets[1];
+    next.onopen?.();
+    next.receive({
+      type: 'snapshot',
+      rev: 8,
+      serverTime: 70_000,
+      capturedAt: 70_000,
+      upstreamOffsetMs: 0,
+      state: day(10_000),
+    });
+    const caughtUp = env.client.view();
+    assert.equal(caughtUp.connection, 'live');
+    assert.equal(caughtUp.fresh, true);
+    assert.equal(caughtUp.remainingMs, 10_000);
+    env.wall = 73_000;
+    assert.equal(env.client.view().remainingMs, 7_000);
+  });
+
+  it('retries a ping that is too slow to trust and reconnects when a ping is not answered', () => {
+    const coarse = harness();
+    coarse.client.join('ABCDEF');
+    const coarseSocket = FakeSocket.sockets[0];
+    coarseSocket.onopen?.();
+    const coarsePing = coarseSocket.sent.find((message) => message.type === 'ping');
+    coarse.wall = 10_800;
+    coarseSocket.receive({ type: 'pong', id: coarsePing.id, serverTime: 10_400 });
+    assert.equal(coarseSocket.sent.filter((message) => message.type === 'ping').length, 1);
+    assert.equal(coarse.pending[0].delay, PING_KEEPALIVE_MS);
+
+    const env = harness();
+    env.client.join('ABCDEF');
+    const socket = FakeSocket.sockets[0];
+    socket.onopen?.();
+    const ping = socket.sent.find((message) => message.type === 'ping');
+    env.wall = 14_000;
+    socket.receive({ type: 'pong', id: ping.id, serverTime: 12_000 });
+    assert.equal(socket.sent.filter((message) => message.type === 'ping').length, 1);
+    assert.equal(env.pending[0].delay, PING_RETRY_MS);
+    env.pending[0].fn();
+    env.pending.shift();
+    assert.equal(socket.sent.filter((message) => message.type === 'ping').length, 2);
+
+    const quiet = harness();
+    quiet.client.join('ABCDEF');
+    const open = FakeSocket.sockets[0];
+    open.onopen?.();
+    assert.equal(quiet.pending[0].delay, PONG_TIMEOUT_MS);
+    quiet.pending[0].fn();
+    quiet.pending.shift();
+    assert.equal(quiet.client.view().connection, 'reconnecting');
+    assert.equal(open.readyState, FakeSocket.CLOSED);
+    assert.equal(quiet.pending[0].delay, 500);
+  });
+
+  it('keeps a keepalive after a usable ping and clears it when the session ends', () => {
+    const env = harness();
+    env.client.join('ABCDEF');
+    const socket = FakeSocket.sockets[0];
+    socket.onopen?.();
+    const ping = socket.sent.find((message) => message.type === 'ping');
+    socket.receive({ type: 'pong', id: ping.id, serverTime: 10_000 });
+    assert.equal(env.pending.length, 1);
+    assert.equal(env.pending[0].delay, PING_KEEPALIVE_MS);
+    socket.receive({ type: 'session-ended', reason: 'ended' });
+    assert.equal(env.pending.length, 0);
+    assert.equal(env.client.view().connection, 'ended');
+  });
+
+  it('does not call an open socket stale before the first message', () => {
+    const env = harness();
+    env.client.join('ABCDEF');
+    const waiting = env.client.view();
+    assert.equal(waiting.connection, 'live');
+    assert.equal(waiting.stale, false);
+    assert.equal(waiting.fresh, false);
   });
 });

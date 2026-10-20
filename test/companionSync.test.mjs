@@ -30,6 +30,16 @@ describe('clock samples', () => {
       measureRoundTrip({ sentAt: 0, receivedAt: 800, serverTime: 400 }),
       null
     );
+    const coarse = measureRoundTrip(
+      { sentAt: 0, receivedAt: 800, serverTime: 400 },
+      3_000,
+    );
+    assert.equal(coarse.rtt, 800);
+    assert.equal(coarse.offsetMs, 0);
+    assert.equal(
+      measureRoundTrip({ sentAt: 0, receivedAt: 4_000, serverTime: 2_000 }, 3_000),
+      null,
+    );
   });
 
   it('keeps the fastest samples and ignores a later slow one', () => {

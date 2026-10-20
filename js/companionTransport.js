@@ -4,6 +4,7 @@
 
 import {
   acceptSample,
+  COARSE_RTT_MS,
   measureRoundTrip,
   nextRetryDelay,
   offsetFromSamples,
@@ -47,6 +48,7 @@ export function createStorytellerTransport({
   let offsetMs = null;
   let announcedOffset = false;
   let pendingPing = null;
+  let pingAttempts = 0;
   const status = {
     connection: 'idle',
     delivery: 'idle',
@@ -185,14 +187,19 @@ export function createStorytellerTransport({
     if (!pendingPing || pendingPing.id !== message.id) return;
     const sentAt = pendingPing.sentAt;
     pendingPing = null;
-    const sample = measureRoundTrip({
+    const trip = {
       sentAt,
       receivedAt: now(),
       serverTime: message.serverTime,
-    });
+    };
+    let sample = measureRoundTrip(trip);
+    if (!sample && offsetMs == null) sample = measureRoundTrip(trip, COARSE_RTT_MS);
     samples = acceptSample(samples, sample);
     const next = offsetFromSamples(samples);
-    if (next == null) return;
+    if (next == null) {
+      sendPing(generation);
+      return;
+    }
     offsetMs = slewOffset(offsetMs, next);
     emitStatus();
     if (!announcedOffset) {
@@ -271,7 +278,8 @@ export function createStorytellerTransport({
   }
 
   function sendPing(gen) {
-    if (gen !== generation || !authed || !socket) return;
+    if (gen !== generation || !authed || !socket || pingAttempts >= 4) return;
+    pingAttempts += 1;
     const id = `p${now().toString(36)}${Math.floor(random() * 1e6).toString(36)}`;
     pendingPing = { id, sentAt: now() };
     try {
@@ -286,6 +294,7 @@ export function createStorytellerTransport({
     const gen = generation + 1;
     generation = gen;
     authed = false;
+    pingAttempts = 0;
     let opened;
     try {
       opened = new Socket(socketUrl(`/sessions/${code}/storyteller`));

@@ -49,7 +49,11 @@ export function createWakeLockController({
       next.addEventListener(
         'release',
         () => {
-          if (lock === next) lock = null;
+          if (lock !== next) return;
+          lock = null;
+          // The browser drops the lock when the page hides, and also when
+          // the system takes it. Ask again only if we still want it on screen.
+          if (enabled && visibility() === 'visible') apply();
         },
         { once: true }
       );

@@ -165,6 +165,22 @@ function statusCopy(view) {
   return { tone: 'idle', label: '', detail: '', quiet: true };
 }
 
+// A completion the player did not see live. `previous` is the last fresh
+// view from while the page was watching; `next` is the first fresh view
+// after a gap. A transition the page painted while fresh is not missed.
+export function missedCompanionNotice(previous, next) {
+  if (!previous || !next?.fresh) return '';
+  const watchedCountdown = previous.phase === 'day' || previous.phase === 'wake';
+  if (!watchedCountdown) return '';
+  const laterDay =
+    Number.isInteger(previous.day) &&
+    Number.isInteger(next.day) &&
+    next.day > previous.day;
+  const ended = next.phase === 'night' || next.confirmedComplete === true;
+  if (!laterDay && !ended) return '';
+  return 'The day ended while this page was away.';
+}
+
 export function presentCompanion(view) {
   const countdown = showsCountdown(view)
     ? formatCountdown(view.displaySeconds)
