@@ -33,6 +33,14 @@ function showsCountdown(view) {
 
 function phaseCopy(view, countdown) {
   const day = view.day == null ? '' : `Day ${view.day}`;
+  if (view.connection === 'expired') {
+    return {
+      kicker: 'Session',
+      headline: 'Expired',
+      message: 'Session no longer exists.',
+      countdown: null,
+    };
+  }
   if (view.problem === 'unsupported-version') {
     return {
       kicker: 'Companion',
@@ -182,9 +190,9 @@ export function missedCompanionNotice(previous, next) {
 }
 
 export function presentCompanion(view) {
-  const countdown = showsCountdown(view)
-    ? formatCountdown(view.displaySeconds)
-    : null;
+  const expired = view.connection === 'expired';
+  const countdown =
+    expired || !showsCountdown(view) ? null : formatCountdown(view.displaySeconds);
   const copy = phaseCopy(view, countdown);
   const night = view.phase === 'night' || view.confirmedComplete === true;
   return {
@@ -193,7 +201,8 @@ export function presentCompanion(view) {
     headline: copy.headline,
     message: copy.message,
     countdown,
-    counts: countsOf(view),
+    counts: expired ? null : countsOf(view),
+    showCounts: !expired,
     status: statusCopy(view),
     showSession: view.connection !== 'idle',
   };

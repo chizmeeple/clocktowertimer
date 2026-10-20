@@ -45,6 +45,7 @@ const footerSession = document.querySelector('#footerSession');
 const footerSessionCode = document.querySelector('#footerSessionCode');
 const footerVersion = document.querySelector('#footerVersion');
 footerVersion.textContent = `v${APP_VERSION} ·`;
+const countsList = document.querySelector('.companion-counts');
 const countNodes = {
   townsfolk: document.querySelector('#townsfolk'),
   outsider: document.querySelector('#outsider'),
@@ -130,6 +131,7 @@ function paint(view) {
   headline.classList.toggle('words', presentation.countdown == null);
   noteMissed(view);
   text(message, [presentation.message, missedNotice].filter(Boolean).join(' '));
+  countsList.hidden = !presentation.showCounts;
   const counts = presentation.counts;
   for (const key of Object.keys(countNodes)) {
     text(countNodes[key], counts ? String(counts[key]) : '–');
