@@ -6,6 +6,7 @@ export const CHANGELOG = {
     date: '2026-10-14',
     changes: {
       improvements: [
+        'Companion page: The current version is shown in the footer.',
         'Companion session code and token are now persisted in session storage, so they are not lost when the page is refreshed.',
         'Companion page: The session code is now displayed in the footer.',
         'Companion page: Returning to the page fetches the latest session and stops trusting a countdown that advanced while the phone was locked or asleep.',
