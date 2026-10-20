@@ -172,7 +172,10 @@ describe('Companion page', () => {
       displaySeconds: null,
       kind: null,
     });
-    cy.get('#headline').should('contain', 'ready');
+    cy.get('#kicker').should('have.text', 'Day 1');
+    cy.get('#headline').should('have.text', 'Getting ready');
+    cy.get('#message').should('have.text', 'Waiting for the game to begin.');
+    cy.get('.companion-counts').should('be.visible');
 
     show({ phase: 'wake', kind: 'wake', displaySeconds: 8 });
     cy.get('#kicker').should('have.text', 'Wake up');
@@ -200,15 +203,28 @@ describe('Companion page', () => {
     show({ connection: 'reconnecting', fresh: false, stale: true });
     cy.get('#status').should('have.text', 'Offline');
     cy.get('#statusDetail').should('contain', 'last update');
+    cy.get('#kicker').should('have.text', 'Day 1');
+    cy.get('#headline').should('have.text', '04:45');
     cy.get('#townsfolk').should('have.text', '7');
+    cy.get('.companion-counts').should('be.visible');
 
     show({ connection: 'ended' });
     cy.get('#status').should('have.text', 'Ended');
-    cy.get('#statusDetail').should('contain', 'ended');
+    cy.get('#statusDetail').should('contain', 'The Storyteller ended this session.');
+    cy.get('#kicker').should('have.text', 'Day 1');
+    cy.get('#headline').should('have.text', '04:45');
+    cy.get('#townsfolk').should('have.text', '7');
+    cy.get('.companion-counts').should('be.visible');
+    cy.get('#leave').should('be.visible');
 
-    show({ connection: 'expired' });
+    show({ connection: 'expired', fresh: false, stale: true });
     cy.get('#status').should('have.text', 'Expired');
-    cy.get('#statusDetail').should('contain', 'expired');
+    cy.get('#statusDetail').should('contain', 'This session has expired.');
+    cy.get('#kicker').should('have.text', 'Session');
+    cy.get('#headline').should('have.text', 'Expired');
+    cy.get('#message').should('have.text', 'Session no longer exists.');
+    cy.get('.companion-counts').should('not.be.visible');
+    cy.get('#leave').should('be.visible').and('contain', 'Leave session');
 
     show({ problem: 'unsupported-version' });
     cy.get('#headline').should('contain', 'Update');

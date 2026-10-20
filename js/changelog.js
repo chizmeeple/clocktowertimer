@@ -1,7 +1,15 @@
 // Version tracking
-export const APP_VERSION = '1.3.4';
+export const APP_VERSION = '1.3.5';
 
 export const CHANGELOG = {
+  '1.3.5': {
+    date: '2026-10-20',
+    changes: {
+      improvements: [
+        'Companion page: A confirmed expired session shows that the session no longer exists, and hides the character counts.',
+      ],
+    },
+  },
   '1.3.4': {
     date: '2026-10-14',
     changes: {

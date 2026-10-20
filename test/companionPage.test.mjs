@@ -112,26 +112,39 @@ describe('companion presentation', () => {
   });
 
   it('describes pregame, wake, expiry and an unsupported version', () => {
-    assert.match(
-      presentCompanion(
-        view({ phase: 'pregame', timerStatus: 'idle', displaySeconds: null }),
-      ).headline,
-      /ready/i,
-    );
     const wake = presentCompanion(
       view({ phase: 'wake', kind: 'wake', displaySeconds: 10 }),
     );
     assert.equal(wake.kicker, 'Wake up');
     assert.equal(wake.headline, '00:10');
 
+    const pregame = presentCompanion(
+      view({ phase: 'pregame', timerStatus: 'idle', displaySeconds: null }),
+    );
+    assert.equal(pregame.kicker, 'Day 1');
+    assert.equal(pregame.headline, 'Getting ready');
+    assert.equal(pregame.message, 'Waiting for the game to begin.');
+    assert.equal(pregame.showCounts, true);
+
     const expired = presentCompanion(
       view({ connection: 'expired', fresh: false, stale: true }),
     );
+    assert.equal(expired.kicker, 'Session');
+    assert.equal(expired.headline, 'Expired');
+    assert.equal(expired.message, 'Session no longer exists.');
+    assert.equal(expired.countdown, null);
+    assert.equal(expired.counts, null);
+    assert.equal(expired.showCounts, false);
     assert.match(expired.status.label, /expired/i);
+    assert.match(expired.status.detail, /expired/i);
     assert.equal(expired.showSession, true);
 
     const ended = presentCompanion(view({ connection: 'ended' }));
     assert.match(ended.status.label, /ended/i);
+    assert.equal(ended.kicker, 'Day 1');
+    assert.equal(ended.headline, '04:45');
+    assert.equal(ended.showCounts, true);
+    assert.equal(ended.counts.townsfolk, 7);
 
     const unsupported = presentCompanion(
       view({ problem: 'unsupported-version', displaySeconds: 10 }),
@@ -149,6 +162,17 @@ describe('companion presentation', () => {
     );
     assert.equal(reconnecting.status.label, 'Offline');
     assert.match(reconnecting.status.detail, /can’t reach the session/i);
+    assert.equal(reconnecting.kicker, 'Day 1');
+    assert.equal(reconnecting.headline, '04:45');
+    assert.equal(reconnecting.showCounts, true);
+
+    const reconnectingWithCounts = presentCompanion(
+      view({ connection: 'reconnecting', fresh: false, stale: true }),
+    );
+    assert.equal(reconnectingWithCounts.kicker, 'Day 1');
+    assert.equal(reconnectingWithCounts.headline, '04:45');
+    assert.equal(reconnectingWithCounts.showCounts, true);
+    assert.equal(reconnectingWithCounts.counts.townsfolk, 7);
 
     assert.equal(formatCountdown(null), null);
     assert.equal(

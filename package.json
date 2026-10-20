@@ -1,6 +1,6 @@
 {
   "name": "clocktowertimer",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "Clock Tower Timer Application",
   "scripts": {
     "stamp-release": "node scripts/release-assets.mjs --write",
