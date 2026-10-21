@@ -45,7 +45,9 @@ describe('companion dev proxy', () => {
         : 'ok';
       const status = req.url.startsWith('/fail') ? 403 : 200;
       res.writeHead(status, {
-        'content-type': req.url.startsWith('/fail') ? 'application/json' : 'text/plain',
+        'content-type': req.url.startsWith('/fail')
+          ? 'application/json'
+          : 'text/plain',
         'content-length': Buffer.byteLength(body),
         'alt-svc': 'h3=":443"; ma=86400',
       });
@@ -56,12 +58,12 @@ describe('companion dev proxy', () => {
         const body = JSON.stringify({ error: 'origin-rejected' });
         socket.write(
           'HTTP/1.1 403 Forbidden\r\n' +
-          'Content-Type: application/json\r\n' +
-          `Content-Length: ${Buffer.byteLength(body)}\r\n` +
-          'Connection: close\r\n' +
-          'alt-svc: h3=":443"; ma=86400\r\n' +
-          '\r\n' +
-          body
+            'Content-Type: application/json\r\n' +
+            `Content-Length: ${Buffer.byteLength(body)}\r\n` +
+            'Connection: close\r\n' +
+            'alt-svc: h3=":443"; ma=86400\r\n' +
+            '\r\n' +
+            body,
         );
         socket.end();
         return;
@@ -110,7 +112,9 @@ describe('companion dev proxy', () => {
     let ready = false;
     for (let attempt = 0; attempt < 30 && !ready; attempt += 1) {
       try {
-        const response = await fetch(`http://127.0.0.1:${proxyPort}/companion-dev-target`);
+        const response = await fetch(
+          `http://127.0.0.1:${proxyPort}/companion-dev-target`,
+        );
         ready = response.ok;
       } catch {
         await new Promise((resolve) => setTimeout(resolve, 50));
@@ -125,11 +129,17 @@ describe('companion dev proxy', () => {
   });
 
   it('completes a WebSocket handshake and carries both directions', async () => {
-    const socket = new WebSocket(`ws://127.0.0.1:${proxyPort}/companion-api/sessions/ABCDEF`, {
-      headers: { Origin: 'http://127.0.0.1:8006' },
-    });
+    const socket = new WebSocket(
+      `ws://127.0.0.1:${proxyPort}/companion-api/sessions/ABCDEF`,
+      {
+        headers: { Origin: 'http://127.0.0.1:8006' },
+      },
+    );
     const first = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`still ${socket.readyState}`)), 2000);
+      const timer = setTimeout(
+        () => reject(new Error(`still ${socket.readyState}`)),
+        2000,
+      );
       socket.addEventListener('message', (event) => {
         clearTimeout(timer);
         resolve(String(event.data));
@@ -158,9 +168,14 @@ describe('companion dev proxy', () => {
       setTimeout(resolve, 500);
     });
 
-    const again = new WebSocket(`ws://127.0.0.1:${proxyPort}/companion-api/sessions/ABCDEF`);
+    const again = new WebSocket(
+      `ws://127.0.0.1:${proxyPort}/companion-api/sessions/ABCDEF`,
+    );
     const second = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`reconnect still ${again.readyState}`)), 2000);
+      const timer = setTimeout(
+        () => reject(new Error(`reconnect still ${again.readyState}`)),
+        2000,
+      );
       again.addEventListener('message', (event) => {
         clearTimeout(timer);
         resolve(String(event.data));
@@ -190,7 +205,10 @@ describe('companion dev proxy', () => {
     ].join('\r\n');
     const response = await new Promise((resolve, reject) => {
       let buffer = Buffer.alloc(0);
-      const timer = setTimeout(() => reject(new Error('refused upgrade stayed open')), 2000);
+      const timer = setTimeout(
+        () => reject(new Error('refused upgrade stayed open')),
+        2000,
+      );
       client.on('data', (chunk) => {
         buffer = Buffer.concat([buffer, chunk]);
       });
@@ -244,7 +262,9 @@ describe('companion dev proxy', () => {
     assert.equal(seen.at(-1).host, `127.0.0.1:${upstreamPort}`);
     assert.equal(seen.at(-1).acceptEncoding, null);
 
-    const plain = await fetch(`http://127.0.0.1:${proxyPort}/companion-api/plain`);
+    const plain = await fetch(
+      `http://127.0.0.1:${proxyPort}/companion-api/plain`,
+    );
     assert.equal(await plain.text(), 'ok');
     assert.equal(plain.headers.get('alt-svc'), null);
   });
@@ -254,7 +274,7 @@ describe('companion dev proxy', () => {
     assert.equal(home.status, 200);
     assert.match(await home.text(), /id="startBtn"/);
 
-    for (const path of ['/c', '/c/', '/c/index.html', '/c?code=ABC123']) {
+    for (const path of ['/c', '/c/', '/c/index.html', '/c?code=ABC234']) {
       const response = await fetch(`http://127.0.0.1:${proxyPort}${path}`);
       assert.equal(response.status, 200, path);
       assert.match(response.headers.get('content-type') || '', /text\/html/);
@@ -265,9 +285,13 @@ describe('companion dev proxy', () => {
       assert.match(body, /clocktower-companion\.redmeeple\.workers\.dev/);
     }
 
-    const stylesheet = await fetch(`http://127.0.0.1:${proxyPort}/css/companion.css`);
+    const stylesheet = await fetch(
+      `http://127.0.0.1:${proxyPort}/css/companion.css`,
+    );
     assert.equal(stylesheet.status, 200);
-    const script = await fetch(`http://127.0.0.1:${proxyPort}/js/companion-page.js`);
+    const script = await fetch(
+      `http://127.0.0.1:${proxyPort}/js/companion-page.js`,
+    );
     assert.equal(script.status, 200);
     const removed = await fetch(`http://127.0.0.1:${proxyPort}/companion.html`);
     assert.equal(removed.status, 404);

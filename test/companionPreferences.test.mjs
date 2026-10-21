@@ -50,7 +50,10 @@ describe('companion player preferences', () => {
     writeCompanionPreferences({ keepScreenOn: true }, storage);
     assert.deepEqual(saved(storage), { warnNearEnd: true, keepScreenOn: true });
     writeCompanionPreferences({ warnNearEnd: false }, storage);
-    assert.deepEqual(saved(storage), { warnNearEnd: false, keepScreenOn: true });
+    assert.deepEqual(saved(storage), {
+      warnNearEnd: false,
+      keepScreenOn: true,
+    });
   });
 
   it('keeps the save for a later read, as a new page would', () => {
@@ -107,7 +110,7 @@ describe('companion player preferences', () => {
       [COMPANION_PREFERENCES_KEY]: JSON.stringify({
         warnNearEnd: true,
         keepScreenOn: false,
-        code: 'ABC123',
+        code: 'ABC234',
         writeToken: 'secret',
         lock: { released: false },
       }),
@@ -122,8 +125,11 @@ describe('companion player preferences', () => {
 
   it('ignores a non-boolean update and keeps the stored value', () => {
     const storage = memoryStorage();
-    writeCompanionPreferences({ warnNearEnd: true, keepScreenOn: true }, storage);
-    writeCompanionPreferences({ warnNearEnd: 'no', code: 'ABC123' }, storage);
+    writeCompanionPreferences(
+      { warnNearEnd: true, keepScreenOn: true },
+      storage,
+    );
+    writeCompanionPreferences({ warnNearEnd: 'no', code: 'ABC234' }, storage);
     assert.deepEqual(saved(storage), { warnNearEnd: true, keepScreenOn: true });
   });
 
@@ -138,8 +144,11 @@ describe('companion player preferences', () => {
     };
     assert.deepEqual(readCompanionPreferences(blocked), defaults);
     assert.deepEqual(
-      writeCompanionPreferences({ warnNearEnd: true, keepScreenOn: true }, blocked),
-      { warnNearEnd: true, keepScreenOn: true }
+      writeCompanionPreferences(
+        { warnNearEnd: true, keepScreenOn: true },
+        blocked,
+      ),
+      { warnNearEnd: true, keepScreenOn: true },
     );
 
     const readable = memoryStorage({
@@ -151,10 +160,16 @@ describe('companion player preferences', () => {
     readable.setItem = () => {
       throw new Error('blocked');
     };
-    assert.deepEqual(writeCompanionPreferences({ keepScreenOn: true }, readable), {
+    assert.deepEqual(
+      writeCompanionPreferences({ keepScreenOn: true }, readable),
+      {
+        warnNearEnd: true,
+        keepScreenOn: true,
+      },
+    );
+    assert.deepEqual(saved(readable), {
       warnNearEnd: true,
-      keepScreenOn: true,
+      keepScreenOn: false,
     });
-    assert.deepEqual(saved(readable), { warnNearEnd: true, keepScreenOn: false });
   });
 });

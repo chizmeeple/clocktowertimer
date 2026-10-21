@@ -16,7 +16,7 @@ function view(overrides) {
     locallyComplete: false,
     confirmedComplete: false,
     rev: 1,
-    code: 'ABC123',
+    code: 'ABC234',
     established: true,
     ...overrides,
   };
@@ -83,10 +83,10 @@ describe('Companion page', () => {
   });
 
   it('keeps a direct session code on /c', () => {
-    cy.visit('/c?code=ABC123');
+    cy.visit('/c?code=ABC234');
     cy.location('pathname').should('match', /^\/c\/?$/);
-    cy.location('search').should('eq', '?code=ABC123');
-    cy.get('#code').should('have.value', 'ABC123');
+    cy.location('search').should('eq', '?code=ABC234');
+    cy.get('#code').should('have.value', 'ABC234');
     cy.get('#session').should('be.visible');
     cy.get('#status')
       .invoke('text')
@@ -210,7 +210,10 @@ describe('Companion page', () => {
 
     show({ connection: 'ended' });
     cy.get('#status').should('have.text', 'Ended');
-    cy.get('#statusDetail').should('contain', 'The Storyteller ended this session.');
+    cy.get('#statusDetail').should(
+      'contain',
+      'The Storyteller ended this session.',
+    );
     cy.get('#kicker').should('have.text', 'Day 1');
     cy.get('#headline').should('have.text', '04:45');
     cy.get('#townsfolk').should('have.text', '7');
@@ -487,7 +490,7 @@ describe('Companion page', () => {
 });
 
 describe('Companion QR sharing', () => {
-  const PLAYER_URL = 'https://timer.arcane-scripts.net/c?code=ABC123';
+  const PLAYER_URL = 'https://timer.arcane-scripts.net/c?code=ABC234';
 
   beforeEach(() => {
     cy.intercept('GET', '**/api.qrserver.com/**', {
@@ -537,7 +540,7 @@ describe('Companion QR sharing', () => {
     cy.focused().should('have.id', 'qrClose');
     cy.get('#qrDialog').should('have.attr', 'aria-labelledby', 'qrHeading');
     cy.get('#qrHeading').should('have.text', 'Join this game');
-    cy.get('#qrCode').should('have.text', 'ABC123');
+    cy.get('#qrCode').should('have.text', 'ABC234');
     cy.get('.qr-address').should('have.text', 'timer.arcane-scripts.net/c');
     cy.get('#qrImage').should(($img) => {
       const src = decodeURIComponent($img.attr('src'));
@@ -563,7 +566,7 @@ describe('Companion QR sharing', () => {
     cy.get('#status').should('have.text', 'Offline');
     cy.get('#status').should('not.have.text', 'Live');
     cy.get('#showQr').click();
-    cy.get('#qrCode').should('have.text', 'ABC123');
+    cy.get('#qrCode').should('have.text', 'ABC234');
     cy.get('#qrClose').click();
     cy.focused().should('have.id', 'showQr');
   });
@@ -599,7 +602,7 @@ describe('Companion QR sharing', () => {
     cy.get('#qrImage').should(($img) => {
       const src = decodeURIComponent($img.attr('src'));
       expect(src).to.include('https://timer.arcane-scripts.net/c?code=NEWCDE');
-      expect(src).to.not.include('ABC123');
+      expect(src).to.not.include('ABC234');
     });
     cy.get('#qrClose').click();
 
@@ -624,10 +627,10 @@ describe('Companion QR sharing', () => {
       fresh: true,
       stale: false,
       established: true,
-      code: 'ABC123',
+      code: 'ABC234',
     });
     cy.get('#showQr').click();
-    cy.get('#qrCode').should('have.text', 'ABC123');
+    cy.get('#qrCode').should('have.text', 'ABC234');
     cy.get('#qrCode').should('not.have.text', 'NEWCDE');
   });
 });
@@ -1249,7 +1252,7 @@ describe('Companion player preferences', () => {
           JSON.stringify({
             warnNearEnd: 'yes',
             keepScreenOn: true,
-            code: 'ABC123',
+            code: 'ABC234',
           }),
         );
       },

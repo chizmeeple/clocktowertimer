@@ -42,7 +42,7 @@ Production connections go **directly from browsers to Cloudflare** using HTTPS a
 - Worker: `https://clocktower-companion.redmeeple.workers.dev`
 - Storyteller application: `https://timer.arcane-scripts.net`
 - Player-facing companion: `https://timer.arcane-scripts.net/c`
-- Direct session link: `https://timer.arcane-scripts.net/c?code=ABC123`
+- Direct session link: `https://timer.arcane-scripts.net/c?code=ABC234`
 - The static file is `c/index.html`. Generated links use `/c` with no trailing slash. GitHub Pages may redirect `/c` to `/c/`; the page still loads, and a `code` query is preserved.
 - A valid code in the address is normalised and joined automatically. Without a code, the page asks for one. The diagnostic client remains at `companion-dev.html`.
 
@@ -50,14 +50,14 @@ The `redmeeple` portion is the account-wide `workers.dev` subdomain; `clocktower
 
 ## Responsibilities and trust boundaries
 
-| Component | Responsibility |
-| --- | --- |
-| Main timer (browser) | Owns authoritative game and timer state; works without Companion Mode. |
-| Companion publishing adapter | Projects and validates **public** state; sends updates only when enabled. |
-| Cloudflare Worker | Routes HTTP and WebSocket requests, enforces Origin restrictions and rate limits. |
-| `SessionDirectory` Durable Object | Creates and tracks session codes; retires codes. |
+| Component                         | Responsibility                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| Main timer (browser)              | Owns authoritative game and timer state; works without Companion Mode.                    |
+| Companion publishing adapter      | Projects and validates **public** state; sends updates only when enabled.                 |
+| Cloudflare Worker                 | Routes HTTP and WebSocket requests, enforces Origin restrictions and rate limits.         |
+| `SessionDirectory` Durable Object | Creates and tracks session codes; retires codes.                                          |
 | `CompanionSession` Durable Object | Authenticates the writer, retains latest snapshot, distributes revisions, handles expiry. |
-| Companion page (browser) | Reads public snapshots and locally interpolates the countdown; cannot publish. |
+| Companion page (browser)          | Reads public snapshots and locally interpolates the countdown; cannot publish.            |
 
 The Storyteller receives a short session code and a separate private write token. Players need only the code. The token is sent in the first authenticated Storyteller WebSocket message, **not** in the URL. Readers have no publishing privileges.
 
@@ -143,14 +143,14 @@ The server wraps snapshots in a revisioned envelope with server timing informati
 
 ## Local development versus production
 
-| Concern | Local development | Production |
-| --- | --- | --- |
-| Frontend hosting | `npm run dev:timer` at `http://127.0.0.1:8006` | GitHub Pages |
-| Backend | `npm run dev:worker` or remote Cloudflare Worker | Remote Cloudflare Worker |
-| Browser API/WebSocket URL | Same-origin `/companion-api` development proxy | Direct HTTPS / `wss://` Worker endpoint |
-| Why a proxy? | Local pages call same-origin `/companion-api`, including when `COMPANION_WORKER_URL` selects the deployed Worker | Not needed; the Storyteller page connects to the Worker directly |
-| Player page | `c/index.html`, served at `/c`, `/c/` and `/c/index.html`, still via `/companion-api` | `/c` connects directly to the deployed worker |
-| Publishing UI | Settings tab and the timer join code while a session is live, plus the development panel at `?companionDev=1` | Settings tab, off until enabled. The timer shows the join code only while a session is live |
+| Concern                   | Local development                                                                                                | Production                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Frontend hosting          | `npm run dev:timer` at `http://127.0.0.1:8006`                                                                   | GitHub Pages                                                                                |
+| Backend                   | `npm run dev:worker` or remote Cloudflare Worker                                                                 | Remote Cloudflare Worker                                                                    |
+| Browser API/WebSocket URL | Same-origin `/companion-api` development proxy                                                                   | Direct HTTPS / `wss://` Worker endpoint                                                     |
+| Why a proxy?              | Local pages call same-origin `/companion-api`, including when `COMPANION_WORKER_URL` selects the deployed Worker | Not needed; the Storyteller page connects to the Worker directly                            |
+| Player page               | `c/index.html`, served at `/c`, `/c/` and `/c/index.html`, still via `/companion-api`                            | `/c` connects directly to the deployed worker                                               |
+| Publishing UI             | Settings tab and the timer join code while a session is live, plus the development panel at `?companionDev=1`    | Settings tab, off until enabled. The timer shows the join code only while a session is live |
 
 For a local Worker:
 
@@ -168,7 +168,7 @@ COMPANION_WORKER_URL='https://clocktower-companion.redmeeple.workers.dev' \
 
 Then visit `http://127.0.0.1:8006/?companionDev=1`. After a session starts, **Open companion** opens the player page and **Open diagnostics** opens the diagnostic client. Both use the current code and are not links once that session has ended. The panel and the Settings tab share one session controller, so they cannot start two sessions for the same page. The panel remains a localhost diagnostic tool. While the timer is showing the join code, the panel does not repeat that code. Its stop and drop actions are local diagnostic controls; **Stop sharing** in Settings is what tells the Worker to end the session for players.
 
-The companion page at `/c` allows connections only to itself and `clocktower-companion.redmeeple.workers.dev` (HTTPS and WSS). On localhost it still uses the `/companion-api` proxy, so the same page works with a local worker or `COMPANION_WORKER_URL`. The Storyteller page allows the same worker host, for HTTPS and WSS only, and uses it when the page is not served from localhost. Locally, `http://127.0.0.1:8006/c`, `http://127.0.0.1:8006/c/` and `http://127.0.0.1:8006/c/index.html` all serve that page. A direct link is `http://127.0.0.1:8006/c?code=ABC123`.
+The companion page at `/c` allows connections only to itself and `clocktower-companion.redmeeple.workers.dev` (HTTPS and WSS). On localhost it still uses the `/companion-api` proxy, so the same page works with a local worker or `COMPANION_WORKER_URL`. The Storyteller page allows the same worker host, for HTTPS and WSS only, and uses it when the page is not served from localhost. Locally, `http://127.0.0.1:8006/c`, `http://127.0.0.1:8006/c/` and `http://127.0.0.1:8006/c/index.html` all serve that page. A direct link is `http://127.0.0.1:8006/c?code=ABC234`.
 
 The companion plays a singing bowl about 30 seconds before a running countdown reaches zero, and a church bell at zero. Vibration accompanies both. Both are off until the player opts in. Those two choices are remembered on the device in `localStorage` under `timer-companion` and restored on the next visit. Restoring the warning does not play a sound by itself, and a sound is not played while the page is hidden. **Test sound** plays the bowl and then the bell so a player can check the device, and it does not turn the warning on or change the countdown. A missing file or a refused playback leaves the countdown running. Where the browser supports the Screen Wake Lock API, the page requests a lock while it is visible and the option is on, including when that choice was restored, and releases that lock when the option is turned off or the page is hidden. It asks again when the page becomes visible, if the option is still on. The browser can refuse the lock; the saved choice stays as the player left it. A browser without the API shows the option disabled, with a short explanation, and leaves the saved choice unchanged. Neither alerts nor the wake lock run in the background, and a refusal does not stop the countdown or the session.
 
