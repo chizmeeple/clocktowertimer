@@ -17,7 +17,7 @@
     "cypress": "^16.1.0",
     "serve": "^14.2.6",
     "start-server-and-test": "^3.0.0",
-    "vitest": "^4.1.11",
+    "vitest": "^5.0.0",
     "wrangler": "^4.150.0"
   },
   "overrides": {
