@@ -1,7 +1,8 @@
 // Session codes use the worker's Crockford alphabet. I, L, O and U are
 // absent so a code can be read aloud. Spoken I, L and O are folded in.
+// 0 and 1 are removed because they are easily confused with O and I.
 
-const CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 export function normaliseSessionCode(raw) {
   return String(raw ?? '')
@@ -55,7 +56,8 @@ export function presentCompanionPlayerShare(view) {
   const established = view?.established === true;
   const valid = isSessionCode(code);
   const canShare =
-    valid && (connection === 'live' || (connection === 'reconnecting' && established));
+    valid &&
+    (connection === 'live' || (connection === 'reconnecting' && established));
   return {
     canShare,
     code: canShare ? code : '',
