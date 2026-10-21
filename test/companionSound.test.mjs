@@ -80,26 +80,34 @@ describe('companion alert sounds', () => {
     const warning = companionSoundUrl('warning');
     const zero = companionSoundUrl('zero');
     assert.match(warning.pathname, /\/sounds\/companion\/warning-30sec\.mp3$/);
-    assert.match(zero.pathname, /\/sounds\/end-of-day\/single-church-bell-v2\.mp3$/);
+    assert.match(
+      zero.pathname,
+      /\/sounds\/end-of-day\/single-church-bell-v2\.mp3$/,
+    );
     assert.equal(existsSync(fileURLToPath(warning)), true);
     assert.equal(existsSync(fileURLToPath(zero)), true);
-    assert.equal(existsSync(fileURLToPath(new URL('../warning-30sec.mp3', import.meta.url))), false);
+    assert.equal(
+      existsSync(
+        fileURLToPath(new URL('../warning-30sec.mp3', import.meta.url)),
+      ),
+      false,
+    );
 
     for (const base of [
       'http://127.0.0.1:8006/c',
       'http://127.0.0.1:8006/c/',
       'http://127.0.0.1:8006/c/index.html',
-      'http://127.0.0.1:8006/c?code=ABC123',
+      'http://127.0.0.1:8006/c?code=ABC234',
     ]) {
       const moduleUrl = new URL('../js/companionSound.js', base);
       assert.equal(moduleUrl.pathname, '/js/companionSound.js');
       assert.equal(
         companionSoundUrl('warning', moduleUrl).pathname,
-        '/sounds/companion/warning-30sec.mp3'
+        '/sounds/companion/warning-30sec.mp3',
       );
       assert.equal(
         companionSoundUrl('zero', moduleUrl).pathname,
-        '/sounds/end-of-day/single-church-bell-v2.mp3'
+        '/sounds/end-of-day/single-church-bell-v2.mp3',
       );
     }
   });
@@ -130,13 +138,21 @@ describe('companion alert sounds', () => {
     assert.deepEqual(harness.status, ['30-second warning']);
     assert.deepEqual(alertState, { previous: 40, alert: null });
     assert.equal(harness.warning.plays.at(-1), COMPANION_SOUNDS.warning.volume);
-    assert.equal(harness.bell.plays.every((volume) => volume === 0), true);
+    assert.equal(
+      harness.bell.plays.every((volume) => volume === 0),
+      true,
+    );
 
     harness.player.preview((label) => harness.status.push(label));
     await flush();
     assert.equal(harness.warning.paused, false);
-    assert.equal(harness.timers.every((entry) => entry.cleared), true);
-    const bellBeforeEnd = harness.bell.plays.filter((volume) => volume > 0).length;
+    assert.equal(
+      harness.timers.every((entry) => entry.cleared),
+      true,
+    );
+    const bellBeforeEnd = harness.bell.plays.filter(
+      (volume) => volume > 0,
+    ).length;
     assert.equal(bellBeforeEnd, 0);
 
     harness.warning.end();
@@ -147,7 +163,7 @@ describe('companion alert sounds', () => {
     assert.equal(harness.status.at(-1), 'End of the countdown');
     assert.deepEqual(
       harness.bell.plays.filter((volume) => volume > 0),
-      [COMPANION_SOUNDS.zero.volume]
+      [COMPANION_SOUNDS.zero.volume],
     );
     harness.bell.end();
     await flush();
@@ -169,8 +185,14 @@ describe('companion alert sounds', () => {
   });
 
   it('leaves the storyteller beep in place and drops the companion oscillator', () => {
-    const page = readFileSync(new URL('../js/companion-page.js', import.meta.url), 'utf8');
-    const storyteller = readFileSync(new URL('../js/script.js', import.meta.url), 'utf8');
+    const page = readFileSync(
+      new URL('../js/companion-page.js', import.meta.url),
+      'utf8',
+    );
+    const storyteller = readFileSync(
+      new URL('../js/script.js', import.meta.url),
+      'utf8',
+    );
     assert.equal(page.includes('createOscillator'), false);
     assert.equal(page.includes('companionSound.js'), true);
     assert.equal(storyteller.includes('createOscillator'), true);

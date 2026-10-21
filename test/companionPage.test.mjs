@@ -47,7 +47,7 @@ describe('companion page codes', () => {
     assert.equal(normaliseSessionCode(' ab-cd ef '), 'ABCDEF');
     assert.equal(normaliseSessionCode('oiloiu'), '01101U');
     assert.equal(isSessionCode(normaliseSessionCode('oiloiu')), false);
-    assert.equal(isSessionCode('ABC123'), true);
+    assert.equal(isSessionCode('ABC234'), true);
     assert.equal(isSessionCode('ABCDEFG'), false);
     assert.equal(
       sessionCodeFromLocation({ search: '?code=ab%20c12o' }),
@@ -183,7 +183,7 @@ describe('companion presentation', () => {
 });
 
 describe('companion player sharing', () => {
-  const code = 'ABC123';
+  const code = 'ABC234';
 
   function share(overrides) {
     return presentCompanionPlayerShare({
@@ -197,16 +197,16 @@ describe('companion player sharing', () => {
   it('encodes only the public player url for a live session', () => {
     const live = share({});
     assert.equal(live.canShare, true);
-    assert.equal(live.code, 'ABC123');
+    assert.equal(live.code, 'ABC234');
     assert.equal(
       live.playerUrl,
-      'https://timer.arcane-scripts.net/c?code=ABC123',
+      'https://timer.arcane-scripts.net/c?code=ABC234',
     );
     assert.equal(live.playerUrl.includes('/c/?'), false);
     const qr = companionQrImageUrl(live.playerUrl);
     assert.match(
       decodeURIComponent(qr),
-      /https:\/\/timer\.arcane-scripts\.net\/c\?code=ABC123/,
+      /https:\/\/timer\.arcane-scripts\.net\/c\?code=ABC234/,
     );
     assert.equal(qr.includes('writeToken'), false);
     assert.equal(share({ stale: true }).canShare, true);
@@ -231,7 +231,7 @@ describe('companion player sharing', () => {
     );
     assert.equal(
       share({ connection: 'reconnecting', established: true }).playerUrl,
-      'https://timer.arcane-scripts.net/c?code=ABC123',
+      'https://timer.arcane-scripts.net/c?code=ABC234',
     );
     for (const connection of ['ended', 'expired', 'idle']) {
       const closed = share({ connection, established: false });
@@ -407,15 +407,19 @@ describe('companion alerts', () => {
     );
     assert.equal(endedEarly.alert, 'zero');
     assert.equal(
-      nextCompanionAlert(endedEarly, view({
-        phase: 'night',
-        timerStatus: 'finished',
-        kind: null,
-        rate: 0,
-        displaySeconds: 0,
-        confirmedComplete: true,
-        rev: 2,
-      }), false).alert,
+      nextCompanionAlert(
+        endedEarly,
+        view({
+          phase: 'night',
+          timerStatus: 'finished',
+          kind: null,
+          rate: 0,
+          displaySeconds: 0,
+          confirmedComplete: true,
+          rev: 2,
+        }),
+        false,
+      ).alert,
       null,
     );
   });
@@ -498,8 +502,11 @@ describe('companion day start', () => {
 
   it('stays quiet for the first sample, a resume, a hidden page, and a stale jump', () => {
     assert.equal(
-      nextDayStart(null, view({ phase: 'wake', kind: 'wake', displaySeconds: 6 }), true)
-        .started,
+      nextDayStart(
+        null,
+        view({ phase: 'wake', kind: 'wake', displaySeconds: 6 }),
+        true,
+      ).started,
       false,
     );
     const paused = nextDayStart(
@@ -535,7 +542,10 @@ describe('missed companion events', () => {
   it('notes a day that ended or advanced while the page was away', () => {
     const watching = { phase: 'day', day: 2 };
     assert.equal(
-      missedCompanionNotice(watching, view({ phase: 'night', confirmedComplete: true })),
+      missedCompanionNotice(
+        watching,
+        view({ phase: 'night', confirmedComplete: true }),
+      ),
       'The day ended while this page was away.',
     );
     assert.equal(
@@ -547,7 +557,10 @@ describe('missed companion events', () => {
       '',
     );
     assert.equal(
-      missedCompanionNotice({ phase: 'night', day: 2 }, view({ phase: 'wake', day: 3 })),
+      missedCompanionNotice(
+        { phase: 'night', day: 2 },
+        view({ phase: 'wake', day: 3 }),
+      ),
       '',
     );
     assert.equal(missedCompanionNotice(null, view({ phase: 'night' })), '');
@@ -566,7 +579,10 @@ describe('companion alert test controls', () => {
     );
     assert.doesNotMatch(page, /testSoundButton\.hidden\s*=/);
     assert.doesNotMatch(page, /testVibrationButton\.hidden\s*=/);
-    assert.match(page, /if \(!canSound && !canVibrate\) alertOption\.hidden = true/);
+    assert.match(
+      page,
+      /if \(!canSound && !canVibrate\) alertOption\.hidden = true/,
+    );
     assert.match(page, /This browser cannot play sound\./);
     assert.match(page, /This browser cannot vibrate\./);
     assert.match(page, /The browser did not vibrate\./);
@@ -656,7 +672,7 @@ describe('companion page policy', () => {
       'http://127.0.0.1:8006/c',
       'http://127.0.0.1:8006/c/',
       'http://127.0.0.1:8006/c/index.html',
-      'http://127.0.0.1:8006/c?code=ABC123',
+      'http://127.0.0.1:8006/c?code=ABC234',
     ]) {
       for (const ref of refs) {
         const url = new URL(ref, base);

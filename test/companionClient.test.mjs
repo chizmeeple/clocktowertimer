@@ -86,10 +86,18 @@ function harness({ fetch: doFetch } = {}) {
   return {
     client,
     pending,
-    set wall(value) { wall = value; },
-    set monoNow(value) { monoNow = value; },
-    get wall() { return wall; },
-    get monoNow() { return monoNow; },
+    set wall(value) {
+      wall = value;
+    },
+    set monoNow(value) {
+      monoNow = value;
+    },
+    get wall() {
+      return wall;
+    },
+    get monoNow() {
+      return monoNow;
+    },
   };
 }
 
@@ -204,7 +212,10 @@ describe('companion client', () => {
     assert.equal(env.client.view().connection, 'idle');
     assert.equal(env.client.view().problem, null);
     assert.equal(env.client.view().code, null);
-    assert.equal(presentCompanionPlayerShare(env.client.view()).canShare, false);
+    assert.equal(
+      presentCompanionPlayerShare(env.client.view()).canShare,
+      false,
+    );
   });
 
   it('shares a live code through a reconnect, then forgets it when the session ends', () => {
@@ -241,7 +252,7 @@ describe('companion client', () => {
       clearTimeout() {},
     });
 
-    client.join('ABC123');
+    client.join('ABC234');
     const first = client.view();
     assert.equal(first.connection, 'connecting');
     assert.equal(first.established, false);
@@ -253,25 +264,28 @@ describe('companion client', () => {
     assert.equal(failed.established, false);
     assert.equal(presentCompanionPlayerShare(failed).playerUrl, '');
 
-    client.join('ABC123');
+    client.join('ABC234');
     HeldSocket.latest.readyState = HeldSocket.OPEN;
     const live = client.view();
     assert.equal(live.connection, 'live');
-    assert.equal(live.code, 'ABC123');
-    assert.equal(presentCompanionPlayerShare(live).playerUrl, 'https://timer.arcane-scripts.net/c?code=ABC123');
+    assert.equal(live.code, 'ABC234');
+    assert.equal(
+      presentCompanionPlayerShare(live).playerUrl,
+      'https://timer.arcane-scripts.net/c?code=ABC234',
+    );
 
     HeldSocket.latest.close();
     const reconnecting = client.view();
     assert.equal(reconnecting.connection, 'reconnecting');
-    assert.equal(reconnecting.code, 'ABC123');
+    assert.equal(reconnecting.code, 'ABC234');
     assert.equal(reconnecting.established, true);
     assert.equal(
       presentCompanionPlayerShare(reconnecting).playerUrl,
-      'https://timer.arcane-scripts.net/c?code=ABC123'
+      'https://timer.arcane-scripts.net/c?code=ABC234',
     );
 
     HeldSocket.latest = null;
-    client.join('ABC123');
+    client.join('ABC234');
     const again = HeldSocket.latest;
     again.readyState = HeldSocket.OPEN;
     client.view();
@@ -286,13 +300,13 @@ describe('companion client', () => {
     assert.equal(next.connection, 'connecting');
     assert.equal(next.code, 'NEWCDE');
     assert.equal(presentCompanionPlayerShare(next).playerUrl, '');
-    assert.equal(JSON.stringify(next).includes('ABC123'), false);
+    assert.equal(JSON.stringify(next).includes('ABC234'), false);
     HeldSocket.latest.readyState = HeldSocket.OPEN;
     const replacement = client.view();
     assert.equal(replacement.code, 'NEWCDE');
     assert.equal(
       presentCompanionPlayerShare(replacement).playerUrl,
-      'https://timer.arcane-scripts.net/c?code=NEWCDE'
+      'https://timer.arcane-scripts.net/c?code=NEWCDE',
     );
   });
 
@@ -314,7 +328,10 @@ describe('companion client', () => {
     env.monoNow = 4_100;
     assert.equal(env.client.view().remainingMs, 56_000);
     assert.equal(env.client.view().fresh, true);
-    assert.equal(socket.sent.filter((message) => message.type === 'ping').length, 1);
+    assert.equal(
+      socket.sent.filter((message) => message.type === 'ping').length,
+      1,
+    );
   });
 
   it('drops a frozen clock when the page returns and takes the next snapshot', () => {
@@ -367,10 +384,19 @@ describe('companion client', () => {
     coarse.client.join('ABCDEF');
     const coarseSocket = FakeSocket.sockets[0];
     coarseSocket.onopen?.();
-    const coarsePing = coarseSocket.sent.find((message) => message.type === 'ping');
+    const coarsePing = coarseSocket.sent.find(
+      (message) => message.type === 'ping',
+    );
     coarse.wall = 10_800;
-    coarseSocket.receive({ type: 'pong', id: coarsePing.id, serverTime: 10_400 });
-    assert.equal(coarseSocket.sent.filter((message) => message.type === 'ping').length, 1);
+    coarseSocket.receive({
+      type: 'pong',
+      id: coarsePing.id,
+      serverTime: 10_400,
+    });
+    assert.equal(
+      coarseSocket.sent.filter((message) => message.type === 'ping').length,
+      1,
+    );
     assert.equal(coarse.pending[0].delay, PING_KEEPALIVE_MS);
 
     const env = harness();
@@ -380,11 +406,17 @@ describe('companion client', () => {
     const ping = socket.sent.find((message) => message.type === 'ping');
     env.wall = 14_000;
     socket.receive({ type: 'pong', id: ping.id, serverTime: 12_000 });
-    assert.equal(socket.sent.filter((message) => message.type === 'ping').length, 1);
+    assert.equal(
+      socket.sent.filter((message) => message.type === 'ping').length,
+      1,
+    );
     assert.equal(env.pending[0].delay, PING_RETRY_MS);
     env.pending[0].fn();
     env.pending.shift();
-    assert.equal(socket.sent.filter((message) => message.type === 'ping').length, 2);
+    assert.equal(
+      socket.sent.filter((message) => message.type === 'ping').length,
+      2,
+    );
 
     const quiet = harness();
     quiet.client.join('ABCDEF');
@@ -538,7 +570,10 @@ describe('companion status after a failed upgrade', () => {
     FakeSocket.sockets[0].close();
     await settle();
     assert.equal(failure.client.view().connection, 'reconnecting');
-    assert.equal(failure.pending.some((timer) => timer.delay === 500), true);
+    assert.equal(
+      failure.pending.some((timer) => timer.delay === 500),
+      true,
+    );
 
     const limited = harness({
       fetch: async () => statusResult('unavailable', 429),
@@ -547,7 +582,10 @@ describe('companion status after a failed upgrade', () => {
     FakeSocket.sockets[0].close();
     await settle();
     assert.equal(limited.client.view().connection, 'reconnecting');
-    assert.equal(limited.pending.some((timer) => timer.delay === 500), true);
+    assert.equal(
+      limited.pending.some((timer) => timer.delay === 500),
+      true,
+    );
 
     const broken = harness({
       fetch: async () => statusResult('unavailable', 503),
@@ -558,28 +596,38 @@ describe('companion status after a failed upgrade', () => {
     assert.equal(broken.client.view().connection, 'reconnecting');
 
     const hung = harness({
-      fetch: (_url, { signal }) => new Promise((_resolve, reject) => {
-        signal.addEventListener('abort', () => reject(new Error('aborted')));
-      }),
+      fetch: (_url, { signal }) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(new Error('aborted')));
+        }),
     });
     hung.client.join('ABCDEF');
     FakeSocket.sockets[0].close();
-    const timeout = hung.pending.find((timer) => timer.delay === STATUS_TIMEOUT_MS);
+    const timeout = hung.pending.find(
+      (timer) => timer.delay === STATUS_TIMEOUT_MS,
+    );
     assert.ok(timeout);
-    assert.equal(hung.pending.some((timer) => timer.delay === 500), false);
+    assert.equal(
+      hung.pending.some((timer) => timer.delay === 500),
+      false,
+    );
     timeout.fn();
     await settle();
     assert.equal(hung.client.view().connection, 'reconnecting');
-    assert.equal(hung.pending.some((timer) => timer.delay === 500), true);
+    assert.equal(
+      hung.pending.some((timer) => timer.delay === 500),
+      true,
+    );
     assert.equal(FakeSocket.sockets.length, 1);
   });
 
   it('ignores a late status after leave, resume, or a different code', async () => {
     let gate;
     const leaveEnv = harness({
-      fetch: () => new Promise((resolve) => {
-        gate = resolve;
-      }),
+      fetch: () =>
+        new Promise((resolve) => {
+          gate = resolve;
+        }),
     });
     leaveEnv.client.join('ABCDEF');
     FakeSocket.sockets[0].close();
@@ -596,9 +644,10 @@ describe('companion status after a failed upgrade', () => {
 
     let resumeGate;
     const resumeEnv = harness({
-      fetch: () => new Promise((resolve) => {
-        resumeGate = resolve;
-      }),
+      fetch: () =>
+        new Promise((resolve) => {
+          resumeGate = resolve;
+        }),
     });
     resumeEnv.client.join('ABCDEF');
     FakeSocket.sockets[0].close();
@@ -611,9 +660,10 @@ describe('companion status after a failed upgrade', () => {
 
     let changeGate;
     const changeEnv = harness({
-      fetch: () => new Promise((resolve) => {
-        changeGate = resolve;
-      }),
+      fetch: () =>
+        new Promise((resolve) => {
+          changeGate = resolve;
+        }),
     });
     changeEnv.client.join('ABCDEF');
     FakeSocket.sockets[0].close();
@@ -645,6 +695,9 @@ describe('companion status after a failed upgrade', () => {
     await settle();
     assert.equal(calls, 0);
     assert.equal(env.client.view().connection, 'reconnecting');
-    assert.equal(env.pending.some((timer) => timer.delay === 500), true);
+    assert.equal(
+      env.pending.some((timer) => timer.delay === 500),
+      true,
+    );
   });
 });
