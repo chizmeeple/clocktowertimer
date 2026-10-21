@@ -38,7 +38,7 @@ export function localImportSpecifiers(source) {
 export function collectModuleSpecifiers(
   entryPath,
   readFile = readFileSync,
-  baseDir = dirname(resolve(entryPath))
+  baseDir = dirname(resolve(entryPath)),
 ) {
   const rootDir = resolve(baseDir);
   const seen = new Set();
@@ -52,7 +52,9 @@ export function collectModuleSpecifiers(
     for (const specifier of localImportSpecifiers(source)) {
       const clean = specifier.split('?')[0].split('#')[0];
       const importedPath = resolve(dirname(absolute), clean);
-      const relativePath = relative(rootDir, importedPath).split('\\').join('/');
+      const relativePath = relative(rootDir, importedPath)
+        .split('\\')
+        .join('/');
       specifiers.add(`./${relativePath}`);
       visit(importedPath);
     }
@@ -81,7 +83,9 @@ export function releaseAssetUrls(version, specifiers) {
   return [
     versionedUrl(STYLESHEET, version),
     versionedUrl(ENTRY_SCRIPT, version),
-    ...[...specifiers].sort().map((specifier) => versionedUrl(specifier, version)),
+    ...[...specifiers]
+      .sort()
+      .map((specifier) => versionedUrl(specifier, version)),
   ];
 }
 
@@ -107,18 +111,18 @@ export function stampHtml(html, version, specifiers) {
   const entry = versionedUrl(ENTRY_SCRIPT, version);
   let next = html.replace(
     new RegExp(`href="${escapeRegExp(STYLESHEET)}(?:\\?[^"]*)?"`, 'g'),
-    `href="${stylesheet}"`
+    `href="${stylesheet}"`,
   );
   next = next.replace(
     new RegExp(`src="${escapeRegExp(ENTRY_SCRIPT)}(?:\\?[^"]*)?"`, 'g'),
-    `src="${entry}"`
+    `src="${entry}"`,
   );
 
   const block = importMapBlock(version, specifiers);
   const moduleTag = `<script src="${entry}" type="module"></script>`;
   const moduleLine = new RegExp(
     `^[ \\t]*${moduleTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[ \\t]*$`,
-    'm'
+    'm',
   );
   if (!moduleLine.test(next)) {
     throw new Error(`Could not find ${moduleTag}`);
@@ -137,7 +141,7 @@ export function stampCompanionHtml(html, version) {
   for (const asset of COMPANION_ASSETS) {
     const pattern = new RegExp(
       `((?:href|src)=")${escapeRegExp(asset)}(?:\\?[^"]*)?"`,
-      'g'
+      'g',
     );
     if (!pattern.test(next)) {
       throw new Error(`Could not find ${asset}`);
@@ -170,9 +174,7 @@ export function releaseManifest(version) {
 export function releaseAssetProblems(html, version, specifiers) {
   const problems = [];
   const expected = buildImportMap(version, specifiers).imports;
-  const match = html.match(
-    /<script type="importmap">([\s\S]*?)<\/script>/
-  );
+  const match = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
   if (!match) {
     problems.push('missing import map');
     return problems;
@@ -221,12 +223,16 @@ function writeReleaseAssets() {
   const entryPath = resolve(root, ENTRY_SCRIPT);
   const specifiers = collectModuleSpecifiers(entryPath, readFileSync, root);
   const htmlPath = resolve(root, 'index.html');
-  const html = stampHtml(readFileSync(htmlPath, 'utf8'), APP_VERSION, specifiers);
+  const html = stampHtml(
+    readFileSync(htmlPath, 'utf8'),
+    APP_VERSION,
+    specifiers,
+  );
   const problems = releaseAssetProblems(html, APP_VERSION, specifiers);
   const companionPath = resolve(root, COMPANION_HTML);
   const companion = stampCompanionHtml(
     readFileSync(companionPath, 'utf8'),
-    APP_VERSION
+    APP_VERSION,
   );
   const companionProblems = companionAssetProblems(companion, APP_VERSION);
   const all = [...problems, ...companionProblems];
@@ -235,11 +241,9 @@ function writeReleaseAssets() {
   }
   writeFileSync(htmlPath, html);
   writeFileSync(companionPath, companion);
-  writeFileSync(
-    resolve(root, 'release.json'),
-    releaseManifest(APP_VERSION)
-  );
+  writeFileSync(resolve(root, 'release.json'), releaseManifest(APP_VERSION));
   console.log(`Stamped release ${APP_VERSION}`);
+  console.log(`NOTE: you should run "npm i" to update package*.json files`);
 }
 
 const isDirect =

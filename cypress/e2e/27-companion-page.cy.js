@@ -98,8 +98,8 @@ describe('Companion page', () => {
     cy.get('#codeError').should('be.visible').and('contain', 'not valid');
     cy.get('#session').should('not.be.visible');
 
-    cy.visit('/c?code=ab-c1o2');
-    cy.get('#code').should('have.value', 'ABC102');
+    cy.visit('/c?code=ab-c2e3');
+    cy.get('#code').should('have.value', 'ABC2E3');
     cy.get('#session').should('be.visible');
     cy.get('#status')
       .invoke('text')
