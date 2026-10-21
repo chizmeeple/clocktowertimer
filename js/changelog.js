@@ -1,7 +1,13 @@
 // Version tracking
-export const APP_VERSION = '1.3.5';
+export const APP_VERSION = '1.3.6';
 
 export const CHANGELOG = {
+  '1.3.6': {
+    date: '2026-10-21',
+    changes: {
+      improvements: ['Code alphabet: exclude 0 and 1 for clarity.'],
+    },
+  },
   '1.3.5': {
     date: '2026-10-20',
     changes: {
